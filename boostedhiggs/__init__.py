@@ -1,7 +1,7 @@
 from .version import __version__
-from .hbbprocessor import HbbProcessor
+from .hwwprocessor import HwwProcessor
 
 __all__ = [
     '__version__',
-    'HbbProcessor',
+    'HwwProcessor',
 ]
