@@ -112,8 +112,30 @@ def buildevents(df, fatjet='FatJet', subjet='SubJet', usemask=False, virtual=Fal
                 get(f'{subjet}_phi'),
                 get(f'{subjet}_mass'),
             ),
-            n2=get(f'{subjet}_n2b1'),
-            btagDeepB=get(f'{subjet}_btagDeepB'),
+            # msoftdrop=ak.MaskedArray(df[f'{fatjet}_msoftdrop'] <= 0, df[f'{fatjet}_msoftdrop']) if usemask else np.maximum(1e-5, df[f'{fatjet}_msoftdrop']),
+            msoftdrop=df[f'{fatjet}_msoftdrop'],
+            area=df[f'{fatjet}_area'],
+            n2=df[f'{fatjet}_n2b1'],
+            jetId=df[f'{fatjet}_jetId'],
+            lsf3=df[f'{fatjet}_lsf3'],
+            muonIdx3SJ=df[f'{fatjet}_muonIdx3SJ'],
+            electronIdx3SJ=df[f'{fatjet}_electronIdx3SJ'],
+            subJetIdx1=df[f'{fatjet}_subJetIdx1'],
+            subJetIdx2=df[f'{fatjet}_subJetIdx2'],
+        ),
+    )
+
+    events['subjets'] = ak.JaggedArray.fromcounts(
+        df['nCustomAK8PuppiSubJet'],
+        ak.Table.named(
+            'subjet',
+            p4=TLorentzVectorArray.from_ptetaphim(
+                df['CustomAK8PuppiSubJet_pt'],
+                df['CustomAK8PuppiSubJet_eta'],
+                df['CustomAK8PuppiSubJet_phi'],
+                df['CustomAK8PuppiSubJet_mass'],
+            ),
+            btagDeepB=df['CustomAK8PuppiSubJet_btagDeepB'],
         ),
     )
     _embed_subjets(events)
@@ -164,8 +186,13 @@ def buildevents(df, fatjet='FatJet', subjet='SubJet', usemask=False, virtual=Fal
                 get('Muon_phi'),
                 get('Muon_mass'),
             ),
-            looseId=get('Muon_looseId'),
-            pfRelIso04_all=get('Muon_pfRelIso04_all'),
+            sip3d=df['Muon_sip3d'],
+            dxy=df['Muon_dxy'],
+            dz=df['Muon_dz'],
+            mvaId=df['Muon_mvaId'],
+            looseId=df['Muon_looseId'],
+            pfRelIso04_all=df['Muon_pfRelIso04_all'],
+            miniPFRelIso_all=df['Muon_miniPFRelIso_all'], 
         ),
     )
 
