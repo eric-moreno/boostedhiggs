@@ -159,13 +159,9 @@ class HbbProcessor(processor.ProcessorABC):
 
         jets = events.Jet[
             (events.Jet.pt > 30.)
-<<<<<<< HEAD
-            #& events.Jet.isTight
-            & (events.Jet.jetId > 0)
-=======
             & (abs(events.Jet.eta) < 2.5)
             & events.Jet.isTight
->>>>>>> 31dbc708cc1c10428ad927050413fde4c64f6100
+            #& (events.Jet.jetId > 0)
         ]
         # only consider first 4 jets to be consistent with old framework
         jets = jets[:, :4]
