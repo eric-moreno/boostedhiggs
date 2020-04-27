@@ -88,6 +88,14 @@ class HbbProcessor(processor.ProcessorABC):
                 hist.Bin('msd', r'Jet $m_{sd}$', 23, 40, 201),
                 hist.Bin('ddb', r'Jet ddb score', [0, 0.89, 1]),
             ),
+            'genresponse_noweight': hist.Hist(
+                'Events',
+                hist.Cat('dataset', 'Dataset'),
+                hist.Cat('region', 'Region'),
+                hist.Cat('systematic', 'Systematic'),
+                hist.Bin('pt', r'Jet $p_{T}$ [GeV]', [450, 500, 550, 600, 675, 800, 1200]),
+                hist.Bin('genpt', r'Generated Higgs $p_{T}$ [GeV]', [200, 300, 450, 650, 7500]),
+            ),
             'genresponse': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
@@ -151,8 +159,13 @@ class HbbProcessor(processor.ProcessorABC):
 
         jets = events.Jet[
             (events.Jet.pt > 30.)
+<<<<<<< HEAD
             #& events.Jet.isTight
             & (events.Jet.jetId > 0)
+=======
+            & (abs(events.Jet.eta) < 2.5)
+            & events.Jet.isTight
+>>>>>>> 31dbc708cc1c10428ad927050413fde4c64f6100
         ]
         # only consider first 4 jets to be consistent with old framework
         jets = jets[:, :4]
@@ -254,6 +267,14 @@ class HbbProcessor(processor.ProcessorABC):
                 weight=weight,
             )
             if wmod is not None:
+                output['genresponse_noweight'].fill(
+                    dataset=dataset,
+                    region=region,
+                    systematic=sname,
+                    pt=normalize(candidatejet.pt),
+                    genpt=normalize(genBosonPt),
+                    weight=events.genWeight[cut] * wmod[cut],
+                )
                 output['genresponse'].fill(
                     dataset=dataset,
                     region=region,
