@@ -84,7 +84,7 @@ class HbbProcessor(processor.ProcessorABC):
                 hist.Cat('region', 'Region'),
                 hist.Cat('systematic', 'Systematic'),
                 hist.Bin('genflavor', 'Gen. jet flavor', [0, 1, 2, 3, 4]),
-                hist.Bin('pt', r'Jet $p_{T}$ [GeV]', [450, 500, 550, 600, 675, 800, 1200]),
+                hist.Bin('pt', r'Jet $p_{T}$ [GeV]', 80, 400, 1200),
                 hist.Bin('msd', r'Jet $m_{sd}$', 23, 40, 201),
                 hist.Bin('ddb', r'Jet ddb score', [0, 0.89, 1]),
             ),
@@ -132,23 +132,27 @@ class HbbProcessor(processor.ProcessorABC):
         fatjets['rho'] = 2 * np.log(fatjets.msdcorr / fatjets.pt)
         fatjets['n2ddt'] = fatjets.n2b1 - n2ddt_shift(fatjets, year=self._year)
 
+        #print(fatjets.jetId)
         candidatejet = fatjets[
             # https://github.com/DAZSLE/BaconAnalyzer/blob/master/Analyzer/src/VJetLoader.cc#L269
             (fatjets.pt > 200)
             & (abs(fatjets.eta) < 2.5)
-            & fatjets.isTight  # this is loose in sampleContainer
+            #& fatjets.isTight  # this is loose in sampleContainer
+            & (fatjets.jetId > 0)  # this is loose in sampleContainer
         ][:, 0:1]
         selection.add('jetacceptance', (
             (candidatejet.pt > 450)
             & (candidatejet.msdcorr > 40.)
             & (abs(candidatejet.eta) < 2.4)
         ).any())
-        selection.add('jetid', candidatejet.isTight.any())
+        #selection.add('jetid', candidatejet.isTight.any())
+        selection.add('jetid', (candidatejet.jetId > 0).any())
         selection.add('n2ddt', (candidatejet.n2ddt < 0.).any())
 
         jets = events.Jet[
             (events.Jet.pt > 30.)
-            & events.Jet.isTight
+            #& events.Jet.isTight
+            & (events.Jet.jetId > 0)
         ]
         # only consider first 4 jets to be consistent with old framework
         jets = jets[:, :4]
@@ -213,7 +217,7 @@ class HbbProcessor(processor.ProcessorABC):
 
         allcuts = set()
         output['cutflow'][dataset]['none'] += float(weights.weight().sum())
-        for cut in regions['muoncontrol']:
+        for cut in regions['signal']:
             allcuts.add(cut)
             output['cutflow'][dataset][cut] += float(weights.weight()[selection.all(*allcuts)].sum())
 
