@@ -11,10 +11,12 @@ pip install --user --editable .
 
 ## For Condor:
 # Only necessary once
-```bash envSetup.sh
+```
+bash envSetup.sh
 ```
 # For submission
-```cd condor
+```
+cd condor
 python CoffeaSubmit.py Apr24 run_htt.py 50 1
 ```
 The arguments are: 
