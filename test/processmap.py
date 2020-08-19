@@ -5,11 +5,6 @@ process = hist.Cat("process", "Process", sorting='placement')
 process_cat = "dataset"
 process_map = OrderedDict()
 
-process_map["wqq"] = [
-    'WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-    'WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-    'WJetsToQQ_HT-800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-]
 process_map["zll"] = [
     'DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8',
     'DYJetsToLL_M-50_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8',
@@ -28,7 +23,20 @@ process_map["wlnu"] = [
     'WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8',
 ]
-process_map["zqq"] = [
+#process_map["wqq"] = [
+#    'WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#    'WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#    'WJetsToQQ_HT-800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zqq"] = [
+#    'ZJetsToQQ_HT400to600_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#    'ZJetsToQQ_HT600to800_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#    'ZJetsToQQ_HT-800toInf_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+process_map["vqq"] = [
+    'WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'WJetsToQQ_HT-800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
     'ZJetsToQQ_HT400to600_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
     'ZJetsToQQ_HT600to800_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
     'ZJetsToQQ_HT-800toInf_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
@@ -38,16 +46,25 @@ process_map["qcd"] = [
     #'QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     'QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     'QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
-    #'QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
-    #'QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
+    'QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
+    'QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     #'QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     'QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
 ]
-process_map["tt"] = [
+process_map["tt-dilep"] = [
     'TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8',
+]
+process_map["tt-semilep"] = [
     'TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8',
+]
+process_map["tt-had"] = [
     'TTToHadronic_TuneCP5_13TeV-powheg-pythia8',
 ]
+#process_map["tt"] = [
+#    'TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8',
+#    'TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8',
+#    'TTToHadronic_TuneCP5_13TeV-powheg-pythia8',
+#]
 process_map["st"] = [
     'ST_s-channel_4f_hadronicDecays_TuneCP5_13TeV-amcatnlo-pythia8',
     'ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8',

@@ -48,7 +48,7 @@ def drawSolo(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
     if (regionsel is not ''):
         exceptions.append('region')
     print([ax.name for ax in h.axes()])
-    x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions])
+    x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions], overflow='allnan')
     for var,val in vars_cut.items():
         if var!=var_name:
             print('integrating ',var,val[0],val[1])
@@ -79,7 +79,7 @@ def drawSolo(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
     old_handles, old_labels = ax.get_legend_handles_labels()
     leg = ax.legend(handles=old_handles,labels=old_labels,title=r'$%s$'%plottitle)
     lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
-    cmstext = plt.text(0., 1., "CMS",fontsize=20,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
+    cmstext = plt.text(0., 1., "CMS",fontsize=19,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
     addtext = plt.text(0.085, 1., "Simulation Preliminary",fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
     #hep.cms.cmslabel(ax, data=False, paper=False, year='2017')
     fig.savefig("solo_%s_%s_%s_lumi%i.pdf"%(sel,var_name,savename,lumifb))

@@ -18,10 +18,15 @@ hists_properties = {'jet0_dHhadhad':{'hist_name': 'presel_hadseljet0',
                                },
                     }
 
-process_latex = {'tt': r'$t\bar{t}$',
+process_latex = {
+                 #'tt': r'$t\bar{t}$',
+                 'tt-dilep': r'$t\bar{t}~(dileptonic)$',
+                 'tt-semilep': r'$t\bar{t}~(semileptonic)$',
+                 'tt-had': r'$t\bar{t}~(hadronic)$',
                  'st': 'Single-t',
-                 'zqq': 'Z(qq)',
-                 'wqq': 'W(qq)',
+                 'vqq': 'V(qq)',
+                 #'zqq': 'Z(qq)',
+                 #'wqq': 'W(qq)',
                  'qcd': 'Multijet',
                  'zll': r'Z($\ell\ell$)',
                  'wlnu': r'W($\ell\nu$)',
@@ -32,5 +37,8 @@ process_latex = {'tt': r'$t\bar{t}$',
 
 import re
 nosig = re.compile("(?!h125)")
-nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
+nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)")
 
