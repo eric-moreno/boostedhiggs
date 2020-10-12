@@ -28,18 +28,8 @@ def run_processor(year,selsamples,starti,endi,outname):
     
     selfiles = {k: files[k][starti:endi] for k in selsamples}
     
-    args = {'nano': True, 'workers': 4, 'savemetrics': True}
+    args = {'nano': True, 'workers': 1, 'savemetrics': True}
     out, metrics = processor.run_uproot_job(selfiles, 'Events', p, processor.futures_executor, args)
-    
-    xs = {}
-    with open('../data/xsec.json', 'r') as f:
-        xs = json.load(f)
-    
-    scale1fb = {k: xs[k] * 1000 / w for k, w in out['sumw'].items()}
-    out['jet_kin'].scale(scale1fb, 'dataset')
-    out['lep_kin'].scale(scale1fb, 'dataset')
-    out['mass_kin'].scale(scale1fb, 'dataset')
-    out['evt_kin'].scale(scale1fb, 'dataset')
     
     util.save(out, '%s.coffea'%outname)
 
@@ -102,6 +92,10 @@ if __name__ == "__main__":
         'TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8',
         'GluGluHToTauTau',
     ]
+        #TTToHadronic_TuneCP5_13TeV-powheg-pythia8 TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8
+        #WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8 WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8 WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8 WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8 WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8
+        #QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8 QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8 QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8 QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8 QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8 QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8
+#python run_htt_lepid.py --year 2017 --starti 0 --endi 100 --selsamples --outname htt_runtest_lepid_QCD
 
     #print(possible)
 #    python run_htt.py --year 2017 --starti 0 --endi 100 --selsamples DYJetsToLL_M-50_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8 --outname htt_runtest

@@ -4,6 +4,7 @@ import awkward as ak
 from coffea.util import load
 
 compiled = load(os.path.join(os.path.dirname(__file__), 'data', 'corrections.coffea'))
+compiled_trigger = load(os.path.join(os.path.dirname(__file__), 'data', 'trig_sf_corr.coffea'))
 
 
 def _msoftdrop_weight(pt, eta):
@@ -75,3 +76,24 @@ def add_jetTriggerWeight(weights, jet_msd, jet_pt, year):
     up = compiled[f'{year}_trigweight_msd_pt_trigweightUp'](jet_msd, jet_pt)
     down = compiled[f'{year}_trigweight_msd_pt_trigweightDown'](jet_msd, jet_pt)
     weights.add('jet_trigger', nom, up, down)
+
+def add_TriggerWeight(weights, jet_msd, jet_pt, lep_pt, year, channel):
+
+    jet_msd = jet_msd.pad(1, clip=True).fillna(0).flatten()
+    jet_pt = jet_pt.pad(1, clip=True).fillna(0).flatten()
+    lep_pt = lep_pt.pad(1, clip=True).fillna(0).flatten()
+    if (channel=="hadhad"):
+        nom = compiled_trigger[f'{year}_trigsf_hadhad_nom/ratio_value'](jet_pt,jet_msd)
+        up = compiled_trigger[f'{year}_trigsf_hadhad_up/ratio_value'](jet_pt,jet_msd)
+        down = compiled_trigger[f'{year}_trigsf_hadhad_down/ratio_value'](jet_pt,jet_msd)
+    if (channel=="hadel"):
+        nom = compiled_trigger[f'{year}_trigsf_hadel_nom/ratio_value'](jet_pt,lep_pt)
+        up = compiled_trigger[f'{year}_trigsf_hadel_up/ratio_value'](jet_pt,lep_pt)
+        down = compiled_trigger[f'{year}_trigsf_hadel_down/ratio_value'](jet_pt,lep_pt)
+    if (channel=="hadmu"):
+        nom = compiled_trigger[f'{year}_trigsf_hadmu_nom/ratio_value'](jet_pt,lep_pt)
+        up = compiled_trigger[f'{year}_trigsf_hadmu_up/ratio_value'](jet_pt,lep_pt)
+        down = compiled_trigger[f'{year}_trigsf_hadmu_down/ratio_value'](jet_pt,lep_pt)
+    #up = compiled[f'{year}_trigweight_msd_pt_trigweightUp'](jet_msd, jet_pt)
+    #down = compiled[f'{year}_trigweight_msd_pt_trigweightDown'](jet_msd, jet_pt)
+    weights.add('%s_trigger'%channel, nom, up, down)

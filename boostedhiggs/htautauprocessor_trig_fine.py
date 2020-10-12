@@ -100,6 +100,7 @@ class HtautauProcessor_Trigger_Fine(processor.ProcessorABC):
                 'PFJet500',
                 'AK8PFJet500',
                 # 'AK8PFJet330_PFAK8BTagCSV_p17', not present in 2018D?
+                'AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_np4',
                 #'AK4PFJet30',
             ],
         }

@@ -41,6 +41,13 @@ err_opts = {
     'edgecolor':(0,0,0,.5),
     'linewidth': 0
     }
+err_opts_data = {
+    'marker': '.',
+    'markersize': 10.,
+    'color':'k',
+    'elinewidth': 1,
+    #'emarker': '-'
+    }
 line_opts = {
     'color': 'aquamarine',
     'linewidth':2,
@@ -48,9 +55,9 @@ line_opts = {
     'linestyle':'dashed',
     'drawstyle':'steps'}
 
-overflow = 'allnan'
+overflow_sum = 'allnan'
 
-def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savename,gridsize,gridmod,grid_cut,grid_labels):
+def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savename,gridsize,gridmod,grid_cut,grid_labels,sigscale,sigstack,blind,overflow):
     print(gridsize,gridmod)
     exceptions = ['process', var_name]
     for var in vars_cut:
@@ -60,7 +67,7 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
     if (regionsel is not ''):
         exceptions.append('region')
     print([ax.name for ax in h.axes()])
-    x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow)
+    x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow_sum)
     for reg in regionsel:
         print('integrating ',reg)
         x = x.integrate('region',reg)
@@ -73,11 +80,13 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
         x = x[:, vars_cut[var_name][0]:vars_cut[var_name][1]]
     x_full = x
 
-    fig,axs = plt.subplots(nrows=int((gridsize-1)/gridmod)+1, ncols=gridmod, squeeze=False, gridspec_kw={'wspace':0.4},figsize=(float(gridmod)*4.5, float(int((gridsize-1)/gridmod)+1)*6))
+    fig,axs = plt.subplots(nrows=int((gridsize-1)/gridmod)+1, ncols=gridmod, squeeze=True, gridspec_kw={'wspace':0.4},figsize=(float(gridmod)*4.5, float(int((gridsize-1)/gridmod)+1)*6))
     print(axs)
 
     logmin = []
     print(grid_cut)
+    frozen_labels = []
+    frozen_handles = []
     for isel in range(gridsize):
         x = x_full.copy()
         if grid_cut[isel*3]!=var_name:
@@ -91,9 +100,18 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
         for ih,hkey in enumerate(x.identifiers('process')):
             x.identifiers('process')[ih].label = process_latex[hkey.name]
     
-        x.axis('process').sorting = 'integral'
         the_axis = axs[int(isel/gridmod)][isel%gridmod]
-        hist.plot1d(x[nosig],
+
+        x_nosig = x[nosig]
+        x_nosig.scale({p: lumifb for p in x_nosig.identifiers('process')}, axis="process")
+
+        all_bkg = 0.
+        for key,val in x_nosig.values().items():
+            all_bkg+=val.sum()
+
+        if (isel==0):
+            x.axis('process').sorting = 'integral'
+            if (all_bkg>0.): hist.plot1d(x_nosig,
                     overlay='process',ax=the_axis,
                     clear=False,
                     stack=True,
@@ -101,41 +119,90 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
                     error_opts=err_opts,
                     overflow=overflow
                     )
+        elif not sigstack:
+            #x.axis('process').sorting = 'integral'
+            the_order = []
+            for lab in frozen_labels:
+                if ('ggH' in lab): continue
+                for ident in x.identifiers('process'):
+                    if (lab == ident.label):
+                        the_order.insert(0,ident)
+                        break
+            if (all_bkg>0.): hist.plot1d(x_nosig,
+                    overlay='process',ax=the_axis,
+                    clear=False,
+                    stack=True,
+                    order=the_order,
+                    fill_opts=fill_opts,
+                    error_opts=err_opts,
+                    overflow=overflow
+                    )
     
-        all_bkg = 0
-        for key,val in x[nosig].values().items():
-            all_bkg+=val.sum()
         x_nobkg = x[nobkg]
-        x_nobkg.scale(50)
+        x_nobkg.scale({p: lumifb*float(sigscale) for p in x_nobkg.identifiers('process')}, axis="process")
     
-        all_sig = 0
+        all_sig = 0.
         for key,val in x_nobkg.values().items():
             all_sig +=val.sum()
-        print('%.4f %.4f %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg)))
-        hist.plot1d(x_nobkg,ax=the_axis,
+        if (all_sig>0. and (not sigstack or isel==0)): hist.plot1d(x_nobkg,ax=the_axis,
                     overlay='process',
                     clear=False,
                     line_opts=line_opts,
                     overflow=overflow)
-    
+
         the_axis.autoscale(axis='x', tight=True)
         #ax.set_xlim(20, 200)
         the_axis.set_ylim(0, None)
         the_axis.ticklabel_format(axis='x', style='sci')
-        old_handles, old_labels = the_axis.get_legend_handles_labels()
-        new_labels = []
-        for xl in old_labels:
-            if ('ggH' in xl): xl = xl + " (x 50)"
-            new_labels.append(xl)
+        
+        if (isel==0):
+            old_handles, old_labels = the_axis.get_legend_handles_labels()
+            frozen_labels = old_labels
+            frozen_handles = old_handles
+        if (sigstack):
+            the_axis.cla()
+            #x.axis('process').sorting = 'integral'
+            the_order = []
+            for lab in frozen_labels:
+                for ident in x.identifiers('process'):
+                    if (lab == ident.label):
+                        the_order.insert(0,ident)
+                        break
+            if (all_bkg+all_sig>0.): hist.plot1d(x_nobkg+x_nosig,
+                    overlay='process',ax=the_axis,
+                    clear=False,
+                    stack=True,
+                    order=the_order,
+                    fill_opts=fill_opts,
+                    error_opts=err_opts,
+                    overflow=overflow
+                    )
+
+        x_data = x['data']
+        all_data = 0.
+        for key,val in x_data.values().items():
+            all_data +=val.sum()
+        if (all_data>0 and not blind):
+            hist.plot1d(x_data,ax=the_axis,
+                    overlay='process',
+                    clear=False,
+                    #line_opts=line_opts,
+                    error_opts=err_opts_data,
+                    overflow=overflow)
+
+        print('MC: %.4f Sig: %.4f  S/sqrt(B): %.4f - Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data))
+    
         try:
             title_add = ', %s'%grid_labels[isel]
         except:
             title_add = ''
-        leg = the_axis.legend(handles=old_handles,labels=new_labels,title=r'%s%s'%(plottitle,title_add),frameon=True,framealpha=1.0,facecolor='white',fontsize=8)
+        leg = the_axis.legend(handles=old_handles,labels=old_labels,title=r'%s%s'%(plottitle,title_add),frameon=True,framealpha=1.0,facecolor='white',fontsize=8)
+        leg.remove()
+        #leg = the_axis.legend(handles=[' '],labels=[' '],title=r'%s%s'%(plottitle,title_add),frameon=False,framealpha=1.0,facecolor='white',fontsize=8)
+        bintxt = the_axis.text(0.95,0.95,r'%s%s'%(plottitle,title_add),horizontalalignment='right',verticalalignment='top',fontsize=14,transform=the_axis.transAxes)
         #lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=the_axis.transAxes)
         #cmstext = plt.text(0., 1., "CMS",fontsize=19,horizontalalignment='left',verticalalignment='bottom',transform=the_axis.transAxes, fontweight='bold')
         #addtext = plt.text(0.085, 1., "Simulation Preliminary",fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=the_axis.transAxes, style='italic')
-
 
         minvals = []
         for xd in x.values():
@@ -147,16 +214,23 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
         else:
           decsplit = str(min(minvals)).split('.')
         if (int(decsplit[0])==0):
-          logmin.append(0.1**float(len(decsplit[1])-len(decsplit[1].lstrip('0'))+2))
+          logmin.append(0.1**float(len(decsplit[1])-len(decsplit[1].lstrip('0'))+1))
         else:
-          logmin.append(10.**float(len(decsplit[0])-1))
+          logmin.append(10.**float(len(decsplit[0])+0))
+
+    new_labels = []
+    for xl in old_labels:
+        if ('ggH' in xl and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
+        new_labels.append(xl)
+    fig.set_figwidth(float(int((gridsize-1)/gridmod)+1)*15)
+    leg = the_axis.legend(handles=frozen_handles,labels=new_labels,title=r'%s'%(plottitle),frameon=True,framealpha=1.0,facecolor='white',fontsize=16,bbox_to_anchor=(1.04,1), loc="upper left", borderaxespad=0.75)
 
     #hep.cms.cmslabel(ax, data=False, paper=False, year='2017')
     fig.savefig("grid_%s_%s_%s_lumi%i.pdf"%(sel,var_name,savename,lumifb))
     for isel in range(gridsize):
         the_axis = axs[int(isel/gridmod)][isel%gridmod]
         the_axis.semilogy()
-        the_axis.set_ylim(logmin[isel]/10., None)
+        the_axis.set_ylim(logmin[isel]/10. if logmin[isel]>1. else 0.1, the_axis.get_ylim()[1]*10.)
     fig.savefig("grid_%s_%s_%s_lumi%i_logy.pdf"%(sel,var_name,savename,lumifb))
 
 def getPlots(args):
@@ -178,10 +252,6 @@ def getPlots(args):
     for key, val in hists_unmapped.items():
         if isinstance(val, hist.Hist):
             hists_mapped[key] = processmap.apply(val)
-    # normalize to lumi
-    for h in hists_mapped.values():
-        h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
-    
 
     # properties
     hist_name = args.hist
@@ -218,7 +288,7 @@ def getPlots(args):
         
     if (gridsize<=1): print('plot_grid.py expects at least 2 grid selections, for a single selection use plot_stacks')
     elif (len(grid_cut)%3!=0): print('number of selgrid arguments must be divisible by 3: name lo hi')
-    else: drawGrid(h,args.hist,var_name,var_label,args.title,lumifb,vars_cut,args.regions,savename,gridsize,gridmod,grid_cut,args.labelgrid)
+    else: drawGrid(h,args.hist,var_name,var_label,args.title,lumifb,vars_cut,args.regions,savename,gridsize,gridmod,grid_cut,args.labelgrid,args.sigscale,args.sigstack,args.blind,args.overflow)
 
     os.chdir(pwd)
 
@@ -238,6 +308,10 @@ if __name__ == "__main__":
     parser.add_argument('--regions',    dest='regions',   default='',           help='regionsel',       nargs='+')
     parser.add_argument('--hist',       dest='hist',      default='',           help='histname')
     parser.add_argument('--gridmod',    dest='gridmod',   default=0,            help='gridmod',         type=int)
+    parser.add_argument('--sigscale',   dest='sigscale',  default=50,           help='sigscale',        type=int)
+    parser.add_argument('--sigstack',   dest='sigstack',  action='store_true',  help='sigstack')
+    parser.add_argument('--blind',      dest='blind',     default='',           help='blind',           nargs='+')
+    parser.add_argument('--overflow',   dest='overflow',  default='none',       help='overflow')
     args = parser.parse_args()
 
     getPlots(args)

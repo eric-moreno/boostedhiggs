@@ -14,6 +14,27 @@ process_map["zll"] = [
     'DYJetsToLL_M-50_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8',
     'DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8',
 ]
+#process_map["zll-ht100to200"] = [
+#    'DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht1200to2500"] = [
+#    'DYJetsToLL_M-50_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht200to400"] = [
+#    'DYJetsToLL_M-50_HT-200to400_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht2500toinf"] = [
+#    'DYJetsToLL_M-50_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht400to600"] = [
+#    'DYJetsToLL_M-50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht600to800"] = [
+#    'DYJetsToLL_M-50_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
+#process_map["zll-ht800to1200"] = [
+#    'DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8',
+#]
 process_map["wlnu"] = [
     'WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8',
@@ -80,6 +101,13 @@ process_map["vv"] = [
 ]
 process_map["h125"] = [
     'GluGluHToTauTau',
+]
+process_map["data"] = [
+    'JetHT',
+    'SingleElectron',
+    'SingleMuon',
+    'Tau',
+    'MET',
 ]
 
 def apply(h):

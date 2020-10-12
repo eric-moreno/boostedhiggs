@@ -48,6 +48,13 @@ line_opts = {
     'linestyle':'dashed',
     'drawstyle':'steps'}
 
+err_opts_data = {
+    'marker': '.',
+    'markersize': 10.,
+    'color':'k',
+    'elinewidth': 1,
+    #'emarker': '-'
+    }
 line_opts_nocolor = {
     'linewidth':2,
     #'marker':'None',
@@ -108,7 +115,12 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
 
     x.axis('process').sorting = 'integral'
     fig,ax = plt.subplots()
-    hist.plot1d(x[nosig],
+
+    all_bkg = 0.
+    for key,val in x[nosig].values().items():
+        all_bkg+=val.sum()
+
+    if (all_bkg>0.): hist.plot1d(x[nosig],
                 overlay='process',ax=ax,
                 clear=False,
                 stack=True,
@@ -116,17 +128,21 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
                 error_opts=err_opts,
                 )
 
-    all_bkg = 0
-    for key,val in x[nosig].values().items():
-        all_bkg+=val.sum()
     x_nobkg = x[nobkg]
     x_nobkg.scale(50)
 
-    all_sig = 0
+    all_sig = 0.
     for key,val in x_nobkg.values().items():
         all_sig +=val.sum()
-    print('%.4f %.4f %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg)))
-    hist.plot1d(x_nobkg,ax=ax,overlay='process',clear=False,line_opts=line_opts)
+    if (all_sig>0.): hist.plot1d(x_nobkg,ax=ax,overlay='process',clear=False,line_opts=line_opts)
+
+    all_data = 0.
+    x_data = x['data']
+    for key,val in x_data.values().items():
+        all_data +=val.sum()
+    if (all_data > 0.): hist.plot1d(x_data,ax=ax,overlay='process',clear=False,error_opts=err_opts_data)
+
+    print('MC: %.4f , S: %.4f , S/sqrt(B): %.4f  -  Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data))
 
     ax.autoscale(axis='x', tight=True)
     #ax.set_xlim(20, 200)
@@ -222,21 +238,34 @@ def getPlots(args):
     os.system('mkdir -p %s'%odir)
     pwd = os.getcwd()
 
-    # open hists
-    hists_unmapped = load('%s.coffea'%args.hists)
-    os.chdir(odir)
-
     # map to hists
     dict_mapped = {}
-    for key, val in hists_unmapped.items():
-        if key in args.regions:
-            if isinstance(val, processor.accumulator.defaultdict_accumulator):
-                #for proc in processmap.process_map:
-                dict_mapped[key] = val
+
+    for h in args.hists:
+        # open hists
+        hists_unmapped = load('%s.coffea'%h)
+        for key, val in hists_unmapped.items():
+            if key in args.regions:
+                if isinstance(val, processor.accumulator.defaultdict_accumulator):
+                    #for proc in processmap.process_map:
+                    if key in dict_mapped: 
+                        dict_mapped[key].add(val)
+                    else: 
+                        dict_mapped[key] = val
+
     # normalize to lumi
-    #for h in hists_mapped.values():
-    #    h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
+    for h in dict_mapped.values():
+        #h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
+        for s in h:
+            if s in ['SingleElectron','SingleMuon','JetHT','Tau','MET']: continue
+            print(s)
+            for b in h[s]:
+                print(b)
+                print('\t',h[s][b])
+                h[s][b] = h[s][b]*lumifb
+                print('\t',h[s][b])
     
+    os.chdir(odir)
     for r in args.regions:
         drawCutflow(dict_mapped[r],args.title,lumifb,r)
 
@@ -245,7 +274,7 @@ def getPlots(args):
 if __name__ == "__main__":
     #ex. python plot_cutflow.py --hists htt_test --tag test --title Test --lumi 41.5 --regions cutflow_hadel
     parser = argparse.ArgumentParser()
-    parser.add_argument('--hists',      dest='hists',    default="hists",      help="hists pickle name")
+    parser.add_argument('--hists',      dest='hists',    default="hists",      help="hists pickle name", nargs='+')
     parser.add_argument('--tag',        dest='tag',      default="",           help="tag")
     parser.add_argument('--title',      dest='title',    default="",           help="title")
     parser.add_argument('--lumi',       dest='lumi',     default=50.,          help="lumi",       type=float)
