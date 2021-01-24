@@ -203,6 +203,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,sig_cut,regions
                 axs.get_legend().set_visible(False)
     
     
+        print('MC: %.4f Sig: %.4f - Data: %.4f'%(all_bkg,all_sig,all_data))
         print('MC: %.4f Sig: %.4f S/sqrt(B): %.4f - Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data))
 
     ax.autoscale(axis='x', tight=True)

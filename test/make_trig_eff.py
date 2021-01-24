@@ -47,14 +47,14 @@ histnames = {
     'hadmu': "trigeff_m",
 }
 varcuts_data = {
-    "hadhad": {"region": "hadhad_signal_150", "trig_pass_ref": [0.5, 1.5]},
-    "hadel": {"region": "hadel_signal_150", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
-    "hadmu": {"region": "hadmu_signal_150", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadhad": {"region": "hadhad_signal_withb_50", "trig_pass_ref": [0.5, 1.5]},
+    "hadel": {"region": "hadel_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadmu": {"region": "hadmu_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
 }
 varcuts_mc = {
-    "hadhad": {"region": "hadhad_signal_150", "trig_pass_ref": [0.5, 1.5]},
-    "hadel": {"region": "hadel_signal_150", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
-    "hadmu": {"region": "hadmu_signal_150", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadhad": {"region": "hadhad_signal_withb_50", "trig_pass_ref": [0.5, 1.5]},
+    "hadel": {"region": "hadel_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadmu": {"region": "hadmu_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
 }
 var1names = {
     "hadhad": "jet_pt",
@@ -214,6 +214,7 @@ def getHists(filename_data,filename_mc,hadel_w,hadmu_w,hadhad_w):
                     else:
                         h_trig = h_trig + hists_unmapped_data[key]
             
+            print(f_d)
             eff_hists_data[chan],_,_,eff_hists_data_int[chan] = getTrigEff(h_trig,var1names[chan],var2names[chan],varcuts_data[chan],numsels[chan],rebin1[chan],rebin2[chan])
             #drawTrigEff(h_trig,args.var1name,args.var1label,args.var2name,args.var2label,vars_cuts,num_sels,args.title,args.label)
 
@@ -234,6 +235,7 @@ def getHists(filename_data,filename_mc,hadel_w,hadmu_w,hadhad_w):
                     else:
                         h_trig = h_trig + hists_unmapped_mc[key]
             
+            print(f_m)
             eff_hists_mc[chan],x_bins[chan],y_bins[chan],eff_hists_mc_int[chan] = getTrigEff(h_trig,var1names[chan],var2names[chan],varcuts_mc[chan],numsels[chan],rebin1[chan],rebin2[chan])
             #drawTrigEff(h_trig,args.var1name,args.var1label,args.var2name,args.var2label,vars_cuts,num_sels,args.title,args.label)
 
