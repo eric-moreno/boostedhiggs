@@ -328,7 +328,7 @@ if __name__ == "__main__":
         warnings.simplefilter("ignore")
         os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
-    #ex. python plot_solo.py --hists htt_test --tag test --var jet_pt --varlabel 'p_{T}(jet)' --title Test --lumi 41.5 --sel lep_pt 20. 200. --regions hadel_signal  --hist trigeff --savetag leppt_20
+    #ex. python plot_stack.py --hists ../condor/Oct01/hists_sum --tag Oct01 --var jet_msd --varlabel '$m_{SD}(jet)$' --title '$\mu\tau_{h},~300<p_{T}(j)<350$' --lumi 36.7 --regions hadmu_signal --hist mass_kin --savetag hadmu_jet_pt_300_350 --sel jet_pt neginf 350. --sigsel genhtt 2.5 3.5 --dosigrat
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',    default="hists",      help="hists pickle name", nargs='+')
     parser.add_argument('--tag',        dest='tag',      default="",           help="tag")

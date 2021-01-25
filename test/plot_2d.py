@@ -205,7 +205,7 @@ def getPlots(args):
     os.chdir(pwd)
 
 if __name__ == "__main__":
-    #ex. python plot_solo.py --hists htt_test --tag test --var jet_pt --varlabel 'p_{T}(jet)' --title Test --lumi 41.5 --sel lep_pt 20. 200. --regions hadel_signal  --hist trigeff --savetag leppt_20
+    #ex. python plot_2d.py --hists ../condor/May09/hists_sum --tag May09 --var1 lep_pt --var1label '$p_{T}(\mu)$' --var2 lep_jet_dr --var2label '$\Delta R(j,\mu)$' --title '$\tau_{h}\mu$' --lumi 41.5 --regions hadmu_signal --hist lep_kin --sample sig --savetag hadmu
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name")
     parser.add_argument('--tag',        dest='tag',       default="",           help="tag")
