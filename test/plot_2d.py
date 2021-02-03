@@ -219,7 +219,7 @@ if __name__ == "__main__":
     parser.add_argument('--sel',        dest='sel',       default='',           help='selection',  nargs='+')
     parser.add_argument('--regions',    dest='regions',   default='',           help='regionsel',  nargs='+')
     parser.add_argument('--hist',       dest='hist',      default='',           help='histname')
-    parser.add_argument('--sample',     dest='sample',    default='',           help='sample')
+    parser.add_argument('--sample',     dest='sample',    default='all',           help='sample')
     parser.add_argument('--xlimits',    dest='xlimits',   default='',           help='xlimits',    nargs='+')
     parser.add_argument('--ylimits',    dest='ylimits',   default='',           help='ylimits',    nargs='+')
     args = parser.parse_args()
