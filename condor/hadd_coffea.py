@@ -6,23 +6,26 @@ import subprocess
 
 import argparse
 
+itoa = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+
 #python hadd_coffea.py --prefix hists_sum_bkg_ --samples 0 20 40 60 80 100 --outname hists_sum_bkg --indir Sep21_Trig -n
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--indir', metavar='indir', default='./', help='indir')
 parser.add_argument('--prefix', metavar='prefix', default='', type=str, help='prefix')
 parser.add_argument('--samples', metavar='samples', help='samples', nargs='+')
 parser.add_argument('--outname', metavar='outname', default='hists_sum', help='outname', type=str)
-parser.add_argument('-n', '--noscale', action='store_true')
+parser.add_argument('-s', '--doscale', action='store_true')
+parser.add_argument('--chunk', metavar='chunk', default=5, type=int, help='chunk')
 args = parser.parse_args()
 
 indir = args.indir
 
-chunk_size = 40
+chunk_size = args.chunk
 
 onlyfiles = ["%s%s"%(args.prefix,s) for s in args.samples]
 
 chunk_names = []
-for i in range(0,len(onlyfiles),chunk_size):
+for ii,i in enumerate(range(0,len(onlyfiles),chunk_size)):
   print('Chunk',i)
   flist = []
   if (i+chunk_size<len(onlyfiles)):
@@ -44,12 +47,12 @@ for i in range(0,len(onlyfiles),chunk_size):
   
   print(flist[0])
   
-  util.save(flist[0],'%s/%s_%i.coffea' % (indir,args.outname,i))
+  util.save(flist[0],'%s/%s_%s.coffea' % (indir,args.outname,itoa[ii]))
 
   for f in flist:
     del f
 
-  chunk_names.append('%s/%s_%i.coffea' % (indir,args.outname,i))
+  chunk_names.append('%s/%s_%s.coffea' % (indir,args.outname,itoa[ii]))
 
 print(chunk_names)
 
@@ -73,8 +76,8 @@ scale1fb = {k: xs[k] * 1000. / w for k, w in flist[0]['sumw'].items()}
 for s in args.samples:
     if s not in scale1fb: scale1fb[s] = 1.
 
-print('noscale =',args.noscale)
-if not args.noscale:
+print('doscale =',args.doscale)
+if args.doscale:
     for key in flist[0]:
         if isinstance(flist[0][key], hist.Hist):
             #out[key].scale(scale(scale1fb, 'dataset'))
@@ -90,5 +93,5 @@ if not args.noscale:
     
   
 util.save(flist[0],'%s/%s.coffea' % (indir,args.outname))
-for i,x in enumerate(chunk_names):
-  os.system("rm %s/%s_%i.coffea" % (indir,args.outname,i*chunk_size))
+for x in chunk_names:
+  os.system("rm %s" % (indir,x))
