@@ -88,8 +88,14 @@ def matchedBosonFlavor(candidates, bosons, maxdR=0.8):
     genflavor = (childid == 5).any() * 3 + (childid == 4).any() * 2 + (childid < 4).all() * 1
     return genflavor.fillna(0)
 
+def matchedBosonFlavorLep(candidates, bosons, maxdR=0.8):
+    matched = match(candidates, bosons, lambda a, b: a.delta_r(b), maxdR)
+    childid = abs(matched.children.pdgId)
+    genflavor = (childid == 13).any() * 3 + (childid == 11).any() * 2 + (childid == 15).any() * 1 + ((childid != 15) & (childid != 13) & (childid != 11)).all() * 0
+    return genflavor.fillna(0)
 
-def getHTauTauDecayInfo(events):
+
+def getHTauTauDecayInfo(events,mod=False):
     #print('genvistau pt')
     #print(events.GenVisTau.pt)
     #print('genvistau parent id')
@@ -116,7 +122,10 @@ def getHTauTauDecayInfo(events):
     genHadTau1Decay = np.zeros_like(ngenvistau_higgs)
     genHadTau2Decay = np.zeros_like(ngenvistau_higgs)
     genHTauTauDecay = np.zeros_like(ngenvistau_higgs) + 1*np.array((ngenvistau_higgs==2) & (nel_taus==0) & (nmu_taus==0)).astype(int) + 2*np.array((ngenvistau_higgs==1) & (nel_taus==1) & (nmu_taus==0)).astype(int) + 3*np.array((ngenvistau_higgs==1) & (nel_taus==0) & (nmu_taus==1)).astype(int) + 4*np.array((ngenvistau_higgs==0) & (nel_taus==1) & (nmu_taus==1)).astype(int) + 5*np.array((ngenvistau_higgs==0) & (nel_taus==2) & (nmu_taus==0)).astype(int) + 6*np.array((ngenvistau_higgs==0) & (nel_taus==0) & (nmu_taus==2)).astype(int)
-    genHTauTauDecay = genHTauTauDecay * (2*np.array(((tau_pair_dr<0.8) & (tau_pair_dr>0.)).any() & (tau_pt[:,:2]>25.).all()).astype(float)-1)
+    if mod:
+        genHTauTauDecay = genHTauTauDecay * np.array(((tau_pair_dr<0.8) & (tau_pair_dr>0.)).any() & (tau_pt[:,:2]>25.).all()).astype(float)
+    else:
+        genHTauTauDecay = genHTauTauDecay * (2*np.array(((tau_pair_dr<0.8) & (tau_pair_dr>0.)).any() & (tau_pt[:,:2]>25.).all()).astype(float)-1)
     genHadTau1Decay = np.zeros_like(genvistau1_decay) + 1*np.array((genvistau1_decay==0)).astype(int) + 2*np.array((genvistau1_decay==1)  | (genvistau1_decay==2)).astype(int) + 3*np.array((genvistau1_decay==10) | (genvistau1_decay==11)).astype(int)
     genHadTau2Decay = np.zeros_like(genvistau2_decay) + 1*np.array((genvistau2_decay==0)).astype(int) + 2*np.array((genvistau2_decay==1)  | (genvistau2_decay==2)).astype(int) + 3*np.array((genvistau2_decay==10) | (genvistau2_decay==11)).astype(int)
     return genHTauTauDecay, genHadTau1Decay, genHadTau2Decay

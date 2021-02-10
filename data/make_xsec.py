@@ -21,6 +21,9 @@ xs = {
     "DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8": 0.8077,
     "DYJetsToLL_M-50_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8": 0.1514,
     "DYJetsToLL_M-50_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8": 0.003435,
+    "DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8": 3.774,
+    "DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8": 0.5164,
+    "DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8": 0.04796,
     "WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8": 52940.,
     "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8": 999999.,#FIXME
     "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8": 1395.,

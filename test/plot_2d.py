@@ -171,20 +171,23 @@ def getPlots(args):
     os.system('mkdir -p %s'%odir)
     pwd = os.getcwd()
 
-    # open hists
-    hists_unmapped = load('%s.coffea'%args.hists)
-    os.chdir(odir)
-
-    # map to hists
     hists_mapped = {}
-    for key, val in hists_unmapped.items():
-        if isinstance(val, hist.Hist):
-            hists_mapped[key] = processmap.apply(val)
+    for h in args.hists:
+        # open hists
+        hists_unmapped = load('%s.coffea'%h)
+        # map to hists
+        for key, val in hists_unmapped.items():
+            if isinstance(val, hist.Hist):
+                if key in hists_mapped:
+                    hists_mapped[key] = hists_mapped[key] + processmap.apply(val)
+                else:
+                    hists_mapped[key] = processmap.apply(val)
+
+    os.chdir(odir)
     # normalize to lumi
     for h in hists_mapped.values():
         h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
     
-
     # properties
     hist_name = args.hist
     var1_name = args.var1
@@ -195,7 +198,12 @@ def getPlots(args):
     #print(args.sel)
     if (len(args.sel)%3==0):
       for vi in range(int(len(args.sel)/3)):
-        vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), float(args.sel[vi*3+2])]
+        if (args.sel[vi*3+1]=='neginf'):
+          vars_cut[args.sel[vi*3]] = [None, float(args.sel[vi*3+2])]
+        elif (args.sel[vi*3+2]=='inf'):
+          vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), None]
+        else:
+          vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), float(args.sel[vi*3+2])]
     print(vars_cut)
     h = hists_mapped[hist_name]
     print(h)
@@ -207,7 +215,7 @@ def getPlots(args):
 if __name__ == "__main__":
     #ex. python plot_2d.py --hists ../condor/May09/hists_sum --tag May09 --var1 lep_pt --var1label '$p_{T}(\mu)$' --var2 lep_jet_dr --var2label '$\Delta R(j,\mu)$' --title '$\tau_{h}\mu$' --lumi 41.5 --regions hadmu_signal --hist lep_kin --sample sig --savetag hadmu
     parser = argparse.ArgumentParser()
-    parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name")
+    parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name", nargs='+')
     parser.add_argument('--tag',        dest='tag',       default="",           help="tag")
     parser.add_argument('--savetag',    dest='savetag',   default="",           help="savetag")
     parser.add_argument('--var1',       dest='var1',      default="",           help="var1")
@@ -219,7 +227,7 @@ if __name__ == "__main__":
     parser.add_argument('--sel',        dest='sel',       default='',           help='selection',  nargs='+')
     parser.add_argument('--regions',    dest='regions',   default='',           help='regionsel',  nargs='+')
     parser.add_argument('--hist',       dest='hist',      default='',           help='histname')
-    parser.add_argument('--sample',     dest='sample',    default='all',           help='sample')
+    parser.add_argument('--sample',     dest='sample',    default='all',        help='sample')
     parser.add_argument('--xlimits',    dest='xlimits',   default='',           help='xlimits',    nargs='+')
     parser.add_argument('--ylimits',    dest='ylimits',   default='',           help='ylimits',    nargs='+')
     args = parser.parse_args()

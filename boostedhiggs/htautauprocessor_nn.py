@@ -7,6 +7,7 @@ from copy import deepcopy
 from .common import (
     getBosons,
     matchedBosonFlavor,
+    matchedBosonFlavorLep,
     getHTauTauDecayInfo,
     isOverlap,
 )
@@ -26,7 +27,7 @@ collection_methods['CustomAK8Puppi'] = FatJet
 collection_methods['CustomAK8PuppiSubjet'] = FatJet
 FatJet.subjetmap['CustomAK8Puppi'] = 'CustomAK8PuppiSubjet'
 
-class HtautauProcessor(processor.ProcessorABC):
+class HtautauProcessor_NN(processor.ProcessorABC):
     def __init__(self, year='2017'):
         self._year = year
 
@@ -213,9 +214,13 @@ class HtautauProcessor(processor.ProcessorABC):
         jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 20, 200, 1200)
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
         jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 34, 40, 210.)
-        nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$',20,0.,1.)
-        nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$',20,0.,1.)
-        nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$',20,0.,1.)
+        #nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$',20,0.,1.)
+        #nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$',20,0.,1.)
+        #nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$',20,0.,1.)
+        nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,0.9995,0.9999,0.99995,0.99999,1.])
+        nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$', [0.,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,0.9995,0.9999,0.99995,0.99999,1.])
+        nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$', [0.,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,0.9995,0.9999,0.99995,0.99999,1.])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,0.9995,0.9999,0.99995,0.99999,1.])
         oppbjet_pt_bin = hist.Bin('oppbjet_pt', r'Max opp. deepCSV-bjet $p_{T}$ [GeV]', 20, 0., 500)
         oppbtag_bin = hist.Bin('oppbtag', r'Max opp. deepCSV-b ', 20, 0., 1)
         lep_pt_bin = hist.Bin('lep_pt', r'Lepton $p_{T}$ [GeV]', 40, 0, 800)
@@ -229,6 +234,7 @@ class HtautauProcessor(processor.ProcessorABC):
         jet_jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
         met_pt_bin = hist.Bin('met_pt', r'MET [GeV]', 20, 0, 800)
         h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', 20, 200, 1200)
+        ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',13,-6.5,6.5)
         gentau1had_bin = hist.Bin('gentau1had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
         gentau2had_bin = hist.Bin('gentau2had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
@@ -246,35 +252,23 @@ class HtautauProcessor(processor.ProcessorABC):
             'cutflow_hadel_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             #'btagWeight': hist.Hist('Events', hist.Cat('dataset', 'Dataset'), hist.Bin('val', 'BTag correction', 50, 0, 2)), #FIXME
-            'jet_kin': hist.Hist(
+            'jet_nn_kin': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                jet_pt_bin, jet_eta_bin, jet_msd_bin
+                jet_pt_bin, jet_msd_bin, nn_disc_bin,
             ),
-            'b_kin': hist.Hist(
+            'lep_nn_kin': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                jet_pt_bin, oppbjet_pt_bin, oppbtag_bin, 
+                lep_miso_bin, jet_msd_bin, nn_disc_bin,
             ),
-            'lep_kin': hist.Hist(
+            'met_nn_kin': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                lep_pt_bin, lep_jet_dr_bin, lep_miso_bin,
-            ),
-            'mass_kin': hist.Hist(
-                'Events',
-                hist.Cat('dataset', 'Dataset'),
-                hist.Cat('region', 'Region'),
-                jet_pt_bin, jet_msd_bin, genhtt_bin, #jet_jetmet_m_bin, jet_jetlepmet_m_bin,
-            ),
-            'evt_kin': hist.Hist(
-                'Events',
-                hist.Cat('dataset', 'Dataset'),
-                hist.Cat('region', 'Region'),
-                met_pt_bin, lep_pt_bin, jet_pt_bin, #h_pt_bin,
+                met_pt_bin, jet_msd_bin, nn_disc_bin,
             ),
         })
 
@@ -338,13 +332,19 @@ class HtautauProcessor(processor.ProcessorABC):
         best_jet_idx = ak8_met_dphi.argmin()
         #best_jet_idx = candidatejets.pt.argmax()
         candidatejet = candidatejets[best_jet_idx]
+
+        nn_disc_hadhad = awkward.JaggedArray.fromiter([[v] for v in events.IN.hadhad_v4p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+        nn_disc_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadel_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+        nn_disc_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadmu_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+
         candidatejet_rho = 2 * np.log(candidatejet.msdcorr / candidatejet.pt)
         selection.add('jetacceptance', (
             (candidatejet.pt > 300)
             & (candidatejet.msdcorr > 40.)
             & (abs(candidatejet.eta) < 2.4)
             & (candidatejet_rho > -6.)
-            & (candidatejet_rho < -2.1)
+            #& (candidatejet_rho < -2.1)
+            & (candidatejet_rho < -1.75)
         ).any())
         selection.add('jetid', (candidatejet.isTight).any())
         selection.add('n2ddt', (candidatejet.n2ddt < 0.).any())
@@ -399,7 +399,8 @@ class HtautauProcessor(processor.ProcessorABC):
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_tight
+            #& elmask_tight
+            & events.Electron.mvaFall17V2noIso_WP80
         )
         ngoodelecs = goodelec.sum()
         leadingelec = events.Electron[goodelec].pad(1, clip=True)
@@ -421,6 +422,22 @@ class HtautauProcessor(processor.ProcessorABC):
             #& (events.Electron.cutBased_HEEP).astype(bool)
             #& elmask_loose
         ).sum()
+
+        if self._year=='2018':
+          tauAntiEleId = events.Tau.idAntiEle2018
+        else:
+          tauAntiEleId = events.Tau.idAntiEle
+
+        goodtaus = (
+            (events.Tau.pt > 20)
+            & (abs(events.Tau.eta) < 2.4)
+            & (tauAntiEleId >= 8)
+        )
+        taus_p4 = TLorentzVectorArray.from_ptetaphim(events.Tau[goodtaus].pt.fillna(0),events.Tau[goodtaus].eta.fillna(0),events.Tau[goodtaus].phi.fillna(0),events.Tau[goodtaus].mass.fillna(0))
+        tau_ak8_pair = taus_p4.cross(candidatejet)
+        taus_dr = (tau_ak8_pair.i0.delta_r(tau_ak8_pair.i1) < 0.8).any()
+
+        selection.add('antiEleId',taus_dr)
 
         #ntaus = (
         #    (events.Tau.pt > 20)
@@ -509,7 +526,9 @@ class HtautauProcessor(processor.ProcessorABC):
             genBosonPt = bosons.pt.pad(1, clip=True).fillna(0)
             add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
             genflavor = matchedBosonFlavor(candidatejet, bosons)
-            genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events)
+            genlepflavor = matchedBosonFlavorLep(candidatejet, bosons)
+            genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events,True)
+            genHTauTauDecay[(genHTauTauDecay == 0)] = -1.*(genlepflavor.pad(1, clip=True).fillna(0).flatten()[(genHTauTauDecay == 0)]).astype(float)
             gentautaudecay = awkward.JaggedArray.fromiter([[v] for v in genHTauTauDecay])
             w_hadhad = deepcopy(weights)
             w_hadel = deepcopy(weights)
@@ -520,14 +539,14 @@ class HtautauProcessor(processor.ProcessorABC):
             #output['btagWeight'].fill(dataset=dataset, val=self._btagSF.addBtagWeight(weights, ak4_away)) #FIXME
 
         regions = {
-            'hadhad_signal': ['jetacceptance', 'hadhad_trigger', 'jetid', 'n2ddt', 'antiak4btagMediumOppHem', 'met', 'noleptons'],
-            'hadhad_cr_mu': ['jetacceptance', 'hadmu_trigger', 'jetid', 'n2ddt', 'met', 'ak4btagMedium08', 'onemuon', 'muonkinhard', 'muonDphiAK8'],#,'jetlsf'],
-            'hadmu_signal': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIso'],#, 'jetlsf'],
-            'hadel_signal': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIso'],#, 'jetlsf'],
+            'hadhad_signal': ['jetacceptance', 'hadhad_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'noleptons'],
+            'hadhad_cr_mu': ['jetacceptance', 'hadmu_trigger', 'jetid', 'met', 'ak4btagMedium08', 'onemuon', 'muonkinhard', 'muonDphiAK8'],#,'jetlsf'],
+            'hadmu_signal': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8'],#, 'miniIso'],#, 'jetlsf'],
+            'hadel_signal': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiEleId'],#, 'miniIso'],#, 'jetlsf'],
             'hadmu_cr_qcd': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIsoInv'],#,'jetlsf'],
-            'hadel_cr_qcd': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIsoInv'],#,'jetlsf'],
+            'hadel_cr_qcd': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiEleId', 'miniIsoInv'],#,'jetlsf'],
             'hadmu_cr_b': ['jetacceptance', 'hadmu_trigger', 'jetid', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIso'],#,'jetlsf'],
-            'hadel_cr_b': ['jetacceptance', 'hadel_trigger', 'jetid', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIso'],#,'jetlsf'],
+            'hadel_cr_b': ['jetacceptance', 'hadel_trigger', 'jetid', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiEleId', 'miniIso'],#,'jetlsf'],
             #'noselection': [],
         }
         w_dict = {
@@ -604,76 +623,40 @@ class HtautauProcessor(processor.ProcessorABC):
             def normalize(val):
                 return val[cut].pad(1, clip=True).fillna(0).flatten()
 
+            if 'hadhad' in region:
+                nn_disc = nn_disc_hadhad
+            if 'hadel' in region:
+                nn_disc = nn_disc_hadel
+            if 'hadmu' in region:
+                nn_disc = nn_disc_hadmu
 
-            #print(dataset)
-            #print(region)
-            #print("TRIG")
-            #print(np.histogram(trigger_hadel[cut]))
-            #print("BOSPT")
-            #print(np.histogram(normalize(genBosonPt)))
-            #print("JETPT")
-            #print(np.histogram(normalize(candidatejet.pt)))
-            #print("LEPPT")
-            #print(np.histogram(normalize(leadinglep.pt)))
-            #print("JLDR")
-            #print(np.histogram(normalize(lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1))))
-            #print("LSF3")
-            #print(np.histogram(normalize(candidatejet.lsf3)))
-            #print("WEIGHT")
-            #print(np.histogram(weight))
-            #print("CUTFLOW")
-            #print(output['cutflow_hadhad'][dataset])
-
-            output['jet_kin'].fill(
+            output['jet_nn_kin'].fill(
                 dataset=dataset,
                 region=region,
                 jet_pt=normalize(candidatejet.pt),
-                jet_eta=normalize(candidatejet.eta),
                 jet_msd=normalize(candidatejet.msdcorr),
+                nn_disc=normalize(nn_disc),
                 weight=weight,
             )
 
-            bmaxind = ak4_opposite.btagDeepB.argmax()
-            output['b_kin'].fill(
+            output['lep_nn_kin'].fill(
                 dataset=dataset,
                 region=region,
-                jet_pt=normalize(candidatejet.pt),
-                oppbjet_pt=normalize(ak4_opposite[bmaxind].pt),
-                oppbtag=normalize(ak4_opposite[bmaxind].btagDeepB),
-                weight=weight,
-            )
-
-            output['lep_kin'].fill(
-                dataset=dataset,
-                region=region,
-                lep_pt=normalize(leadinglep.pt),
-                #lep_eta=normalize(leadinglep.eta),
-                #lsf3=normalize(candidatejet.lsf3),
-                lep_jet_dr=normalize(lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1)),
                 miso=normalize(leadinglep_miso),
+                jet_msd=normalize(candidatejet.msdcorr),
+                nn_disc=normalize(nn_disc),
                 weight=weight,
             )
 
-            output['mass_kin'].fill(
-                dataset=dataset,
-                region=region,
-                jet_pt=normalize(candidatejet.pt),
-                jet_msd=normalize(candidatejet.msdcorr),
-                genhtt=normalize(gentautaudecay),
-                #jetlep_m=normalize(jet_lep_p4.mass),
-                #jetmet_m=normalize(jet_met_p4.mass),
-                #jetlepmet_m=normalize(jet_lep_met_p4.mass),
-                weight=weight,
-            )
-            output['evt_kin'].fill(
+            output['met_nn_kin'].fill(
                 dataset=dataset,
                 region=region,
                 met_pt=normalize(met_p4.pt),
-                lep_pt=normalize(leadinglep.pt),
-                jet_pt=normalize(candidatejet.pt),
-                #h_pt=normalize(bosons[events.GenPart.pdgId==25].pt),
+                jet_msd=normalize(candidatejet.msdcorr),
+                nn_disc=normalize(nn_disc),
                 weight=weight,
             )
+
 
         for region in regions:
             for systematic in systematics:

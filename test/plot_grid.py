@@ -106,7 +106,9 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
         x_nosig.scale({p: lumifb for p in x_nosig.identifiers('process')}, axis="process")
 
         all_bkg = 0.
+        sampcount = 0
         for key,val in x_nosig.values().items():
+            sampcount = sampcount + 1
             all_bkg+=val.sum()
 
         if (isel==0):
@@ -114,7 +116,7 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
             if (all_bkg>0.): hist.plot1d(x_nosig,
                     overlay='process',ax=the_axis,
                     clear=False,
-                    stack=True,
+                    stack=(sampcount>1),
                     fill_opts=fill_opts,
                     error_opts=err_opts,
                     overflow=overflow
@@ -131,7 +133,7 @@ def drawGrid(h,sel,var_name,var_label,plottitle,lumifb,vars_cut,regionsel,savena
             if (all_bkg>0.): hist.plot1d(x_nosig,
                     overlay='process',ax=the_axis,
                     clear=False,
-                    stack=True,
+                    stack=(sampcount>1),
                     order=the_order,
                     fill_opts=fill_opts,
                     error_opts=err_opts,
