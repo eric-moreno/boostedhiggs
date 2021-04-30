@@ -149,7 +149,7 @@ def drawTrigEff(h,var1_name,var1_label,var2_name,var2_label,vars_cut,num_sel,plo
     ax.ticklabel_format(axis='x', style='sci')
     #old_handles, old_labels = ax.get_legend_handles_labels()
     #for x in old_labels:
-    #    if ('ggh' in x): x = x + " (x 50)"
+    #    if ('H(125)' in x): x = x + " (x 50)"
     #leg = ax.legend(handles=old_handles,labels=old_labels,title='Hadronic trigger')
     ax.set_xlabel(var1_label)
     ax.set_ylabel(var2_label)
@@ -160,6 +160,7 @@ def drawTrigEff(h,var1_name,var1_label,var2_name,var2_label,vars_cut,num_sel,plo
     if (debug):
         plt.clf()
         fig,ax = plt.subplots(1,1, figsize=(8,8))
+        print(num_arr.flatten('F'))
         plt.hist2d([x_bins[ix] for ix in range(len(x_bins)-1) for iy in range(len(y_bins)-1)], 
                [y_bins[iy] for ix in range(len(x_bins)-1) for iy in range(len(y_bins)-1)], 
                bins=[x_bins,y_bins], weights=num_arr.flatten('F'))

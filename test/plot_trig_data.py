@@ -15,8 +15,8 @@ import gzip
 import math
 
 import argparse
-#import processmap
-#from hists_map import *
+import processmap
+from hists_map import *
 
 plt.rcParams.update({
         'font.size': 14,
@@ -43,10 +43,11 @@ err_opts = {
 #overflow_behavior = 'all'
 overflow_behavior = 'over'
 
-def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label):
+def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label,samplename):
     print(h)
     #print(h.values())
-    exceptions = [var_name,'dataset']
+    #exceptions = [var_name,'dataset']
+    exceptions = [var_name,'process']
     for var,val in vars_cut.items():
         exceptions.append(var)
     for var,val in num_sel.items():
@@ -92,14 +93,19 @@ def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label):
 
     fig,ax = plt.subplots(1,1, figsize=(8,8))
 
-    dataset = x.axis("dataset").identifiers()[0]
+    dataset = samplename
+    if (dataset == ""):
+        #dataset = x.axis("process").identifiers()[0]
+        dataset = "data"
     histl = hist.Cat("histl", dataset)
-    x_scale = x.group("dataset",histl,{"Total":dataset})
-    x_num_scale = x_num.group("dataset",histl,{"Pass":dataset})
+    x_scale = x.group("process",histl,{"Total":dataset})
+    x_num_scale = x_num.group("process",histl,{"Pass":dataset})
     total = list(x.sum(var_name).values().values())[0]
     maxval = list(x.values().values())[0].max()
     x_scale.scale(1./maxval)
     x_num_scale.scale(1./maxval)
+    print(x_scale.values())
+    print(x_num_scale.values())
     hist.plot1d(x_scale,
               overlay='histl',
               ax=ax,
@@ -113,8 +119,8 @@ def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label):
               fill_opts={'edgecolor':'k'},#,'facecolor':'b'},
               )
 
-    x = x.sum(*["dataset"],overflow='allnan')
-    x_num = x_num.sum(*["dataset"],overflow='allnan')
+    x = x.sum(*["process"],overflow='allnan')
+    x_num = x_num.sum(*["process"],overflow='allnan')
     hist.plotratio(x_num,x,
                 #overlay='dataset',
                 ax=ax,
@@ -130,10 +136,10 @@ def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label):
     ax.ticklabel_format(axis='x', style='sci')
     #old_handles, old_labels = ax.get_legend_handles_labels()
     #for x in old_labels:
-    #    if ('ggh' in x): x = x + " (x 50)"
+    #    if ('H(125)' in x): x = x + " (x 50)"
     #leg = ax.legend(handles=old_handles,labels=old_labels,title='Hadronic trigger')
     ax.set_ylabel("Efficiency")
-    com_sample = plt.text(1., 1., r"(13 TeV)",fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
+    #com_sample = plt.text(1., 1., r"(13 TeV)",fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     trigtitle = plt.text(0., 1., r"%s"%plot_title,fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes)
     fig.savefig("ratio_data_%s_%s.pdf"%(plot_label,var_name))
 
@@ -151,9 +157,13 @@ def getPlots(args):
 
     # map to hists
     h_trig = None
-    for key in hists_unmapped:
-        if (key==args.histname):
-            h_trig = hists_unmapped[key]
+    #for key in hists_unmapped:
+    #    if (key==args.histname):
+    #        h_trig = hists_unmapped[key]
+    for key, val in hists_unmapped.items():
+        if isinstance(val, hist.Hist):
+            if key==args.histname:
+                h_trig = processmap.apply(val)
     
 
     #print(h_trig)
@@ -177,7 +187,7 @@ def getPlots(args):
             num_sels[args.numsel[ic]] = [float(args.numsel[ic+1]) if args.numsel[ic+1]!='None' else None, float(args.numsel[ic+2]) if args.numsel[ic+2]!='None' else None]
             ic = ic + 3
  
-    drawTrigEff(h_trig,args.varname,args.varlabel,vars_cuts,num_sels,args.title,args.label)
+    drawTrigEff(h_trig,args.varname,args.varlabel,vars_cuts,num_sels,args.title,args.label,args.sample)
 
     os.chdir(pwd)
 
@@ -192,6 +202,7 @@ if __name__ == "__main__":
     parser.add_argument('--numsel',     dest='numsel',   default="",           help="numsel",     nargs='+')
     parser.add_argument('--title',      dest='title',    default="",           help="title")
     parser.add_argument('--label',      dest='label',    default="",           help="label")
+    parser.add_argument('--sample',     dest='sample',   default="",           help="sample")
     args = parser.parse_args()
 
     getPlots(args)

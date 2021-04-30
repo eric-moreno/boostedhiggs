@@ -53,7 +53,7 @@ line_opts = {
 colormap = 'viridis'
 overflow = 'all'
 
-def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,vars_cut,regionsel,sample,savename,xlimits,ylimits):
+def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,vars_cut,regionsel,sample,savename,xlimits,ylimits,rebin1,rebin2):
     exceptions = ['process', var1_name, var2_name]
     for var,val in vars_cut.items():
         exceptions.append(var)
@@ -88,6 +88,21 @@ def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,v
     histo.axis(xaxis).label = var1_label
     yaxis = var2_name
     histo.axis(yaxis).label = var2_label
+
+    print(histo.axis(xaxis).edges())
+    print(histo.axis(yaxis).edges())
+
+    if len(rebin1)==1:
+        if (rebin1[0]>1): 
+            histo = histo.rebin(xaxis,int(rebin1[0]))
+    else:
+        histo = histo.rebin(xaxis,hist.Bin(xaxis, var1_label, rebin1))
+
+    if len(rebin2)==1:
+        if (rebin2[0]>1): 
+            histo = histo.rebin(yaxis,int(rebin2[0]))
+    else:
+        histo = histo.rebin(yaxis,hist.Bin(yaxis, var2_label, rebin2))
 
     fig,ax = plt.subplots()
     hist.plot2d(histo,
@@ -161,6 +176,8 @@ def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,v
     addtext = plt.text(0.105, 1., "Simulation Preliminary",fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
     fig.savefig("plot2d_%s_%s_vs_%s_%s_%s_lumi%i_logy.pdf"%(sel,var1_name,var2_name,sample,savename,lumifb))
 
+    plt.close('all') 
+
 def getPlots(args):
     print(args.lumi)
     lumifb = float(args.lumi)
@@ -178,14 +195,20 @@ def getPlots(args):
         # map to hists
         for key, val in hists_unmapped.items():
             if isinstance(val, hist.Hist):
-                if key in hists_mapped:
-                    hists_mapped[key] = hists_mapped[key] + processmap.apply(val)
+                if not args.noprocmap:
+                    if key in hists_mapped:
+                        hists_mapped[key] = hists_mapped[key] + processmap.apply(val)
+                    else:
+                        hists_mapped[key] = processmap.apply(val)
                 else:
-                    hists_mapped[key] = processmap.apply(val)
+                    hists_mapped[key] = val
 
     os.chdir(odir)
     # normalize to lumi
     for h in hists_mapped.values():
+        if args.noprocmap:
+            hp = hist.Cat("process", "process")
+            h = h.group("dataset",hp,{d.name:[d.name] for d in h.axis("dataset").identifiers()})
         h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
     
     # properties
@@ -208,7 +231,7 @@ def getPlots(args):
     h = hists_mapped[hist_name]
     print(h)
         
-    drawStack(h,args.hist,var1_name,var1_label,var2_name,var2_label,args.title,lumifb,vars_cut,args.regions,args.sample,savename,args.xlimits,args.ylimits)
+    drawStack(h,args.hist,var1_name,var1_label,var2_name,var2_label,args.title,lumifb,vars_cut,args.regions,args.sample,savename,args.xlimits,args.ylimits,args.rebin1,args.rebin2)
 
     os.chdir(pwd)
 
@@ -220,8 +243,10 @@ if __name__ == "__main__":
     parser.add_argument('--savetag',    dest='savetag',   default="",           help="savetag")
     parser.add_argument('--var1',       dest='var1',      default="",           help="var1")
     parser.add_argument('--var1label',  dest='var1label', default="",           help="var1label")
+    parser.add_argument('--rebin1',     dest='rebin1',    default=[1],          help='rebin1',     type=float,   nargs='+')
     parser.add_argument('--var2',       dest='var2',      default="",           help="var2")
     parser.add_argument('--var2label',  dest='var2label', default="",           help="var2label")
+    parser.add_argument('--rebin2',     dest='rebin2',    default=[1],          help='rebin2',     type=float,   nargs='+')
     parser.add_argument('--title',      dest='title',     default="",           help="title")
     parser.add_argument('--lumi',       dest='lumi',      default=50.,          help="lumi",       type=float)
     parser.add_argument('--sel',        dest='sel',       default='',           help='selection',  nargs='+')
@@ -230,6 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('--sample',     dest='sample',    default='all',        help='sample')
     parser.add_argument('--xlimits',    dest='xlimits',   default='',           help='xlimits',    nargs='+')
     parser.add_argument('--ylimits',    dest='ylimits',   default='',           help='ylimits',    nargs='+')
+    parser.add_argument('--noprocmap',  dest='noprocmap', action='store_true',  help='noprocmap')
     args = parser.parse_args()
 
     getPlots(args)

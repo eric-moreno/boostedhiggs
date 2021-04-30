@@ -38,16 +38,41 @@ process_latex = {
                  #'zll-ht800to1200': r'Z($\ell\ell$) $800<HT<1200$',
                  'wlnu': r'W($\ell\nu$)',
                  'vv': 'Diboson',
-                 'h125': 'ggH(125)',
+                 'h125': r'H(125)',
+                 "ggF-Htt":"ggF-Htt",
+                 "VBF-Htt":"VBF-Htt",
+                 "Wm-Htt":"Wm-Htt",
+                 "Wp-Htt":"Wp-Htt",
+                 "ZH-Htt":"ZH-Htt",
+                 "ggZll-Htt":"ggZll-Htt",
+                 "ggZvv-Htt":"ggZvv-Htt",
+                 "ggZqq-Htt":"ggZqq-Htt",
+                 "tt-Htt":"tt-Htt",
                  'data': 'Data',
                  'Stat. Unc.': 'Stat. Unc.',
                  }
 
+color_map = {
+                 'tt-dilep':'salmon',
+                 'tt-semilep':'firebrick',
+                 'tt-had':'rosybrown',
+                 'st':'sienna',
+                 'vqq':'darkorange',
+                 'qcd':'royalblue',
+                 'zll':'darkorchid',
+                 'wlnu':'forestgreen',
+                 'vv':'lightpink',
+                 'h125':'snow',
+}
+
 import re
 nosig = re.compile("(?!h125)(?!data)")
+#nosig = re.compile("(?!ggF-Htt)(?!VBF-Htt)(?!Wm-Htt)(?!Wp-Htt)(?!ZH-Htt)(?!ggZll-Htt)(?!ggZvv-Htt)(?!ggZqq-Htt)(?!tt-Htt)(?!h125)(?!data)")
+
 #nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
 #nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)")
 #nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
 
 nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)(?!data)") 
+
 #nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll-ht100to200)(?!zll-ht1200to2500)(?!zll-ht200to400)(?!zll-ht2500toinf)(?!zll-ht400to600)(?!zll-ht600to800)(?!zll-ht800to1200)(?!data)") 

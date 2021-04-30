@@ -104,13 +104,68 @@ process_map["vv"] = [
 ]
 process_map["h125"] = [
     'GluGluHToTauTau',
+    'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
+    'VBFHToTauTau_M125_13TeV_powheg_pythia8',
+    'WminusHToTauTau_M125_13TeV_powheg_pythia8',
+    'WplusHToTauTau_M125_13TeV_powheg_pythia8',
+    'ZHToTauTau_M125_13TeV_powheg_pythia8',
+    'ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8',
+    'ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8',
+    'ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8',
+    'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
 ]
+#process_map["ggF-Htt"] = [
+#    'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
+#]
+#process_map["VBF-Htt"] = [
+#    'VBFHToTauTau_M125_13TeV_powheg_pythia8',
+#]
+#process_map["Wm-Htt"] = [
+#    'WminusHToTauTau_M125_13TeV_powheg_pythia8',
+#]
+#process_map["Wp-Htt"] = [
+#    'WplusHToTauTau_M125_13TeV_powheg_pythia8',
+#]
+#process_map["ZH-Htt"] = [
+#    'ZHToTauTau_M125_13TeV_powheg_pythia8',
+#]
+#process_map["ggZll-Htt"] = [
+#    'ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8',
+#]
+#process_map["ggZvv-Htt"] = [
+#    'ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8',
+#]
+#process_map["ggZqq-Htt"] = [
+#    'ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8',
+#]
+#process_map["tt-Htt"] = [
+#    'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
+#]
 process_map["data"] = [
-    'JetHT',
-    'SingleElectron',
-    'SingleMuon',
+    #'JetHT',
+    'JetHT_pancakes-02_Run2017B-09Aug2019_UL2017-v1',
+    'JetHT_pancakes-02_Run2017C-09Aug2019_UL2017-v1',
+    'JetHT_pancakes-02_Run2017D-09Aug2019_UL2017-v1',
+    'JetHT_pancakes-02_Run2017E-09Aug2019_UL2017-v1',
+    'JetHT_pancakes-02_Run2017F-09Aug2019_UL2017-v1',
+    #'SingleElectron',
+    'SingleElectron_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1',
+    'SingleElectron_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1',
+    'SingleElectron_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1',
+    'SingleElectron_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1',
+    'SingleElectron_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v2',
+    #'SingleMuon',
+    'SingleMuon_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1',
+    'SingleMuon_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1',
+    'SingleMuon_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1',
+    'SingleMuon_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1',
+    'SingleMuon_pancakes-02-withPF_Run2017F-09Aug2019_UL2017-v1',
     'Tau',
-    'MET',
+    #'MET_pancakes-02-withPF_Run2017B-09Aug2019_UL2017_rsb-v1',
+    'MET_pancakes-02-withPF_Run2017C-09Aug2019_UL2017_rsb-v1',
+    'MET_pancakes-02-withPF_Run2017D-09Aug2019_UL2017_rsb-v1',
+    'MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1',
+    'MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1',
 ]
 
 def apply(h):

@@ -16,6 +16,7 @@ from coffea.util import load
 import pickle
 import gzip
 import math
+from cycler import cycler
 
 import argparse
 import processmap
@@ -66,7 +67,7 @@ special_char_list = ['_','-']
 def getindices(s):
     return [i for i, c in enumerate(s) if c.isupper() or c in special_char_list]
 
-def drawCutflow(h,plottitle,lumifb,regionsel):
+def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
 
     cutlist = []
     for c in h[list(h.keys())[0]]:
@@ -117,19 +118,40 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
     fig,ax = plt.subplots()
 
     all_bkg = 0.
+    sampcount = 0
+    samp_order = []
     for key,val in x[nosig].values().items():
-        all_bkg+=val.sum()
+        sampcount = sampcount + 1
+        samp_sum = val.sum()
+        all_bkg+=samp_sum
+        samp_order.append([str(key)[2:-3],samp_sum])
+
+    samp_order.sort(key=lambda x : x[1],reverse=True)
+    print(samp_order)
+    the_order = []
+    for lab in samp_order:
+        for ident in x[nosig].identifiers('process'):
+            if (lab[0] == ident.name):
+                the_order.insert(0,ident)
+                break
+    print(the_order)
+
+    if colormap:
+        color_order = [color_map[s[0]] for s in samp_order]
+        custom_cycler = (cycler(color=color_order))
+        ax.set_prop_cycle(custom_cycler)
 
     if (all_bkg>0.): hist.plot1d(x[nosig],
                 overlay='process',ax=ax,
                 clear=False,
-                stack=True,
+                stack=(sampcount>1),
+                order=the_order,
                 fill_opts=fill_opts,
                 error_opts=err_opts,
                 )
 
     x_nobkg = x[nobkg]
-    x_nobkg.scale(50)
+    #x_nobkg.scale(50)
 
     all_sig = 0.
     for key,val in x_nobkg.values().items():
@@ -152,7 +174,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
     old_handles, old_labels = ax.get_legend_handles_labels()
     new_labels = []
     for xl in old_labels:
-        if ('ggH' in xl): xl = xl + " (x 50)"
+        #if ('H(125)' in xl): xl = xl + " (x 50)"
         new_labels.append(xl)
     leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='lower left')
     lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
@@ -212,7 +234,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
     ax.semilogy()
     minvals = []
     for xd in x.values():
-        minvals.append(min(np.trim_zeros(x.values()[xd])))
+        if (min(np.trim_zeros(x.values()[xd]))>0.): minvals.append(min(np.trim_zeros(x.values()[xd]))) 
     ax.set_ylim(10.**float(math.floor(math.log10(min(minvals)))))
     ylo, yhi = ax.get_ylim()
     nticksy = int(math.floor(math.log10(yhi))-math.floor(math.log10(ylo)))+2
@@ -227,6 +249,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel):
     ax.yaxis.set_minor_formatter(mpltick.NullFormatter())
     fig.savefig("cuteff_%s_lumi%i_logy.pdf"%(regionsel,lumifb))
 
+    plt.close('all') 
 
 
 def getPlots(args):
@@ -257,7 +280,7 @@ def getPlots(args):
     for h in dict_mapped.values():
         #h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
         for s in h:
-            if s in ['SingleElectron','SingleMuon','JetHT','Tau','MET']: continue
+            if any([s.startswith(d) for d in ['SingleElectron','SingleMuon','JetHT','Tau','MET']]): continue
             print(s)
             for b in h[s]:
                 print(b)
@@ -266,25 +289,21 @@ def getPlots(args):
                 print('\t',h[s][b])
     
     os.chdir(odir)
-    for r in args.regions:
-        drawCutflow(dict_mapped[r],args.title,lumifb,r)
+    for ir,r in enumerate(args.regions):
+        drawCutflow(dict_mapped[r],args.title[ir],lumifb,r, args.defcolors)
 
     os.chdir(pwd)
 
 if __name__ == "__main__":
     #ex. python plot_cutflow.py --hists htt_test --tag test --title Test --lumi 41.5 --regions cutflow_hadel
     parser = argparse.ArgumentParser()
-    parser.add_argument('--hists',      dest='hists',    default="hists",      help="hists pickle name", nargs='+')
-    parser.add_argument('--tag',        dest='tag',      default="",           help="tag")
-    parser.add_argument('--title',      dest='title',    default="",           help="title")
-    parser.add_argument('--lumi',       dest='lumi',     default=50.,          help="lumi",       type=float)
-    parser.add_argument('--regions',    dest='regions',  default='',           help='regionsel',  nargs='+')
+    parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name", nargs='+')
+    parser.add_argument('--tag',        dest='tag',       default="",           help="tag")
+    parser.add_argument('--title',      dest='title',     default="",           help="title",      nargs='+')
+    parser.add_argument('--lumi',       dest='lumi',      default=50.,          help="lumi",       type=float)
+    parser.add_argument('--regions',    dest='regions',   default='',           help='regionsel',  nargs='+')
+    parser.add_argument('--defcolors',  dest='defcolors', action='store_false', help='defcolors')
     args = parser.parse_args()
 
     getPlots(args)
 
-#        output['cutflow_hadel'][dataset]['none'] += float(weights.weight().sum())
-#        output['cutflow_hadmu'][dataset]['none'] += float(weights.weight().sum())
-#        output['cutflow_hadel_cr_b'][dataset]['none'] += float(weights.weight().sum())
-#        output['cutflow_hadmu_cr_b'][dataset]['none'] += float(weights.weight().sum())
-#        output['cutflow_hadhad'][dataset]['none'] += float(weights.weight().sum())

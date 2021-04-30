@@ -43,7 +43,7 @@ err_opts = {
 #overflow_behavior = 'all'
 overflow_behavior = 'over'
 
-def drawTrigEff(h,var1_name,var1_label,var2_name,var2_label,vars_cut,num_sel,plot_title,plot_label):
+def drawTrigEff(h,var1_name,var1_label,var2_name,var2_label,vars_cut,num_sel,plot_title,plot_label,samplename):
     print(h)
     #print(h.values())
     exceptions = [var1_name,var2_name,'dataset']
@@ -143,12 +143,12 @@ def drawTrigEff(h,var1_name,var1_label,var2_name,var2_label,vars_cut,num_sel,plo
     ax.ticklabel_format(axis='x', style='sci')
     #old_handles, old_labels = ax.get_legend_handles_labels()
     #for x in old_labels:
-    #    if ('ggh' in x): x = x + " (x 50)"
+    #    if ('H(125)' in x): x = x + " (x 50)"
     #leg = ax.legend(handles=old_handles,labels=old_labels,title='Hadronic trigger')
     ax.set_xlabel(var1_label)
     ax.set_ylabel(var2_label)
     com_sample = plt.text(1., 1., r"(13 TeV)",fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
-    trigtitle = plt.text(0., 1., r"%s"%plot_title,fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes)
+    trigtitle = plt.text(0., 1., r"%s %s"%(samplename,plot_title),fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes)
     fig.savefig("ratio2d_data_%s_%s_%s.pdf"%(plot_label,var1_name,var2_name))
 
     plt.clf()
@@ -208,7 +208,7 @@ def getPlots(args):
             num_sels[args.numsel[ic]] = [float(args.numsel[ic+1]) if args.numsel[ic+1]!='None' else None, float(args.numsel[ic+2]) if args.numsel[ic+2]!='None' else None]
             ic = ic + 3
  
-    drawTrigEff(h_trig,args.var1name,args.var1label,args.var2name,args.var2label,vars_cuts,num_sels,args.title,args.label)
+    drawTrigEff(h_trig,args.var1name,args.var1label,args.var2name,args.var2label,vars_cuts,num_sels,args.title,args.label,args.sample)
 
     os.chdir(pwd)
 
@@ -225,6 +225,7 @@ if __name__ == "__main__":
     parser.add_argument('--numsel',     dest='numsel',    default="",           help="numsel",     nargs='+')
     parser.add_argument('--title',      dest='title',     default="",           help="title")
     parser.add_argument('--label',      dest='label',     default="",           help="label")
+    parser.add_argument('--sample',     dest='sample',    default="",           help="sample")
     args = parser.parse_args()
 
     getPlots(args)

@@ -63,8 +63,6 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
               for fi in range(1,len(flist)):
                 flist[0][key] = flist[0][key] + flist[fi][key]
           
-          print(flist[0])
-          
           util.save(flist[0],'%s/%s_%i.coffea' % (indir,outname,i))
         
           for f in flist:
@@ -83,7 +81,7 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
         print(chunk_names)
         
         flist = [ util.load(x) for x in chunk_names ]
-        
+
         for key in flist[0]:
           if isinstance(key, hist.Hist):
             for fi in range(1,len(flist)):
@@ -92,13 +90,15 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
             for fi in range(1,len(flist)):
               flist[0][key] = flist[0][key] + flist[fi][key]
           
-        print(flist[0])
-        
         xs = {}
         with open('../data/xsec.json', 'r') as f:
             xs = json.load(f)
             
         scale1fb = {k: xs[k] * 1000. / w for k, w in flist[0]['sumw'].items()}
+
+        print('sum weights  ',{k: w for k, w in flist[0]['sumw'].items()})
+        print('scaling using',scale1fb)
+
         for s in samples:
             if s not in scale1fb: scale1fb[s] = 1.
         
@@ -106,16 +106,13 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
         if not noscale:
             for key in flist[0]:
                 if isinstance(flist[0][key], hist.Hist):
-                    #out[key].scale(scale(scale1fb, 'dataset'))
                     flist[0][key].scale(scale1fb, 'dataset')
                 else:
-                    print(key,flist[0][key])
                     if key=='sumw':
                         continue
                     for samp in flist[0][key]:
                         for x in flist[0][key][samp]:
                             flist[0][key][samp][x] = flist[0][key][samp][x]*scale1fb[samp]
-                print(key,flist[0][key])
             
           
         util.save(flist[0],'%s/%s.coffea' % (indir,outname))
@@ -179,7 +176,49 @@ samp_dict = {
         "ZJetsToQQ_HT600to800_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8",
         "ZJetsToQQ_HT-800toInf_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8",
     ],
+    "HTauTau":[
+        "GluGluHToTauTau_M125_13TeV_powheg_pythia8",
+        "VBFHToTauTau_M125_13TeV_powheg_pythia8",
+        "WminusHToTauTau_M125_13TeV_powheg_pythia8",
+        "WplusHToTauTau_M125_13TeV_powheg_pythia8",
+        "ZHToTauTau_M125_13TeV_powheg_pythia8",
+        "ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8",
+        "ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8",
+        "ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8",
+        "ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8",
+        #"GluGluHToTauTau",
+    ],
+    "SingleElectron":[
+        #"SingleElectron_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1",
+        "SingleElectron_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1",
+        "SingleElectron_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1",
+        "SingleElectron_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1",
+        "SingleElectron_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v2",
+    ],
+    "JetHT":[
+    #    "JetHT_pancakes-02_Run2017B-09Aug2019_UL2017-v1",
+        "JetHT_pancakes-02_Run2017C-09Aug2019_UL2017-v1",
+        "JetHT_pancakes-02_Run2017D-09Aug2019_UL2017-v1",
+        "JetHT_pancakes-02_Run2017E-09Aug2019_UL2017-v1",
+        "JetHT_pancakes-02_Run2017F-09Aug2019_UL2017-v1",
+    ],
+    "SingleMuon":[
+        #"SingleMuon_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1",
+        "SingleMuon_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1",
+        "SingleMuon_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1",
+        "SingleMuon_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1",
+        "SingleMuon_pancakes-02-withPF_Run2017F-09Aug2019_UL2017-v1",
+    ],
+    "MET":[
+        #"MET_pancakes-02-withPF_Run2017B-09Aug2019_UL2017_rsb-v1",
+        "MET_pancakes-02-withPF_Run2017C-09Aug2019_UL2017_rsb-v1",
+        "MET_pancakes-02-withPF_Run2017D-09Aug2019_UL2017_rsb-v1",
+        "MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1",
+        "MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1",
+    ],
 }
+
+datalist = ["SingleMuon", "SingleElectron", "JetHT", "Tau", "MET"]
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('indir', metavar='indir', type=str, help='indir')
@@ -191,6 +230,7 @@ parser.add_argument('--outname', metavar='outname', default='hists_sum', help='o
 parser.add_argument('-n', '--noscale', action='store_true')
 parser.add_argument('--noresub', action='store_true')
 parser.add_argument('--sampsplit', action='store_true')
+parser.add_argument('--fullsplit', action='store_true')
 parser.add_argument('--chunk', metavar='chunk', help='chunk size', type=int, default=20)
 args = parser.parse_args()
 
@@ -200,10 +240,27 @@ if not args.sampsplit:
     run_hadd(args.indir, args.eosdir, args.samples, args.invert, args.ignore, args.outname, args.noscale, args.noresub, args.chunk)
 
 else:
-    theblocks = args.samples
     if not args.samples:
         theblocks = [k for k in samp_dict]
     
+    else:
+        samplist = {
+            "Data":[s for s in samp_dict if s in datalist],
+            "MC":[s for s in samp_dict if s not in datalist],
+        }
+        exp_samps = []
+        for s in args.samples:
+            if (s!="Data" and s!="MC"):
+                exp_samps.append(s)
+            else:
+                exp_samps = exp_samps + samplist[s]
+        print(exp_samps)
+        theblocks = exp_samps
+    
     for block in theblocks:
-        run_hadd(args.indir, args.eosdir, samp_dict[block], args.invert, args.ignore, "%s_%s"%(args.outname,block), args.noscale, args.noresub, args.chunk)
+        if not args.fullsplit:
+            run_hadd(args.indir, args.eosdir, samp_dict[block], args.invert, args.ignore, "%s_%s"%(args.outname,block), True if block in datalist else args.noscale, args.noresub, args.chunk)
+        else:
+            for bs in samp_dict[block]:
+                run_hadd(args.indir, args.eosdir, [bs], args.invert, args.ignore, "%s_%s"%(args.outname,bs), True if block in datalist else args.noscale, args.noresub, args.chunk)
 

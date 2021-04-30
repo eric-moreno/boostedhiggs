@@ -2,7 +2,8 @@ import numpy as np
 import awkward
 from uproot_methods import TLorentzVectorArray
 
-dataset_ordering = ['JetHT','SingleElectron','SingleMuon','Tau']
+#dataset_ordering = ['JetHT','SingleElectron','SingleMuon','MET','Tau']
+dataset_ordering = ['SingleMuon','SingleElectron','JetHT','MET','Tau']
 
 pd_to_trig = {
     'PFHT800':"JetHT",
@@ -21,11 +22,15 @@ pd_to_trig = {
     'Ele50_CaloIdVT_GsfTrkIdT_PFJet165':"SingleElectron",
     'Ele115_CaloIdVT_GsfTrkIdT':"SingleElectron",
     "Ele15_IsoVVVL_PFHT600":"SingleElectron",
-    #"Ele15_IsoVVVL_PFHT450_PFMET50":"SingleElectron",
+    "Ele35_WPTight_Gsf":"SingleElectron",
+    "Ele15_IsoVVVL_PFHT450_PFMET50":"SingleElectron",
+    'IsoMu27':"SingleMuon",
     'Mu50':"SingleMuon",
     'Mu55':"SingleMuon",
     "Mu15_IsoVVVL_PFHT600":"SingleMuon",
-    #"Mu15_IsoVVVL_PFHT450_PFMET50":"SingleMuon",
+    "Mu15_IsoVVVL_PFHT450_PFMET50":"SingleMuon",
+    'PFMETNoMu120_PFMHTNoMu120_IDTight':"MET",
+    'PFMETNoMu110_PFMHTNoMu110_IDTight':"MET",
     'DoubleMediumChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg':"Tau",
     'DoubleMediumChargedIsoPFTau35_Trk1_eta2p1_Reg':"Tau",
     'DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg':"Tau",
@@ -45,13 +50,21 @@ def isOverlap(events,dataset,triggers):
     for p in dataset_ordering:
         trig_to_pd[p] = []
     for t in triggers:
-        trig_to_pd[pd_to_trig[t]].append(t)
+        if t not in trig_to_pd[pd_to_trig[t]]:
+            trig_to_pd[pd_to_trig[t]].append(t)
     overlap = np.ones(events.size, dtype='bool')
     for p in dataset_ordering:
-        if (p==dataset): break
-        for t in trig_to_pd[p]:
-            overlap = overlap & np.logical_not(events.HLT[t])
+        if dataset.startswith(p):
+            pass_pd = np.zeros(events.size, dtype='bool')
+            for t in trig_to_pd[p]:
+                pass_pd = pass_pd | events.HLT[t]
+            overlap = overlap & pass_pd
+            break
+        else:
+            for t in trig_to_pd[p]:
+                overlap = overlap & np.logical_not(events.HLT[t])
     return overlap
+
 
 def getParticles(events,lo_id=22,hi_id=25,flags=['fromHardProcess', 'isLastCopy']):
     absid = np.abs(events.GenPart.pdgId)

@@ -129,10 +129,10 @@ def drawTrigEff(h,var_name,var_label,vars_cut,num_sel,plot_title,plot_label,samp
     ax.ticklabel_format(axis='x', style='sci')
     #old_handles, old_labels = ax.get_legend_handles_labels()
     #for x in old_labels:
-    #    if ('ggh' in x): x = x + " (x 50)"
+    #    if ('H(125)' in x): x = x + " (x 50)"
     #leg = ax.legend(handles=old_handles,labels=old_labels,title='Hadronic trigger')
     ax.set_ylabel("Efficiency")
-    com_sample = plt.text(1., 1., r"(13 TeV)",fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
+    #com_sample = plt.text(1., 1., r"(13 TeV)",fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     trigtitle = plt.text(0., 1., r"%s"%plot_title,fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes)
     fig.savefig("ratio_%s_%s.pdf"%(plot_label,var_name))
 

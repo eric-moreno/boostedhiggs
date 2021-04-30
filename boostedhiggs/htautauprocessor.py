@@ -7,6 +7,7 @@ from copy import deepcopy
 from .common import (
     getBosons,
     matchedBosonFlavor,
+    matchedBosonFlavorLep,
     getHTauTauDecayInfo,
     isOverlap,
 )
@@ -213,9 +214,8 @@ class HtautauProcessor(processor.ProcessorABC):
         jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 20, 200, 1200)
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
         jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 34, 40, 210.)
-        nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$',20,0.,1.)
-        nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$',20,0.,1.)
-        nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$',20,0.,1.)
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,1.])
+        mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', 30, 0., 150.)
         oppbjet_pt_bin = hist.Bin('oppbjet_pt', r'Max opp. deepCSV-bjet $p_{T}$ [GeV]', 20, 0., 500)
         oppbtag_bin = hist.Bin('oppbtag', r'Max opp. deepCSV-b ', 20, 0., 1)
         lep_pt_bin = hist.Bin('lep_pt', r'Lepton $p_{T}$ [GeV]', 40, 0, 800)
@@ -227,8 +227,10 @@ class HtautauProcessor(processor.ProcessorABC):
         jet_jetlep_m_bin = hist.Bin('jetlep_m', r'Jet+lepton $m$ [GeV]', 20, 0, 600.)
         jet_jetmet_m_bin = hist.Bin('jetmet_m', r'Jet+MET $m$ [GeV]', 20, 0, 600.)
         jet_jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
+        jetmet_dphi_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 20, 0., 2.)
         met_pt_bin = hist.Bin('met_pt', r'MET [GeV]', 20, 0, 800)
         h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', 20, 200, 1200)
+        ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',13,-6.5,6.5)
         gentau1had_bin = hist.Bin('gentau1had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
         gentau2had_bin = hist.Bin('gentau2had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
@@ -243,6 +245,8 @@ class HtautauProcessor(processor.ProcessorABC):
             'cutflow_hadmu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadel_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadel_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             #'btagWeight': hist.Hist('Events', hist.Cat('dataset', 'Dataset'), hist.Bin('val', 'BTag correction', 50, 0, 2)), #FIXME
@@ -338,9 +342,30 @@ class HtautauProcessor(processor.ProcessorABC):
         best_jet_idx = ak8_met_dphi.argmin()
         #best_jet_idx = candidatejets.pt.argmax()
         candidatejet = candidatejets[best_jet_idx]
+        jetmet_dphi = ak8_met_dphi[best_jet_idx]
+
+        nn_disc_hadhad = awkward.JaggedArray.fromiter([[v] for v in events.IN.hadhad_v4p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+        nn_disc_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadel_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+        nn_disc_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadmu_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>300.]
+
         candidatejet_rho = 2 * np.log(candidatejet.msdcorr / candidatejet.pt)
         selection.add('jetacceptance', (
             (candidatejet.pt > 300)
+            & (candidatejet.msdcorr > 40.)
+            & (abs(candidatejet.eta) < 2.4)
+            & (candidatejet_rho > -6.)
+            #& (candidatejet_rho < -2.1)
+            & (candidatejet_rho < -1.75)
+        ).any())
+        selection.add('jetacceptance400', (
+            (candidatejet.pt > 400)
+            & (candidatejet.msdcorr > 40.)
+            & (abs(candidatejet.eta) < 2.4)
+            & (candidatejet_rho > -6.)
+            & (candidatejet_rho < -2.)
+        ).any())
+        selection.add('jetacceptance450', (
+            (candidatejet.pt > 450)
             & (candidatejet.msdcorr > 40.)
             & (abs(candidatejet.eta) < 2.4)
             & (candidatejet_rho > -6.)
@@ -358,11 +383,12 @@ class HtautauProcessor(processor.ProcessorABC):
         # only consider first 4 jets to be consistent with old framework
         jets = jets[:, :4]
         ak4_ak8_pair = jets.cross(candidatejet, nested=True)
-        dphi = abs(ak4_ak8_pair.i0.delta_phi(ak4_ak8_pair.i1))
-        ak4_opposite = jets[(dphi > np.pi / 2).all()]
+        ak4_ak8_dphi = abs(ak4_ak8_pair.i0.delta_phi(ak4_ak8_pair.i1))
+        ak4_ak8_dr = ak4_ak8_pair.i0.delta_r(ak4_ak8_pair.i1)
+        ak4_opposite = jets[(ak4_ak8_dphi > np.pi / 2).all()]
         #selection.add('antiak4btagMediumOppHem', ak4_opposite.btagDeepB.max() < BTagEfficiency.btagWPs[self._year]['medium'])
         selection.add('antiak4btagMediumOppHem', ak4_opposite.btagDeepB.max() < self._btagWPs['medium'][self._year])
-        ak4_away = jets[(dphi > 0.8).all()]
+        ak4_away = jets[(ak4_ak8_dr > 0.8).all()]
         #selection.add('ak4btagMedium08', ak4_away.btagDeepB.max() > BTagEfficiency.btagWPs[self._year]['medium'])
         selection.add('ak4btagMedium08', ak4_away.btagDeepB.max() > self._btagWPs['medium'][self._year])
 
@@ -387,7 +413,7 @@ class HtautauProcessor(processor.ProcessorABC):
             & (np.abs(events.Muon.eta) < 2.4)
             #& (events.Muon.sip3d < 4)
             #& (np.abs(events.Muon.dz) < 0.1)
-            #& (np.abs(events.Muon.dxy) < 0.05)
+            #& (np.abs(events.Muon.dxy) < 0.02)
             & (events.Muon.mediumId).astype(bool)
             #& (events.Muon.highPtId).astype(bool)
         )
@@ -399,13 +425,14 @@ class HtautauProcessor(processor.ProcessorABC):
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_tight
+            #& elmask_tight
+            & events.Electron.mvaFall17V2noIso_WP80
         )
         ngoodelecs = goodelec.sum()
         leadingelec = events.Electron[goodelec].pad(1, clip=True)
 
         nmuons = (
-            (events.Muon.pt > 15)
+            (events.Muon.pt > 10)
             & (abs(events.Muon.eta) < 2.4)
             #& (events.Muon.pfRelIso04_all < 0.25)
             #& (np.abs(events.Muon.dz) < 0.1)
@@ -415,12 +442,29 @@ class HtautauProcessor(processor.ProcessorABC):
         ).sum()
 
         nelectrons = (
-            (events.Electron.pt > 15)
+            (events.Electron.pt > 10)
             & (abs(events.Electron.eta) < 2.5)
-            & (events.Electron.cutBased >= events.Electron.VETO)
+            & (events.Electron.cutBased >= events.Electron.LOOSE)
             #& (events.Electron.cutBased_HEEP).astype(bool)
             #& elmask_loose
         ).sum()
+
+        if self._year=='2018':
+          tauAntiEleId = events.Tau.idAntiEle2018
+        else:
+          tauAntiEleId = events.Tau.idAntiEle
+
+        goodtaus = (
+            (events.Tau.pt > 20)
+            & (abs(events.Tau.eta) < 2.3)
+            & (tauAntiEleId >= 8)
+            & (events.Tau.idAntiMu >= 1)
+        )
+        taus_p4 = TLorentzVectorArray.from_ptetaphim(events.Tau[goodtaus].pt.fillna(0),events.Tau[goodtaus].eta.fillna(0),events.Tau[goodtaus].phi.fillna(0),events.Tau[goodtaus].mass.fillna(0))
+        tau_ak8_pair = taus_p4.cross(candidatejet)
+        taus_dr = (tau_ak8_pair.i0.delta_r(tau_ak8_pair.i1) < 0.8).any()
+
+        selection.add('antiLepId',taus_dr)
 
         #ntaus = (
         #    (events.Tau.pt > 20)
@@ -443,6 +487,10 @@ class HtautauProcessor(processor.ProcessorABC):
         el_miso = leadingelec.miniPFRelIso_all.fillna(0)*lepsel
         leadinglep_miso = mu_miso + el_miso
         leadinglep_miso = leadinglep_miso.pad(1, clip=True)
+
+        mt_lepmet = np.sqrt(2.*leadinglep.pt*met_p4.pt*(leadinglep.pt.ones_like()-np.cos(leadinglep.delta_phi(met_p4))))
+        selection.add('mt_lepmet', (mt_lepmet.flatten() < 80.))
+        selection.add('mt_lepmetInv', (mt_lepmet.flatten() >= 80.))
 
         selection.add('noleptons', (nmuons == 0) & (nelectrons == 0) & (ntaus == 0) & (ngoodmuons == 0) & (ngoodelecs == 0))
         selection.add('onemuon', (nmuons <= 1) & (nelectrons == 0) & (ntaus == 0) & (ngoodelecs == 0) & (ngoodmuons == 1))
@@ -520,14 +568,16 @@ class HtautauProcessor(processor.ProcessorABC):
             #output['btagWeight'].fill(dataset=dataset, val=self._btagSF.addBtagWeight(weights, ak4_away)) #FIXME
 
         regions = {
-            'hadhad_signal': ['jetacceptance', 'hadhad_trigger', 'jetid', 'n2ddt', 'antiak4btagMediumOppHem', 'met', 'noleptons'],
-            'hadhad_cr_mu': ['jetacceptance', 'hadmu_trigger', 'jetid', 'n2ddt', 'met', 'ak4btagMedium08', 'onemuon', 'muonkinhard', 'muonDphiAK8'],#,'jetlsf'],
-            'hadmu_signal': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIso'],#, 'jetlsf'],
-            'hadel_signal': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIso'],#, 'jetlsf'],
-            'hadmu_cr_qcd': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIsoInv'],#,'jetlsf'],
-            'hadel_cr_qcd': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIsoInv'],#,'jetlsf'],
-            'hadmu_cr_b': ['jetacceptance', 'hadmu_trigger', 'jetid', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'miniIso'],#,'jetlsf'],
-            'hadel_cr_b': ['jetacceptance', 'hadel_trigger', 'jetid', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'miniIso'],#,'jetlsf'],
+            'hadhad_signal': ['jetacceptance450', 'hadhad_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'noleptons', 'antiLepId'],
+            'hadhad_cr_mu': ['jetacceptance400', 'hadmu_trigger', 'jetid', 'ak4btagMedium08', 'met', 'onemuon', 'muonkinhard', 'muonDphiAK8','antiLepId'],#,'jetlsf'],
+            'hadmu_signal': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIso'],#, 'jetlsf'],
+            'hadel_signal': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIso'],#, 'jetlsf'],
+            'hadmu_cr_qcd': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIsoInv'],#,'jetlsf'],
+            'hadel_cr_qcd': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIsoInv'],#,'jetlsf'],
+            'hadmu_cr_b': ['jetacceptance', 'hadmu_trigger', 'jetid', 'ak4btagMedium08', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIso'],#,'jetlsf'],
+            'hadel_cr_b': ['jetacceptance', 'hadel_trigger', 'jetid', 'ak4btagMedium08', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiLepId', 'mt_lepmet', 'miniIso'],#,'jetlsf'],
+            'hadmu_cr_w': ['jetacceptance', 'hadmu_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'onemuon', 'muonkin', 'lepDrAK8', 'antiLepId', 'mt_lepmetInv', 'miniIso'],#,'jetlsf'],
+            'hadel_cr_w': ['jetacceptance', 'hadel_trigger', 'jetid', 'antiak4btagMediumOppHem', 'met', 'oneelec', 'eleckin', 'lepDrAK8', 'antiLepId', 'mt_lepmetInv', 'miniIso'],#,'jetlsf'],
             #'noselection': [],
         }
         w_dict = {
@@ -539,12 +589,16 @@ class HtautauProcessor(processor.ProcessorABC):
             'hadel_cr_qcd': w_hadel,
             'hadmu_cr_b': w_hadmu,
             'hadel_cr_b': w_hadel,
+            'hadmu_cr_w': w_hadmu,
+            'hadel_cr_w': w_hadel,
         }
 
         allcuts_hadel = set()
         allcuts_hadmu = set()
         allcuts_hadel_cr_b = set()
         allcuts_hadmu_cr_b = set()
+        allcuts_hadel_cr_w = set()
+        allcuts_hadmu_cr_w = set()
         allcuts_hadel_cr_qcd = set()
         allcuts_hadmu_cr_qcd = set()
         allcuts_hadhad = set()
@@ -553,6 +607,8 @@ class HtautauProcessor(processor.ProcessorABC):
         output['cutflow_hadmu'][dataset]['none'] += float(w_dict['hadmu_signal'].weight().sum())
         output['cutflow_hadel_cr_b'][dataset]['none'] += float(w_dict['hadel_cr_b'].weight().sum())
         output['cutflow_hadmu_cr_b'][dataset]['none'] += float(w_dict['hadmu_cr_b'].weight().sum())
+        output['cutflow_hadel_cr_w'][dataset]['none'] += float(w_dict['hadel_cr_w'].weight().sum())
+        output['cutflow_hadmu_cr_w'][dataset]['none'] += float(w_dict['hadmu_cr_w'].weight().sum())
         output['cutflow_hadel_cr_qcd'][dataset]['none'] += float(w_dict['hadel_cr_qcd'].weight().sum())
         output['cutflow_hadmu_cr_qcd'][dataset]['none'] += float(w_dict['hadmu_cr_qcd'].weight().sum())
         output['cutflow_hadhad'][dataset]['none'] += float(w_dict['hadhad_signal'].weight().sum())
@@ -569,6 +625,12 @@ class HtautauProcessor(processor.ProcessorABC):
         for cut in regions['hadmu_cr_b']:
             allcuts_hadmu_cr_b.add(cut)
             output['cutflow_hadmu_cr_b'][dataset][cut] += float(w_dict['hadmu_cr_b'].weight()[selection.all(*allcuts_hadmu_cr_b)].sum())
+        for cut in regions['hadel_cr_w']:
+            allcuts_hadel_cr_w.add(cut)
+            output['cutflow_hadel_cr_w'][dataset][cut] += float(w_dict['hadel_cr_w'].weight()[selection.all(*allcuts_hadel_cr_w)].sum())
+        for cut in regions['hadmu_cr_w']:
+            allcuts_hadmu_cr_w.add(cut)
+            output['cutflow_hadmu_cr_w'][dataset][cut] += float(w_dict['hadmu_cr_w'].weight()[selection.all(*allcuts_hadmu_cr_w)].sum())
         for cut in regions['hadel_cr_qcd']:
             allcuts_hadel_cr_qcd.add(cut)
             output['cutflow_hadel_cr_qcd'][dataset][cut] += float(w_dict['hadel_cr_qcd'].weight()[selection.all(*allcuts_hadel_cr_qcd)].sum())
@@ -604,25 +666,13 @@ class HtautauProcessor(processor.ProcessorABC):
             def normalize(val):
                 return val[cut].pad(1, clip=True).fillna(0).flatten()
 
+            if 'hadhad' in region:
+                nn_disc = nn_disc_hadhad
+            if 'hadel' in region:
+                nn_disc = nn_disc_hadel
+            if 'hadmu' in region:
+                nn_disc = nn_disc_hadmu
 
-            #print(dataset)
-            #print(region)
-            #print("TRIG")
-            #print(np.histogram(trigger_hadel[cut]))
-            #print("BOSPT")
-            #print(np.histogram(normalize(genBosonPt)))
-            #print("JETPT")
-            #print(np.histogram(normalize(candidatejet.pt)))
-            #print("LEPPT")
-            #print(np.histogram(normalize(leadinglep.pt)))
-            #print("JLDR")
-            #print(np.histogram(normalize(lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1))))
-            #print("LSF3")
-            #print(np.histogram(normalize(candidatejet.lsf3)))
-            #print("WEIGHT")
-            #print(np.histogram(weight))
-            #print("CUTFLOW")
-            #print(output['cutflow_hadhad'][dataset])
 
             output['jet_kin'].fill(
                 dataset=dataset,

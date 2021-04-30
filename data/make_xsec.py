@@ -7,7 +7,7 @@ xs = {
     "QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 248600000.,
     "QCD_HT100to200_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 27990000.,
     "QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 9999999.,#FIXME
-    "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 322600.,
+    "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 322600.,# huge weights
     "QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 29980.,
     "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 6334.,
     "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8": 1088.,
@@ -26,7 +26,7 @@ xs = {
     "DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8": 0.04796,
     "WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8": 52940.,
     "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8": 999999.,#FIXME
-    "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8": 1395.,
+    "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8": 1395.0,
     "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8": 407.9,
     "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8": 57.48,
     "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8": 12.87,
@@ -48,7 +48,17 @@ xs = {
     "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": 88.29,
     "TTToHadronic_TuneCP5_13TeV-powheg-pythia8": 377.96,
     "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8": 365.34,
-    "GluGluHToTauTau": 0.0398
+    "GluGluHToTauTau_M125_13TeV_powheg_pythia8": 48.58*0.0627,
+    "VBFHToTauTau_M125_13TeV_powheg_pythia8":3.782*0.0627,
+    "WminusHToTauTau_M125_13TeV_powheg_pythia8":0.5328*0.0627,
+    "WplusHToTauTau_M125_13TeV_powheg_pythia8":0.8400*0.0627,
+    "ZHToTauTau_M125_13TeV_powheg_pythia8":0.7612*0.0627,
+    "ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8":0.1227*0.0627*3*0.033658,
+    "ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8":0.1227*0.0627*0.2000,
+    "ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8":0.1227*0.0627*0.6991,
+    "ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8":0.5269*0.0627,
+    "GluGluHToTauTau": 0.8045*0.0627, #from lhe (x BR)
+    #"GluGluHToTauTau": 0.0398
 }
 
 with open('xsec.json', 'w') as outfile:

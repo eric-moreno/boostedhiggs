@@ -360,6 +360,8 @@ class HtautauProcessor_LepID(processor.ProcessorABC):
         el_veto_cuts = [(np.bitwise_and(np.right_shift(events.Electron.vidNestedWPBitmap,events.Electron.vidNestedWPBitmap.ones_like()*(3*k)),events.Electron.vidNestedWPBitmap.ones_like()*7) >= events.Electron.VETO) for k in range(10) if k != 7]
         #                  (MinPtCut,GsfEleSCEtaMultiRangeCut,GsfEleDEtaInSeedCut,GsfEleDPhiInCut,GsfEleFull5x5SigmaIEtaIEtaCut,GsfEleHadronicOverEMEnergyScaledCut,GsfEleEInverseMinusPInverseCut,GsfEleRelPFIsoScaledCut,GsfEleConversionVetoCut,GsfEleMissingHitsCut)
         #                   0       ,1                       ,2                  ,3              ,4                            ,5                                  ,6                             ,7                      ,8                      ,9
+        elmask_wp90 = events.Electron.mvaFall17V2noIso_WP90
+        elmask_wp80 = events.Electron.mvaFall17V2noIso_WP80
 
         elmask_tight = el_tight_cuts[0].ones_like().astype(bool)
         for m in el_tight_cuts: elmask_tight = elmask_tight & m
@@ -423,7 +425,8 @@ class HtautauProcessor_LepID(processor.ProcessorABC):
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_veto
+            #& elmask_veto ##FIXME HACKY
+            & elmask_wp80
         )
         ngoodelecs_veto = goodelec_veto.sum()
         leadingelec_veto = events.Electron[goodelec_veto].pad(1, clip=True)
@@ -433,7 +436,8 @@ class HtautauProcessor_LepID(processor.ProcessorABC):
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_loose
+            #& elmask_loose ##FIXME HACKY
+            & elmask_wp90
         )
         ngoodelecs_loose = goodelec_loose.sum()
         leadingelec_loose = events.Electron[goodelec_loose].pad(1, clip=True)

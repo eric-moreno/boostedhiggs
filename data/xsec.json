@@ -46,5 +46,14 @@
     "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": 88.29,
     "TTToHadronic_TuneCP5_13TeV-powheg-pythia8": 377.96,
     "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8": 365.34,
-    "GluGluHToTauTau": 0.0398
+    "GluGluHToTauTau_M125_13TeV_powheg_pythia8": 3.045966,
+    "VBFHToTauTau_M125_13TeV_powheg_pythia8": 0.23713140000000002,
+    "WminusHToTauTau_M125_13TeV_powheg_pythia8": 0.03340656000000001,
+    "WplusHToTauTau_M125_13TeV_powheg_pythia8": 0.052668,
+    "ZHToTauTau_M125_13TeV_powheg_pythia8": 0.047727240000000004,
+    "ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8": 0.00077682226446,
+    "ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8": 0.0015386580000000003,
+    "ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8": 0.005378379039000001,
+    "ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8": 0.033036630000000004,
+    "GluGluHToTauTau": 0.050442150000000005
 }

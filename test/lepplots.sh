@@ -1,6 +1,7 @@
 #!/bin/bash
 
-INFILE=../condor/Sep30_LepID/hists_sum
+INFILE=../condor/Feb05_LepID/hists_sum 
+TAG=LepID_Feb05
 
 for VETO in hv ll mm
 do
@@ -65,29 +66,29 @@ do
         SEL_TEXT='$p_{T}$ > 50'
         ;;
     esac
-    echo python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN}
-    #python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN}
-    #python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadmu --numsel ${SEL_VAR} ${SEL_RANGE} --title "Muon ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadmu_${SEL_VAR}${SELSTR}_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --rebin ${REBIN}
-    #for SAMP in qcd wlnu tt-semilep zll
-    #do
-    #  python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN} --sample ${SAMP}
-    #  python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadmu --numsel ${SEL_VAR} ${SEL_RANGE} --title "Muon ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadmu_${SEL_VAR}${SELSTR}_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --rebin ${REBIN} --sample ${SAMP}
-    #done
+    #echo python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN}
+    python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN}
+    python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadmu --numsel ${SEL_VAR} ${SEL_RANGE} --title "Muon ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadmu_${SEL_VAR}${SELSTR}_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --rebin ${REBIN}
+    for SAMP in qcd wlnu tt-semilep zll
+    do
+      python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadel --numsel ${SEL_VAR} ${SEL_RANGE} --title "Electron ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadel_${SEL_VAR}${SEL_STR}_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --rebin ${REBIN} --sample ${SAMP}
+      python plot_lepid.py --hists ${INFILE} --histname ${HISTNAME} --varname ${VAR} --varlabel "${VAR_LABEL}" --varcuts region hadmu --numsel ${SEL_VAR} ${SEL_RANGE} --title "Muon ID, ${TITLE} (Veto), ${SEL_TEXT}" --label hadmu_${SEL_VAR}${SELSTR}_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --rebin ${REBIN} --sample ${SAMP}
+    done
   done
-  #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base
-  #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base
-  #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadhad --title "${TITLE} (Veto)" --label hadhad_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 0.5 1.5 --densel region hadhad_base
-  #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadel --title "Electron ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadel_${VETO}_miso_lt_0p1 --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base
-  #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadmu --title "Muon ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadmu_${VETO}_miso_lt_0p1 --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base
+  python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base
+  python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base
+  python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadhad --title "${TITLE} (Veto)" --label hadhad_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 0.5 1.5 --densel region hadhad_base
+  python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadel --title "Electron ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadel_${VETO}_miso_lt_0p1 --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base
+  python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadmu --title "Muon ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadmu_${VETO}_miso_lt_0p1 --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base
   for SAMP in qcd wlnu tt-semilep zll
   do
     echo ${SAMP}
-    #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base --sample ${SAMP}
-    #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base --sample ${SAMP}
-    #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadhad --title "${TITLE} (Veto)" --label hadhad_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 0.5 1.5 --densel region hadhad_base --sample ${SAMP}
-    #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadel --title "Electron ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadel_${VETO}_miso_lt_0p1 --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base --sample ${SAMP}
-    #python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadmu --title "Muon ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadmu_${VETO}_miso_lt_0p1 --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base --sample ${SAMP}
+    python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base --sample ${SAMP}
+    python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base --sample ${SAMP}
+    python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel region hadhad --title "${TITLE} (Veto)" --label hadhad_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 0.5 1.5 --densel region hadhad_base --sample ${SAMP}
+    python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadel --title "Electron ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadel_${VETO}_miso_lt_0p1 --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --densel region hadel_base --sample ${SAMP}
+    python plot_lepid_cat.py --hists ${INFILE} --histname lep_kin --varname lep_pt --numsel miso None 0.1 region hadmu --title "Muon ID + miniIso < 0.1, ${TITLE} (Veto)" --label hadmu_${VETO}_miso_lt_0p1 --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --densel region hadmu_base --sample ${SAMP}
   done
-  python plot_lepid_roc.py --hists ${INFILE} --histname lep_kin --varname miso --varlabel miniIso --varcuts region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_miso_0p05_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 1.5 2.5 --point 0.05
-  python plot_lepid_roc.py --hists ${INFILE} --histname lep_kin --varname miso --varlabel miniIso --varcuts region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_miso_0p05_${VETO} --tag LepID --veto ${VETO} --sigsel genhtt 2.5 3.5 --point 0.05
+  python plot_lepid_roc.py --hists ${INFILE} --histname lep_kin --varname miso --varlabel miniIso --varcuts region hadel --title "Electron ID, ${TITLE} (Veto)" --label hadel_miso_0p05_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 1.5 2.5 --point 0.05
+  python plot_lepid_roc.py --hists ${INFILE} --histname lep_kin --varname miso --varlabel miniIso --varcuts region hadmu --title "Muon ID, ${TITLE} (Veto)" --label hadmu_miso_0p05_${VETO} --tag LepID_Feb05 --veto ${VETO} --sigsel genhtt 2.5 3.5 --point 0.05
 done

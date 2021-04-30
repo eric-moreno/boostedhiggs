@@ -16,6 +16,7 @@ from coffea.util import load
 import pickle
 import gzip
 import math
+from cycler import cycler
 
 import argparse
 import processmap
@@ -61,7 +62,7 @@ line_opts = {
 
 overflow_sum = 'allnan'
 
-def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits,blind,solo,sigscale,sigstack,noratio,dosigrat,rebin,overflow,xlog,xexp,norm,density,docomp,comp_var,comp_cut,complabels):
+def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,verbose=False):
     exceptions = ['process', var_name]
     for var in vars_cut:
         exceptions.append(var)
@@ -71,18 +72,18 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         exceptions.append('region')
     if (docomp):
         exceptions.extend(comp_var)
-    print([ax.name for ax in h.axes()])
+    if verbose: print([ax.name for ax in h.axes()])
     x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow_sum)
     for reg in regionsel:
-        print('integrating ',reg)
+        if verbose: print('integrating ',reg)
         x = x.integrate('region',reg)
     for var,val in vars_cut.items():
         if var!=var_name:
-            print('integrating ',var,val[0],val[1])
-            x = x.integrate(var,slice(val[0],val[1]))
+            if verbose: print('integrating ',var,val[0],val[1])
+            x = x.integrate(var,slice(float(val[0]) if val[0] is not None else None,float(val[1]) if val[1] is not None else None),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
             #x = x.integrate(var,slice(val[0],val[1]),overflow=overflow)
     if var_name in vars_cut.keys():
-        x = x[:, vars_cut[var_name][0]:vars_cut[var_name][1]]
+        x = x[:, float(vars_cut[var_name][0]) if vars_cut[var_name][0] is not None else None:float(vars_cut[var_name][1]) if vars_cut[var_name][1] is not None else None]
 
     xaxis = var_name
     x.axis(xaxis).label = var_label
@@ -95,8 +96,11 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     elif (noratio and dosigrat): fig, (ax,axs) = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1],'hspace': 0.1})
     else: fig, (ax,axr) = plt.subplots(2, 1, sharex='col', gridspec_kw={'height_ratios': [4, 1],'hspace': 0.1})
 
-    if (rebin>1): 
-        x = x.rebin(xaxis,rebin)
+    if len(rebin)==1:
+        if (rebin[0]>1): 
+            x = x.rebin(xaxis,int(rebin[0]))
+    else:
+        x = x.rebin(xaxis,hist.Bin(xaxis, var_label, rebin))
  
     if (solo):
         if (sample=='sig'):
@@ -154,9 +158,9 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
                     clis[ic+1] = clis[ic+1] + 1
                     clis[ic] = 0
         #{'new_bin': (slice, ...), ...}
-        print(comp_map)
+        if verbose: print(comp_map)
         x = x.group(old_axes=tuple(comp_var), new_axis=comp_axis, mapping=comp_map)
-        print(x.values())
+        if verbose: print(x.values())
         hist.plot1d(x,
                 overlay='compsel',ax=ax,
                 clear=False,
@@ -176,47 +180,80 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
 
         for var,val in sig_cut.items():
             if var!=var_name:
-                print('integrating ',var,val[0],val[1])
-                x_nobkg = x_nobkg.integrate(var,slice(val[0],val[1]))
+                if verbose: print('integrating ',var,val[0],val[1])
+                x_nobkg = x_nobkg.integrate(var,slice(val[0],val[1]),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
                 #x = x.integrate(var,slice(val[0],val[1]),overflow=overflow)
         if var_name in vars_cut.keys():
-            x_nobkg = x_nobkg[:, vars_cut[var_name][0]:vars_cut[var_name][1]]
+            x_nobkg = x_nobkg[:, float(vars_cut[var_name][0]) if vars_cut[var_name][0] is not None else None:float(vars_cut[var_name][1]) if vars_cut[var_name][1] is not None else None]
         x = x.sum(*[ax for ax in x.axes() if ax.name in sig_cut],overflow='allnan')
 
         x_nosig = x[nosig]
+
         # normalize to lumi
         x_nosig.scale({p: lumifb for p in x_nosig.identifiers('process')}, axis="process")
         all_bkg = 0
         sampcount = 0
+        samp_order = []
         for key,val in x_nosig.values().items():
             sampcount = sampcount + 1
-            all_bkg+=val.sum()
+            samp_sum = val.sum()
+            all_bkg+=samp_sum
+            samp_order.append([str(key)[2:-3],samp_sum])
+    
+        x_nobkg.scale({p: lumifb*float(sigscale) for p in x_nobkg.identifiers('process')}, axis="process")
+    
+        if verbose: print(x_nobkg.identifiers('process'))
+    
+        sig_order = []
+        all_sig = 0
+        for key,val in x_nobkg.values().items():
+            samp_sum = val.sum()
+            all_sig+=samp_sum
+            sig_order.append([str(key)[2:-3],samp_sum])
+            if verbose: print(key,val)
+
+        samp_order.sort(key=lambda x : x[1],reverse=True)
+        if verbose: print(samp_order)
+        the_order = []
+        for lab in samp_order:
+            for ident in x_nosig.identifiers('process'):
+                if (lab[0] == ident.name):
+                    the_order.insert(0,ident)
+                    break
+        if verbose: print(the_order)
+
+        if colormap:
+            color_order = [color_map[s[0]] for s in samp_order]
+            if (sigstack):
+                sig_order.sort(key=lambda x : x[1],reverse=True)
+                color_order = [color_map[s[0]] for s in sig_order] + color_order
+                
+            custom_cycler = (cycler(color=color_order))
+            ax.set_prop_cycle(custom_cycler)
+
         if (all_bkg>0.): hist.plot1d(x_nosig,
                     overlay='process',ax=ax,
                     clear=False,
                     stack=(sampcount>1),
+                    order=the_order,
                     fill_opts=fill_opts,
                     error_opts=err_opts,
                     overflow=overflow
                     )
-    
-        x_nobkg.scale({p: lumifb*float(sigscale) for p in x_nobkg.identifiers('process')}, axis="process")
-    
-        all_sig = 0
-        for key,val in x_nobkg.values().items():
-            all_sig +=val.sum()
         if (all_sig>0.): hist.plot1d(x_nobkg,ax=ax,
                     overlay='process',
                     clear=False,
                     line_opts=line_opts,
                     overflow=overflow)
-    
+
         if (sigstack):
             old_handles, old_labels = ax.get_legend_handles_labels()
             ax.cla()
             x_comb = x_nobkg+x_nosig
             #x.axis('process').sorting = 'integral'
             the_order = []
+            if colormap:
+                ax.set_prop_cycle(custom_cycler)
             for lab in old_labels:
                 for ident in x_comb.identifiers('process'):
                     if (lab == ident.label):
@@ -241,7 +278,24 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         x_nobkg.scale({p: 1./(lumifb*float(sigscale)) for p in x_nobkg.identifiers('process')}, axis="process")
         x_allsig = x_nobkg.sum("process",overflow=overflow)
 
-        if (all_data>0 and not blind):
+        if not blind:
+            blindi = 0
+        else:
+            blindi = len(blind)
+
+        if (all_data>0 and blindi!=1):
+            if blindi>1:
+                bi = blindi - 2
+                x_data_tmp = x_data[:,float(blind[bi]) if blind[bi]!='None' else None:float(blind[bi+1]) if blind[bi+1]!='None' else None]
+                x_allbkg_blind_tmp = x_allbkg[float(blind[bi]) if blind[bi]!='None' else None:float(blind[bi+1]) if blind[bi+1]!='None' else None]
+                while bi > 1:
+                    bi = bi - 2
+                    x_data_tmp += x_data[:,float(blind[bi]) if blind[bi]!='None' else None:float(blind[bi+1]) if blind[bi+1]!='None' else None]
+                    x_allbkg_blind_tmp += x_allbkg[float(blind[bi]) if blind[bi]!='None' else None:float(blind[bi+1]) if blind[bi+1]!='None' else None]
+                x_data = x_data_tmp
+                x_allbkg_blind = x_allbkg_blind_tmp
+            else:
+                x_allbkg_blind = x_allbkg
             hist.plot1d(x_data,ax=ax,
                     overlay='process',
                     clear=False,
@@ -252,7 +306,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             x_data = x_data.sum("process",overflow=overflow)
             x_data.label = 'Data/MC'
             if (not noratio):
-                hist.plotratio(x_data,x_allbkg,ax=axr,
+                hist.plotratio(x_data,x_allbkg_blind,ax=axr,
                     unc='num',
                     clear=False,
                     error_opts=err_opts_data,
@@ -264,7 +318,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             x_intsosqrtb = x_allsig.copy(content=False)
             sosqrtb = {}
             sosqrtb[var_name] = np.array(x_allsig.axis(var_name).centers())
-            sosqrtb["weight"] = np.nan_to_num(np.divide(np.array([sum(x_allsig.values()[()][i:]) for i in range(len(x_allsig.values()[()]))]),np.sqrt([sum(x_allbkg.values()[()][i:]) for i in range(len(x_allbkg.values()[()]))])),0.)
+            sosqrtb["weight"] = np.clip(np.nan_to_num(np.divide(np.array([sum(x_allsig.values()[()][i:]) for i in range(len(x_allsig.values()[()]))]),np.sqrt([sum(x_allbkg.values()[()][i:]) for i in range(len(x_allbkg.values()[()]))]))),-100.,100.)
             x_intsosqrtb.fill(**sosqrtb)
             x_intsosqrtb.label = r'$S/\sqrt{B}$'
             hist.plot1d(x_intsosqrtb,ax=axs,
@@ -275,8 +329,8 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             axs.get_legend().set_visible(False)
     
     
-        print('MC: %.4f Sig: %.4f - Data: %.4f'%(all_bkg,all_sig,all_data))
-        print('MC: %.4f Sig: %.4f S/sqrt(B): %.4f - Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data))
+        if verbose: print('MC: %.4f Sig: %.4f - Data: %.4f'%(all_bkg,all_sig,all_data if blindi==0 else 0.))
+        if verbose: print('MC: %.4f Sig: %.4f S/sqrt(B): %.4f - Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data if blindi==0 else 0.))
 
     ax.autoscale(axis='x', tight=True)
     if len(xlimits)==2:
@@ -311,12 +365,13 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     old_handles, old_labels = ax.get_legend_handles_labels()
     new_labels = []
     for xl in old_labels:
-        if ('ggH' in xl and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
+        if ('H(125)' in xl and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
         new_labels.append(xl)
     if not docomp:
         leg = ax.legend(handles=old_handles,labels=new_labels,title=r'%s'%plottitle,frameon=True,framealpha=1.0,facecolor='white',ncol=(2 if len(x.identifiers('process')) > 4 else 1))
     else:
         leg = ax.legend(handles=old_handles,labels=new_labels,title=r'%s'%plottitle,frameon=True,framealpha=1.0,facecolor='white',ncol=(2 if len(x.identifiers('compsel')) > 4 else 1))
+    ax.set_ylim(ax.get_ylim()[0],ax.get_ylim()[1]*1.3)
     lumi = ax.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     cmstext = ax.text(0., 1., "CMS",fontsize=19,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
     issim = True
@@ -327,8 +382,8 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         issim = False
     addtext = ax.text(0.085, 1., "%sPreliminary"%("Simulation " if issim else ""),fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
     #hep.cms.cmslabel(ax, data=False, paper=False, year='2017')
-    fig.savefig("%s_%s_%s_%s_lumi%i.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb))
-    print("%s_%s_%s_%s_lumi%i.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb))
+    fig.savefig("%s_%s_%s_%s_lumi%i%s.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
+    if verbose: print("%s_%s_%s_%s_lumi%i%s.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
     ax.semilogy()
     minvals = []
     for xd in x.values():
@@ -346,12 +401,14 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     if (docomp or solo) and density:
         ax.set_ylim(ax.get_ylim()[1]/100.,ax.get_ylim()[1]*10.)
     else:
-        ax.set_ylim(logmin/10. if logmin>1. else 0.1, ax.get_ylim()[1]*10.)
-    fig.savefig("%s_%s_%s_%s_lumi%i_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb))
-    print("%s_%s_%s_%s_lumi%i_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb))
+        ax.set_ylim(logmin/10. if logmin>1. else 0.1, ax.get_ylim()[1]*80.)
+    fig.savefig("%s_%s_%s_%s_lumi%i%s_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
+    if verbose: print("%s_%s_%s_%s_lumi%i%s_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
 
-def getPlots(args):
-    print(args.lumi)
+    plt.close('all') 
+
+def getPlots(args,returnHist=False):
+    if args.verbose: print(args.lumi)
     lumifb = float(args.lumi)
     tag = args.tag
     savename = args.savetag
@@ -387,7 +444,7 @@ def getPlots(args):
           vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), None]
         else:
           vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), float(args.sel[vi*3+2])]
-    print(vars_cut)
+    if args.verbose: print(vars_cut)
     sig_cut =  {}
     if (len(args.sigsel)%3==0):
       for vi in range(int(len(args.sigsel)/3)):
@@ -397,7 +454,7 @@ def getPlots(args):
           sig_cut[args.sigsel[vi*3]] = [float(args.sigsel[vi*3+1]), None]
         else:
           sig_cut[args.sigsel[vi*3]] = [float(args.sigsel[vi*3+1]), float(args.sigsel[vi*3+2])]
-    print(sig_cut)
+    if args.verbose: print(sig_cut)
     comp_var = []
     comp_i0 = []
     for iv,v in enumerate(args.compsel):
@@ -417,20 +474,27 @@ def getPlots(args):
         nlabels = int((comp_i1[ii]-comp_i0[ii]-1)/2)
         comp_labels.append(args.complabels[label_track:label_track+nlabels])
         label_track = label_track + nlabels
-    print(comp_labels)
-    print(comp_var,comp_cut)
+    if args.verbose: print(comp_labels)
+    if args.verbose: print(comp_var,comp_cut)
     h = hists_mapped[hist_name]
-    print(h)
+    if args.verbose: print(h)
 
     normed = args.norm
     if normed is not None:
         normed = float(normed)
-    print('norm')
-    print(normed)
+    if args.verbose: print('norm')
+    if args.verbose: print(normed)
 
-    drawStack(h,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,args.regions,savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels)
+    if args.verbose: print('rebin',args.rebin)
 
-    os.chdir(pwd)
+    if not returnHist:
+        drawStack(h,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,args.regions,savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors)
+        os.chdir(pwd)
+        return None
+
+    else:
+        os.chdir(pwd)
+        return h
 
 if __name__ == "__main__":
 
@@ -462,13 +526,15 @@ if __name__ == "__main__":
     parser.add_argument('--noratio',    dest='noratio',    action='store_true',  help='noratio')
     parser.add_argument('--dosigrat',   dest='dosigrat',   action='store_true',  help='dosigrat')
     parser.add_argument('--overflow',   dest='overflow',   default='none',       help='overflow')
-    parser.add_argument('--rebin',      dest='rebin',      default=1,            help='rebin',   type=int)
+    parser.add_argument('--rebin',      dest='rebin',      default=[1],          help='rebin',   type=float,   nargs='+')
     parser.add_argument('--norm',       dest='norm',       default=None,         help='norm')
     parser.add_argument('--density',    dest='density',    action='store_true',  help='density')
     parser.add_argument('--sample',     dest='sample',     default='all',        help='sample')
     parser.add_argument('--comp',       dest='comp',       action='store_true',  help='comp')
     parser.add_argument('--compsel',    dest='compsel',    default='',           help='compsel',     nargs='+')
     parser.add_argument('--complabels', dest='complabels', default='',           help='complabels',  nargs='+')
+    parser.add_argument('--defcolors',  dest='defcolors',  action='store_false', help='defcolors')
+    parser.add_argument('--verbose',    dest='verbose',    action='store_true',  help='verbose')
     args = parser.parse_args()
 
     getPlots(args)

@@ -47,14 +47,14 @@ histnames = {
     'hadmu': "trigeff_m",
 }
 varcuts_data = {
-    "hadhad": {"region": "hadhad_signal_withb_50", "trig_pass_ref": [0.5, 1.5]},
-    "hadel": {"region": "hadel_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
-    "hadmu": {"region": "hadmu_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadhad": {"region": "hadhad_signal_0", "trig_pass_ref": [0.5, 1.5]},
+    "hadel": {"region": "hadel_signal_0", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadmu": {"region": "hadmu_signal_0", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
 }
 varcuts_mc = {
-    "hadhad": {"region": "hadhad_signal_withb_50", "trig_pass_ref": [0.5, 1.5]},
-    "hadel": {"region": "hadel_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
-    "hadmu": {"region": "hadmu_signal_50", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadhad": {"region": "hadhad_signal_0", "trig_pass_ref": [0.5, 1.5]},
+    "hadel": {"region": "hadel_signal_0", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
+    "hadmu": {"region": "hadmu_signal_0", "trig_pass_ref": [0.5, 1.5], "jet_msd": [40.,None]},
 }
 var1names = {
     "hadhad": "jet_pt",
@@ -67,9 +67,9 @@ var1labels = {
     "hadmu": "$p_{T}(jet)$",
 }
 rebin1 = {
-    "hadhad": [300.,350.,400.,450.,500.,550.,600.,650.,700.],
-    "hadel": [300.,350.,400.,500.,700.],
-    "hadmu": [300.,350.,400.,500.,700.],
+    "hadhad": [200.,250.,300.,350.,400.,450.,500.,550.,600.,650.,950.],
+    "hadel": [200.,250.,300.,350.,400.,500.,950.],
+    "hadmu": [200.,250.,300.,350.,400.,500.,950.],
 }
 var2names = {
     "hadhad": "jet_msd",
@@ -87,9 +87,9 @@ rebin2 = {
     "hadmu": [20.,32.,44.,56.,68.,92.,116.,140.],
 }
 numsels = {
-    "hadhad": {"trig_pass_hadhad": [0.5, 1.5]},
-    "hadel": {"trig_pass_hadel": [0.5, 1.5]},
-    "hadmu": {"trig_pass_hadmu": [0.5, 1.5]},
+    "hadhad": {"trig_pass": [0.5, 1.5]},
+    "hadel": {"trig_pass": [0.5, 1.5]},
+    "hadmu": {"trig_pass": [0.5, 1.5]},
 }
 
 #overflow_behavior = 'all'

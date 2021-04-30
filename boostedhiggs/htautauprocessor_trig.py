@@ -6,6 +6,7 @@ import awkward
 from .common import (
     getBosons,
     matchedBosonFlavor,
+    isOverlap,
 )
 from .corrections import (
     corrected_msoftdrop,
@@ -252,7 +253,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
                 ],
                 "hadmu":[
                     #"PFMETNoMu110_PFMHTNoMu110_IDTight",
-                    #'Ele35_WPTight_Gsf',
+                    'Ele35_WPTight_Gsf',
                     'Ele50_CaloIdVT_GsfTrkIdT_PFJet165',
                     'Ele115_CaloIdVT_GsfTrkIdT',
                 ],
@@ -260,10 +261,11 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         }
 
         h_pt_bin = hist.Bin('h_pt', r'Higgs $p_{T}$ [GeV]', 10, 200, 700)
-        jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 10, 300, 800)
+        jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 15, 200, 950)
         lep_pt_bin = hist.Bin('lep_pt', r'Lepton $p_{T}$ [GeV]', 10, 20., 140)
         jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{SD}$ [GeV]', 10, 0., 100.)
         jet_lep_dr_bin = hist.Bin('jet_lep_dr', r'Jet-lepton $\Delta R$', 10, 0., 1.)
+        lepdr_bin = hist.Bin('lepdr', r'Jet-lepton $\Delta R$', 2, 0., 1.6)
         lep_miso_bin = hist.Bin('lep_miso', r'Lepton miniIso', 10, 0., 1.)
         n2ddt_bin = hist.Bin('n2ddt',r'$N_{2}^{DDT}$',10,-0.25,0.25)
 
@@ -279,9 +281,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                hist.Bin('trig_pass_hadhad', r'Trigger Pass Bit (HadHad)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadel', r'Trigger Pass Bit (HadEl)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadmu', r'Trigger Pass Bit (HadMu)', 2, -0.5, 1.5),
+                hist.Bin('trig_pass', r'Trigger Pass Bit (Sig)', 2, -0.5, 1.5),
                 hist.Bin('trig_pass_ref', r'Trigger Pass Bit (Reference)', 2, -0.5, 1.5),
                 h_pt_bin, jet_pt_bin, lep_pt_bin,
             ),
@@ -289,32 +289,28 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                hist.Bin('trig_pass_hadhad', r'Trigger Pass Bit (HadHad)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadel', r'Trigger Pass Bit (HadEl)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadmu', r'Trigger Pass Bit (HadMu)', 2, -0.5, 1.5),
+                hist.Bin('trig_pass', r'Trigger Pass Bit (Sig)', 2, -0.5, 1.5),
                 hist.Bin('trig_pass_ref', r'Trigger Pass Bit (Reference)', 2, -0.5, 1.5),
-                jet_msd_bin, jet_pt_bin, lep_pt_bin,
+                jet_msd_bin, jet_pt_bin, lep_pt_bin, lepdr_bin,
             ),
             'trigeff_dr': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
                 hist.Cat('region', 'Region'),
-                hist.Bin('trig_pass_hadhad', r'Trigger Pass Bit (HadHad)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadel', r'Trigger Pass Bit (HadEl)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadmu', r'Trigger Pass Bit (HadMu)', 2, -0.5, 1.5),
+                hist.Bin('trig_pass', r'Trigger Pass Bit (Sig)', 2, -0.5, 1.5),
                 hist.Bin('trig_pass_ref', r'Trigger Pass Bit (Reference)', 2, -0.5, 1.5),
                 jet_lep_dr_bin, jet_pt_bin, lep_pt_bin,
             ),
-            'trigeff_miso': hist.Hist(
-                'Events',
-                hist.Cat('dataset', 'Dataset'),
-                hist.Cat('region', 'Region'),
-                hist.Bin('trig_pass_hadhad', r'Trigger Pass Bit (HadHad)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadel', r'Trigger Pass Bit (HadEl)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_hadmu', r'Trigger Pass Bit (HadMu)', 2, -0.5, 1.5),
-                hist.Bin('trig_pass_ref', r'Trigger Pass Bit (Reference)', 2, -0.5, 1.5),
-                lep_miso_bin, jet_pt_bin, lep_pt_bin,
-            ),
+#            'trigeff_miso': hist.Hist(
+#                'Events',
+#                hist.Cat('dataset', 'Dataset'),
+#                hist.Cat('region', 'Region'),
+#                hist.Bin('trig_pass_hadhad', r'Trigger Pass Bit (HadHad)', 2, -0.5, 1.5),
+#                hist.Bin('trig_pass_hadel', r'Trigger Pass Bit (HadEl)', 2, -0.5, 1.5),
+#                hist.Bin('trig_pass_hadmu', r'Trigger Pass Bit (HadMu)', 2, -0.5, 1.5),
+#                hist.Bin('trig_pass_ref', r'Trigger Pass Bit (Reference)', 2, -0.5, 1.5),
+#                lep_miso_bin, jet_pt_bin, lep_pt_bin,
+#            ),
         })
 
     @property
@@ -340,6 +336,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         trigger_ref["hadhad"] = np.zeros(events.size, dtype='bool')
         trigger_ref["hadel"] = np.zeros(events.size, dtype='bool')
         trigger_ref["hadmu"] = np.zeros(events.size, dtype='bool')
+
         for t in self._ref_triggers[self._year]["hadhad"]:
             trigger_ref["hadhad"] = trigger_ref["hadhad"] | events.HLT[t]
         for t in self._ref_triggers[self._year]["hadel"]:
@@ -347,8 +344,9 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         for t in self._ref_triggers[self._year]["hadmu"]:
             trigger_ref["hadmu"] = trigger_ref["hadmu"] | events.HLT[t]
 
-        if (isRealData): overlap_removal = isOverlap(events,dataset,self._ref_triggers[self._year]["hadhad"]+self._ref_triggers[self._year]["hadel"]+self._ref_triggers[self._year]["hadmu"])
-        else: overlap_removal = np.ones(events.size, dtype='bool')
+        #if (isRealData): overlap_removal = isOverlap(events,dataset,self._ref_triggers[self._year]["hadhad"]+self._ref_triggers[self._year]["hadel"]+self._ref_triggers[self._year]["hadmu"])
+        #else: overlap_removal = np.ones(events.size, dtype='bool')
+        overlap_removal = np.ones(events.size, dtype='bool')
 
         trigger_hadhad = np.zeros(events.size, dtype='bool')
         for t in self._hadhad_triggers[self._year]:
@@ -398,17 +396,20 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         best_jet_idx = ak8_met_dphi.argmin()
         #best_jet_idx = candidatejets.pt.argmax()
         candidatejet = candidatejets[best_jet_idx]
+
         candidatejet_rho = 2 * np.log(candidatejet.msdcorr / candidatejet.pt)
         selection.add('jetacceptance', (
-            (candidatejet.pt > 300)
+            (candidatejet.pt > 200)
             #& (candidatejet.msdcorr > 40.)
             & (abs(candidatejet.eta) < 2.4)
             & (candidatejet_rho > -6.)
-            & (candidatejet_rho < -2.1)
+            & (candidatejet_rho < -1.4)
         ).any())
         selection.add('jetid', (candidatejet.isTight).any())
         #selection.add('n2ddt', (candidatejet.n2ddt < 0.).any())
         #print(np.histogram(candidatejet.pt.fillna(0).flatten()))
+
+        selection.add('jet_msd', (candidatejet.msdcorr > 50.).any())
 
         jets = events.Jet[
             (events.Jet.pt > 30.)
@@ -418,11 +419,12 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         # only consider first 4 jets to be consistent with old framework
         jets = jets[:, :4]
         ak4_ak8_pair = jets.cross(candidatejet, nested=True)
-        dphi = abs(ak4_ak8_pair.i0.delta_phi(ak4_ak8_pair.i1))
-        ak4_opposite = jets[(dphi > np.pi / 2).all()]
+        ak4_ak8_dphi = abs(ak4_ak8_pair.i0.delta_phi(ak4_ak8_pair.i1))
+        ak4_ak8_dr = ak4_ak8_pair.i0.delta_r(ak4_ak8_pair.i1)
+        ak4_opposite = jets[(ak4_ak8_dphi > np.pi / 2).all()]
         #selection.add('antiak4btagMediumOppHem', ak4_opposite.btagDeepB.max() < BTagEfficiency.btagWPs[self._year]['medium'])
         selection.add('antiak4btagMediumOppHem', ak4_opposite.btagDeepB.max() < self._btagWPs['medium'][self._year])
-        ak4_away = jets[(dphi > 0.8).all()]
+        ak4_away = jets[(ak4_ak8_dr > 0.8).all()]
         #selection.add('ak4btagMedium08', ak4_away.btagDeepB.max() > BTagEfficiency.btagWPs[self._year]['medium'])
         selection.add('ak4btagMedium08', ak4_away.btagDeepB.max() > self._btagWPs['medium'][self._year])
 
@@ -461,14 +463,15 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_tight
+            #& elmask_tight
+            & events.Electron.mvaFall17V2noIso_WP80
             #& (events.Electron.miniPFRelIso_all < 0.1)
         )
         ngoodelecs = goodelec.sum()
         leadingelec = events.Electron[goodelec].pad(1, clip=True)
 
         nmuons = (
-            (events.Muon.pt > 15)
+            (events.Muon.pt > 10)
             & (abs(events.Muon.eta) < 2.4)
             #& (events.Muon.pfRelIso04_all < 0.25)
             #& (np.abs(events.Muon.dz) < 0.1)
@@ -478,32 +481,33 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         ).sum()
 
         nelectrons = (
-            (events.Electron.pt > 15)
+            (events.Electron.pt > 10)
             & (abs(events.Electron.eta) < 2.5)
-            & (events.Electron.cutBased >= events.Electron.VETO)
+            & (events.Electron.cutBased >= events.Electron.LOOSE)
             #& (events.Electron.cutBased_HEEP).astype(bool)
             #& elmask_loose
         ).sum()
 
         trigmuon = (
             (events.Muon.pt > 55)
-            & (np.abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.eta) < 2.4)
             #& (events.Muon.sip3d < 4)
             #& (np.abs(events.Muon.dz) < 0.1)
             #& (np.abs(events.Muon.dxy) < 0.05)
-            & (events.Muon.tightId).astype(bool)
+            & (events.Muon.mediumId).astype(bool)
             #& (events.Muon.highPtId).astype(bool)
-            #& (events.Muon.miniPFRelIso_all < 0.1)
+            & (events.Muon.miniPFRelIso_all < 0.1)
         )
         ntrigmuons = trigmuon.sum()
 
         trigelec = (
-            (events.Electron.pt > 55)
+            (events.Electron.pt > 60)
             & (abs(events.Electron.eta) < 2.5)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            & elmask_tight
-            #& (events.Electron.miniPFRelIso_all < 0.1)
+            #& elmask_tight
+            & events.Electron.mvaFall17V2noIso_WP80
+            & (events.Electron.miniPFRelIso_all < 0.1)
         )
         ntrigelecs = trigelec.sum()
 
@@ -529,9 +533,12 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         leadinglep_miso["hadel"] = el_miso.pad(1, clip=True)
         leadinglep_miso["hadmu"] = mu_miso.pad(1, clip=True)
 
+        selection.add('mu_miso', (mu_miso < 0.1).all())
+        selection.add('el_miso', (el_miso < 0.1).all())
+
         selection.add('noleptons', (nmuons == 0) & (nelectrons == 0) & (ntaus == 0) & (ngoodmuons == 0) & (ngoodelecs == 0))
-        selection.add('trigmuons', (ntrigmuons >= 1) & (ntaus == 0))
-        selection.add('trigelecs', (ntrigelecs >= 1) & (ntaus == 0))
+        selection.add('trigmuons', (ntrigmuons == 1) & (ntaus == 0))
+        selection.add('trigelecs', (ntrigelecs == 1) & (ntaus == 0))
         selection.add('onemuon', (ngoodmuons == 1) & (ntaus == 0))
         selection.add('oneelec', (ngoodelecs == 1) & (ntaus == 0))
         selection.add('muonkin', (
@@ -574,10 +581,16 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
 
         regions = {
             #'hadhad_signal': ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'n2ddt', 'met', 'noleptons'],#, 'antiak4btagMediumOppHem'
-            **{'hadhad_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'trigmuons'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
-            **{'hadhad_signal_withb_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'ak4btagMedium08', 'trigmuons'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
-            **{'hadmu_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadmu_trigger', 'jetid', 'met%s'%metcut, 'onemuon', 'trigelecs'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
-            **{'hadel_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadel_trigger', 'jetid', 'met%s'%metcut, 'oneelec', 'trigmuons'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadhad_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'trigmuons', 'muonDphiAK8'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            #**{'hadhad_signal_withb_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'ak4btagMedium08', 'trigmuons'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadmu_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadmu_trigger', 'jetid', 'met%s'%metcut, 'onemuon', 'trigelecs', 'elecDphiAK8'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadel_signal_%s'%metcut: ['met_filters','jetacceptance', 'hadel_trigger', 'jetid', 'met%s'%metcut, 'oneelec', 'trigmuons', 'muonDphiAK8'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadhad_signal_w_miso_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'trigmuons', 'muonDphiAK8'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadmu_signal_w_miso_%s'%metcut: ['met_filters','jetacceptance', 'hadmu_trigger', 'jetid', 'met%s'%metcut, 'onemuon', 'trigelecs', 'elecDphiAK8', 'mu_miso'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadel_signal_w_miso_%s'%metcut: ['met_filters','jetacceptance', 'hadel_trigger', 'jetid', 'met%s'%metcut, 'oneelec', 'trigmuons', 'muonDphiAK8', 'el_miso'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadhad_signal_w_jmsd_%s'%metcut: ['met_filters','jetacceptance', 'hadhad_trigger', 'jetid', 'met%s'%metcut, 'trigmuons', 'muonDphiAK8', 'jet_msd'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadmu_signal_w_jmsd_%s'%metcut: ['met_filters','jetacceptance', 'hadmu_trigger', 'jetid', 'met%s'%metcut, 'onemuon', 'trigelecs', 'elecDphiAK8', 'mu_miso', 'jet_msd'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
+            **{'hadel_signal_w_jmsd_%s'%metcut: ['met_filters','jetacceptance', 'hadel_trigger', 'jetid', 'met%s'%metcut, 'oneelec', 'trigmuons', 'muonDphiAK8', 'el_miso', 'jet_msd'] for metcut in ['0','50','100']},#,'150','200']},#, 'antiak4btagMediumOppHem'
             #'hadmu_control': ['met_filters','jetacceptance', 'hadmu_trigger', 'jetid', 'ak4btagMedium08', 'met', 'onemuon', 'muonkin', 'muonDphiAK8'],
             #'hadel_control': ['met_filters','jetacceptance', 'hadel_trigger', 'jetid', 'ak4btagMedium08', 'met', 'oneelec', 'eleckin', 'elecDphiAK8'],
             #'noselection': [],
@@ -595,7 +608,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         for cut in regions['hadmu_signal_50']:
             allcuts_hadmu.add(cut)
             output['cutflow_hadmu'][dataset][cut] += float(weights.weight()[selection.all(*allcuts_hadmu)].sum())
-        for cut in regions['hadhad_signal_withb_50']:
+        for cut in regions['hadhad_signal_50']:
             allcuts_hadhad.add(cut)
             output['cutflow_hadhad'][dataset][cut] += float(weights.weight()[selection.all(*allcuts_hadhad)].sum())
 
@@ -610,9 +623,15 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
         ]
 
         def fill(region, systematic, wmod=None):
-            if (region.startswith("hadhad")): chan = "hadhad"
-            elif (region.startswith("hadel")): chan = "hadel"
-            elif (region.startswith("hadmu")): chan = "hadmu"
+            if (region.startswith("hadhad")): 
+                 chan = "hadhad"
+                 trigger_chan = trigger_hadhad
+            elif (region.startswith("hadel")): 
+                 chan = "hadel"
+                 trigger_chan = trigger_hadel
+            elif (region.startswith("hadmu")): 
+                 chan = "hadmu"
+                 trigger_chan = trigger_hadmu
             else: chan = ""
             selections = regions[region]
             cut = selection.all(*selections)
@@ -628,9 +647,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
             output['trigeff_h'].fill(
                 dataset=dataset,
                 region=region,
-                trig_pass_hadhad=trigger_hadhad[cut],
-                trig_pass_hadel=trigger_hadel[cut],
-                trig_pass_hadmu=trigger_hadmu[cut],
+                trig_pass=trigger_chan[cut],
                 trig_pass_ref=trigger_ref[chan][cut],
                 h_pt=normalize(genBosonPt),
                 jet_pt=normalize(candidatejet.pt),
@@ -641,13 +658,12 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
             output['trigeff_m'].fill(
                 dataset=dataset,
                 region=region,
-                trig_pass_hadhad=trigger_hadhad[cut],
-                trig_pass_hadel=trigger_hadel[cut],
-                trig_pass_hadmu=trigger_hadmu[cut],
+                trig_pass=trigger_chan[cut],
                 trig_pass_ref=trigger_ref[chan][cut],
                 jet_msd=normalize(candidatejet.msdcorr),
                 jet_pt=normalize(candidatejet.pt),
                 lep_pt=normalize(leadinglep[chan].pt),
+                lepdr=normalize(lep_ak8_pair[chan].i0.delta_r(lep_ak8_pair[chan].i1)),
                 #n2ddt=normalize(candidatejet.n2ddt),
                 #weight=weight,
             )
@@ -655,9 +671,7 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
             output['trigeff_dr'].fill(
                 dataset=dataset,
                 region=region,
-                trig_pass_hadhad=trigger_hadhad[cut],
-                trig_pass_hadel=trigger_hadel[cut],
-                trig_pass_hadmu=trigger_hadmu[cut],
+                trig_pass=trigger_chan[cut],
                 trig_pass_ref=trigger_ref[chan][cut],
                 jet_lep_dr=normalize(lep_ak8_pair[chan].i0.delta_r(lep_ak8_pair[chan].i1)),
                 jet_pt=normalize(candidatejet.pt),
@@ -665,18 +679,18 @@ class HtautauProcessor_Trigger(processor.ProcessorABC):
 #                #weight=weight,
             )
 
-            output['trigeff_miso'].fill(
-                dataset=dataset,
-                region=region,
-                trig_pass_hadhad=trigger_hadhad[cut],
-                trig_pass_hadel=trigger_hadel[cut],
-                trig_pass_hadmu=trigger_hadmu[cut],
-                trig_pass_ref=trigger_ref[chan][cut],
-                lep_miso=normalize(leadinglep_miso[chan]),
-                jet_pt=normalize(candidatejet.pt),
-                lep_pt=normalize(leadinglep[chan].pt),
-#                #weight=weight,
-            )
+#            output['trigeff_miso'].fill(
+#            #    dataset=dataset,
+#                region=region,
+#                trig_pass_hadhad=trigger_hadhad[cut],
+#                trig_pass_hadel=trigger_hadel[cut],
+#                trig_pass_hadmu=trigger_hadmu[cut],
+#                trig_pass_ref=trigger_ref[chan][cut],
+#                lep_miso=normalize(leadinglep_miso[chan]),
+#                jet_pt=normalize(candidatejet.pt),
+#                lep_pt=normalize(leadinglep[chan].pt),
+##                #weight=weight,
+#            )
 
         for region in regions:
             for systematic in systematics:
