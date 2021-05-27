@@ -4,12 +4,16 @@ import plot_stack
 import plot_cutflow
 import plot_2d
 
-infilePre = '../condor/Apr29_NN/hists_sum_'
+infilePre = '../condor/May14_NN/hists_sum_'
 useData = True
 lumi = 36.7
-tag = "NNTest_Apr29"
+tag = "NNTest_May14"
 massVar = "massreg"
+massRange = [50.,210.]
 massLabel = r"$m_{NN}$"
+
+hadHadCut = 0.9999
+hadLepCut = 0.95
 
 histListBase = [
   #"jet_nn_kin", 
@@ -24,6 +28,8 @@ srHist = "met_nn_kin"
 regionList = [
   "hadhad_signal",
   "hadhad_signal_met",
+  "hadhad_cr_b",
+  "hadhad_cr_b_met",
   "hadhad_cr_mu",
   "hadhad_cr_mu_iso",
   "hadhad_cr_b_mu",
@@ -41,6 +47,8 @@ regionList = [
 cutList = [
   "cutflow_hadhad",
   "cutflow_hadhad_met",
+  "cutflow_hadhad_cr_b",
+  "cutflow_hadhad_cr_b_met",
   "cutflow_hadhad_cr_b_mu",
   "cutflow_hadhad_cr_b_mu_iso",
   "cutflow_hadhad_cr_mu",
@@ -62,8 +70,8 @@ plotList = {
     "titleAdd":["", "", ""],
     "selStr":["", "", "_zoom"],
     "sels":[{}, {}, {"nn_disc":[0.9,None]}],
-    "addOpts":[{}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}],
-    "blindSel":["", ["None", 0.95], ["None", 0.95]],
+    "addOpts":[{}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.00001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}],
+    "blindSel":["", ["None", hadLepCut], ["None", hadLepCut]],
     "addOptsBase":"",
   },
   "lep_nn_kin":{
@@ -77,13 +85,13 @@ plotList = {
     "addOptsBase":"",
   },
   "met_nn_kin":{
-    "varName":["met_pt", "met_pt", "nn_disc", "nn_disc"],
-    "varLabel":[r"PUPPI $p_{T}^{miss}$", r"PUPPI $p_{T}^{miss}$", "NN", "NN"],
-    "titleAdd":["", r", $NN>NNCUT$", "", ""],
-    "selStr":["", "_nnpass", "", "_zoom"],
-    "sels":[{}, {"nn_disc":["NNCUT",None]}, {}, {"nn_disc":[0.9,None]}],
-    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}],
-    "blindSel":["", "", ["None", 0.95], ["None", 0.95]],
+    "varName":["met_pt", "met_pt", "nn_disc", "nn_disc", "h_pt", "h_pt"],
+    "varLabel":[r"PUPPI $p_{T}^{miss}$", r"PUPPI $p_{T}^{miss}$", "NN", "NN", r"$p_{T}(h)$", r"$p_{T}(h)$"],
+    "titleAdd":["", r", $NN>NNCUT$", "", "", "", r", $NN>NNCUT$"],
+    "selStr":["", "_nnpass", "", "_zoom", "", "_nnpass"],
+    "sels":[{}, {"nn_disc":["NNCUT",None]}, {}, {"nn_disc":[0.9,None]}, {}, {"nn_disc":["NNCUT",None]}],
+    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.00001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}, {"dosigrat":True}, {"dosigrat":True}],
+    "blindSel":["", "", ["None", hadLepCut], ["None", hadLepCut], "", ""],
     "addOptsBase":"",
   },
 }
@@ -102,16 +110,19 @@ def StringRemap(inputObj, lepType, nnCut):
         newObj = newObj.replace("NNCUT",str(nnCut))
     return newObj
   
-looseList = ["hadhad_signal", "hadhad_signal_met", "hadhad_cr_b_mu", "hadhad_cr_b_mu_iso", "hadhad_cr_mu", "hadhad_cr_mu_iso", "hadel_signal", "hadmu_signal", "hadel_cr_b", "hadel_cr_w", "hadel_cr_qcd", "hadmu_cr_b", "hadmu_cr_w", "hadmu_cr_qcd"]
+looseList = ["hadhad_signal", "hadhad_signal_met", "hadhad_cr_b", "hadhad_cr_b_met", "hadhad_cr_b_mu", "hadhad_cr_b_mu_iso", "hadhad_cr_mu", "hadhad_cr_mu_iso", "hadel_signal", "hadmu_signal", "hadel_cr_b", "hadel_cr_w", "hadel_cr_qcd", "hadmu_cr_b", "hadmu_cr_w", "hadmu_cr_qcd"]
 lepLooseNN = "0.10"
-hadLooseNN = "0.95"
+hadLooseNN = "0.995"
 
-def addPassFail(origList, region, ptList):
+def addPassFail(origList, region, ptList, keepBlind=True):
   nnCats = ["pass", "fail"]
   nnTitle = ["$NN>NNCUT$", "$NN<NNCUT$"]
   nnSel = [["NNCUT", None], [None, "NNCUT"]]
-  nnBlind = [["None", 110], ""]
+  nnBlind = [["None", 110] if keepBlind else "", ""]
   if region in looseList:
+    nnTitle[nnCats.index("fail")] = "$NN<%s$"%(hadLooseNN if "hadhad" in region else lepLooseNN)
+    nnSel[nnCats.index("fail")] = [None, hadLooseNN if "hadhad" in region else lepLooseNN]
+
     nnCats = nnCats + ["loosepass"]
     nnTitle = nnTitle + [r"$%s<NN<NNCUT$"%(hadLooseNN if "hadhad" in region else lepLooseNN)]
     nnSel = nnSel + [["%s"%(hadLooseNN if "hadhad" in region else lepLooseNN), "NNCUT"]]
@@ -123,7 +134,7 @@ def addPassFail(origList, region, ptList):
       "varLabel":[massLabel for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "titleAdd":[r", %s, $%s<p_{T}(j)<%s$"%(nnTitle[ic],str(ptList[ip]),str(ptList[ip+1])) for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "selStr":["_jet%sto%s_nn%s"%(str(ptList[ip]),str(ptList[ip+1]),nnCats[ic]) for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
-      "sels":[{"jet_pt":[ptList[ip],ptList[ip+1]],"nn_disc":nnSel[ic]} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
+      "sels":[{"h_pt":[ptList[ip],ptList[ip+1]], "nn_disc":nnSel[ic], massVar:massRange} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "addOpts":[{} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "blindSel":[nnBlind[ic] for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
     }
@@ -133,7 +144,7 @@ def addPassFail(origList, region, ptList):
       "varLabel":[massLabel for ic in range(len(nnCats))],
       "titleAdd":[r", %s"%(nnTitle[ic]) for ic in range(len(nnCats))],
       "selStr":["_nn%s"%(nnCats[ic]) for ic in range(len(nnCats))],
-      "sels":[{"nn_disc":nnSel[ic]} for ic in range(len(nnCats))],
+      "sels":[{"nn_disc":nnSel[ic], massVar:massRange} for ic in range(len(nnCats))],
       "addOpts":[{} for ic in range(len(nnCats))],
       "blindSel":[nnBlind[ic] for ic in range(len(nnCats))],
     }
@@ -148,14 +159,15 @@ mcSamples = [
   #"DYJetsToLL", 
   #"VJetsToQQ", 
   #"HTauTau",
+  "DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8",
   "DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8",
   "DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8",
   "DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8",
   "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
   "QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
   "QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
+  #"QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
+  #"QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
   "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
   "ST_s-channel_4f_hadronicDecays_TuneCP5_13TeV-amcatnlo-pythia8",
   "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8",
@@ -213,11 +225,12 @@ dataSamples = [
   "MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1",
   "MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1",
 ]
-dataSamples = []
 
 cutTitleMap = {
   "cutflow_hadhad":r'\tau_{h}\tau_{h}',
-  "cutflow_hadhad_met":r'\tau_{h}\tau_{h},~high~MET,~low~p_{T}(j)',
+  "cutflow_hadhad_met":r'\tau_{h}\tau_{h},~high~MET',
+  "cutflow_hadhad_cr_b":r'\tau_{h}\tau_{h}~CR~b',
+  "cutflow_hadhad_cr_b_met":r'\tau_{h}\tau_{h},~high~MET,~CR~b',
   "cutflow_hadhad_cr_b_mu":r'\tau_{h}\tau_{h}~CR~\mu~(b)',
   "cutflow_hadhad_cr_b_mu_iso":r'\tau_{h}\tau_{h}~CR~\mu~(Iso,~b)',
   "cutflow_hadhad_cr_mu":r'\tau_{h}\tau_{h}~CR~\mu',
@@ -253,8 +266,9 @@ cutflowArgs = CutflowArgs(infileList, tag, [cutTitleMap[c] for c in cutList], lu
 plot_cutflow.getPlots(cutflowArgs)
 
 class StackArgs:
-  def __init__(self, hists, tag, savetag, var, varlabel, title, regions, hist, lumi=50., sel='', sigsel='', xlimits='', xlog=False, xexp=False, blind='', solo=False, sigscale=50, sigstack=False, noratio=False, dosigrat=False, overflow='allnan', rebin=[1], norm=None, density=False, sample='all', comp=False, compsel='', complabels='', defcolors=True, verbose=False):
+  def __init__(self, hists, tag, savetag, var, varlabel, title, regions, hist, lumi=50., sel='', sigsel='', xlimits='', xlog=False, xexp=False, blind='', solo=False, sigscale=50, sigstack=False, noratio=False, dosigrat=False, overflow='allnan', rebin=[1], norm=None, density=False, sample='all', comp=False, compsel='', complabels='', defcolors=True, verbose=False, dirname=None):
     self.hists = hists
+    self.dirname = dirname
     self.tag = tag
     self.savetag = savetag
     self.var = var
@@ -292,18 +306,40 @@ region_opts = {
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[450,1200],
-    "cutNN":0.995,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
     "sigSel":{},
     "saveLabel":"",
   },
   "hadhad_signal_met":{
-    "titleBase":r'$\tau_{h}\tau_{h}$, high MET, low $p_{T}(j)$',
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET',
     "lep":"",
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[300,450],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "sigSel":{},
+    "saveLabel":"",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "sigSel":{},
+    "saveLabel":"",
+  },
+  "hadhad_cr_b_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -314,7 +350,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -325,7 +361,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -337,7 +373,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -348,7 +384,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -359,7 +395,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -370,7 +406,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -381,7 +417,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -392,7 +428,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -403,7 +439,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -414,7 +450,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -425,7 +461,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -436,7 +472,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"",
@@ -444,9 +480,10 @@ region_opts = {
 }
 
 
-def doPlotting(infileList,tag,lumi,region,hist,plotList,regopts,add_opts={},sample='all'):
+def doPlotting(infileList,tag,lumi,region,hist,plotList,regopts,add_opts={},sample='all', keepBlind=True):
   if (hist==srHist): 
-    thePlotList = StringRemap(addPassFail(plotList[hist], region, regopts["ptList"]),regopts["lep"],regopts["cutNN"])
+    thePlotList = StringRemap(addPassFail(plotList[hist], region, regopts["ptList"], keepBlind=True),regopts["lep"],regopts["cutNN"])
+    #thePlotList = StringRemap(plotList[hist],regopts["lep"],regopts["cutNN"])
   else:
     thePlotList = StringRemap(plotList[hist],regopts["lep"],regopts["cutNN"])
   add_opts = StringRemap(add_opts,regopts["lep"],regopts["cutNN"])
@@ -483,7 +520,7 @@ print('Nominal')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
 print("Done")
 
 #region_opts["hadhad_signal"]["sigSel"]       = {"h_pt":[400,1200]}
@@ -560,18 +597,40 @@ region_opts = {
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[450,1200],
-    "cutNN":0.995,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[100.,200.]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
   },
   "hadhad_signal_met":{
-    "titleBase":r'$\tau_{h}\tau_{h}$, high MET, low $p_{T}(j)$ (invert $\Delta\phi(j,MET)$)',
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET (invert $\Delta\phi(j,MET)$)',
     "lep":"",
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[300,450],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
+    "sigSel":{},
+    "saveLabel":"_invdphisel",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ (invert $\Delta\phi(j,MET)$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,200.]},
+    "sigSel":{},
+    "saveLabel":"_invdphisel",
+  },
+  "hadhad_cr_b_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET (invert $\Delta\phi(j,MET)$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
@@ -582,7 +641,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
@@ -593,7 +652,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
@@ -605,7 +664,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
@@ -616,7 +675,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
@@ -627,7 +686,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -638,7 +697,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -649,7 +708,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -660,7 +719,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -671,7 +730,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -682,7 +741,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -693,7 +752,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -704,7 +763,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[None,0.5],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_noantilep",
@@ -715,12 +774,124 @@ print('NoAntiLep')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 regionList = [
   "hadhad_signal",
   "hadhad_signal_met",
+  "hadhad_cr_b",
+  "hadhad_cr_b_met",
+  "hadhad_cr_mu",
+  "hadhad_cr_mu_iso",
+  "hadhad_cr_b_mu",
+  "hadhad_cr_b_mu_iso",
+]
+
+region_opts = {
+  "hadhad_signal":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ (AntiLep)',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[100.,200.],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_signal_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET (AntiLep)',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ (AntiLep) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,200.],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_b_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET (AntiLep) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_b_mu":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ CR $\mu$ (b) (AntiLep)',
+    "lep":'\mu',
+    "histList":histListBase+lepHists,
+    "blind":False,
+    "ptList":[0],#[400,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_b_mu_iso":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ CR $\mu$ (Iso, b) (AntiLep)',
+    "lep":'\mu',
+    "histList":histListBase+lepHists,
+    "blind":False,
+    "ptList":[0],#[400,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_mu":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ CR $\mu$ (AntiLep)',
+    "lep":'\mu',
+    "histList":histListBase+lepHists,
+    "histList":histListBase,
+    "blind":False,
+    "ptList":[0],#[400,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+  "hadhad_cr_mu_iso":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ CR $\mu$ (Iso) (AntiLep)',
+    "lep":'\mu',
+    "histList":histListBase+lepHists,
+    "blind":False,
+    "ptList":[0],#[400,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,None],'jetmet_dphi':[None,1.6]},
+    "sigSel":{},
+    "saveLabel":"_antilep",
+  },
+}
+
+print('AntiLep')
+for region in regionList:
+  for hist in region_opts[region]["histList"]:
+    print(region, hist)
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
+print("Done")
+
+regionList = [
+  "hadhad_signal",
+  "hadhad_signal_met",
+  "hadhad_cr_b",
+  "hadhad_cr_b_met",
   "hadhad_cr_b_mu",
   "hadhad_cr_b_mu_iso",
   "hadhad_cr_mu",
@@ -734,18 +905,40 @@ region_opts = {
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[450,1200],
-    "cutNN":0.995,
-    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
     "sigSel":{},
     "saveLabel":"_n2sel",
   },
   "hadhad_signal_met":{
-    "titleBase":r'$\tau_{h}\tau_{h}$, high MET, low $p_{T}(j)$ ($N_{2}^{DDT}<0$)',
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET ($N_{2}^{DDT}<0$)',
     "lep":"",
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[300,450],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
+    "sigSel":{},
+    "saveLabel":"_n2sel",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ ($N_{2}^{DDT}<0$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "sigSel":{},
+    "saveLabel":"_n2sel",
+  },
+  "hadhad_cr_b_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET ($N_{2}^{DDT}<0$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2sel",
@@ -756,7 +949,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2sel",
@@ -767,7 +960,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2sel",
@@ -779,7 +972,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2sel",
@@ -790,7 +983,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2sel",
@@ -811,18 +1004,40 @@ region_opts = {
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[450,1200],
-    "cutNN":0.995,
-    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
     "sigSel":{},
     "saveLabel":"_n2cut",
   },
   "hadhad_signal_met":{
-    "titleBase":r'$\tau_{h}\tau_{h}$, high MET, low $p_{T}(j)$ ($N_{2}^{DDT}>0$)',
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET ($N_{2}^{DDT}>0$)',
     "lep":"",
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[300,450],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
+    "sigSel":{},
+    "saveLabel":"_n2cut",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ ($N_{2}^{DDT}>0$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
+    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "sigSel":{},
+    "saveLabel":"_n2cut",
+  },
+  "hadhad_cr_b_met":{
+    "titleBase":r'$\tau_{h}\tau_{h}$, high MET ($N_{2}^{DDT}>0$) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[300,450],
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2cut",
@@ -833,7 +1048,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2cut",
@@ -844,7 +1059,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2cut",
@@ -856,7 +1071,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2cut",
@@ -867,7 +1082,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,None]},
     "sigSel":{},
     "saveLabel":"_n2cut",
@@ -888,29 +1103,29 @@ region_opts = {
     "histList":histListBase,
     "blind":True,
     "ptList":[0],#[450,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,100.]},
+    "sigSel":{},
+    "saveLabel":"_lowMET",
+  },
+  "hadhad_cr_b":{
+    "titleBase":r'$\tau_{h}\tau_{h}$ (low MET) CR b',
+    "lep":"",
+    "histList":histListBase,
+    "blind":True,
+    "ptList":[0],#[450,1200],
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
   },
-#  "hadhad_signal_met":{
-#    "titleBase":r'$\tau_{h}\tau_{h}$, high MET, low $p_{T}(j)$ (invert $\Delta\phi(j,MET)$)',
-#    "lep":"",
-#    "histList":histListBase,
-#    "blind":True,
-#    "ptList":[0],#[300,450],
-#    "cutNN":0.995,
-#    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
-#    "sigSel":{},
-#    "saveLabel":"_lowMET",
-#  },
   "hadhad_cr_b_mu":{
     "titleBase":r'$\tau_{h}\tau_{h}$ CR $\mu$ (b) (low MET)',
     "lep":'\mu',
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -921,7 +1136,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -933,7 +1148,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -944,7 +1159,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -955,7 +1170,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -966,7 +1181,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":True,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -977,7 +1192,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -988,7 +1203,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -999,7 +1214,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -1010,7 +1225,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -1021,7 +1236,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -1032,7 +1247,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[300, 400, 1200],
-    "cutNN":0.95,
+    "cutNN":hadLepCut,
     "specSel":{"antilep":[0.5,None],'met_pt':[None,50.]},
     "sigSel":{},
     "saveLabel":"_lowMET",
@@ -1041,7 +1256,7 @@ region_opts = {
 
 regionList = [
   "hadhad_signal",
-  #"hadhad_signal_met",
+  "hadhad_cr_b",
   "hadhad_cr_mu",
   "hadhad_cr_mu_iso",
   "hadhad_cr_b_mu",
@@ -1060,7 +1275,7 @@ print('Low MET')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 region_opts = {
@@ -1070,7 +1285,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
@@ -1081,7 +1296,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
@@ -1093,7 +1308,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
@@ -1104,7 +1319,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
@@ -1122,7 +1337,7 @@ print('High MET')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 region_opts = {
@@ -1132,7 +1347,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
@@ -1143,7 +1358,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
@@ -1155,7 +1370,7 @@ region_opts = {
     "histList":histListBase,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
@@ -1166,7 +1381,7 @@ region_opts = {
     "histList":histListBase+lepHists,
     "blind":False,
     "ptList":[0],#[400,1200],
-    "cutNN":0.995,
+    "cutNN":hadHadCut,
     "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
@@ -1184,7 +1399,7 @@ print('High MET, inv dPhi')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 #regionList = [
@@ -1205,7 +1420,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":True,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1216,7 +1431,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":True,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1227,7 +1442,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1238,7 +1453,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1249,7 +1464,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1260,7 +1475,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1271,7 +1486,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",
@@ -1282,7 +1497,7 @@ print("Done")
 #    "histList":["jet_nn_kin"],
 #    "blind":False,
 #    "ptList":[0],#[300, 400, 1200],
-#    "cutNN":0.95,
+#    "cutNN":hadLepCut,
 #    "specSel":{},
 #    "sigSel":{},
 #    "saveLabel":"_antilepcomp",

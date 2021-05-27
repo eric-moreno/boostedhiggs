@@ -3,6 +3,7 @@ import gzip
 import json
 import os
 import sys
+import glob
 
 import uproot
 import matplotlib.pyplot as plt
@@ -62,8 +63,10 @@ line_opts = {
 
 overflow_sum = 'allnan'
 
-def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,verbose=False):
+def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,verbose=False,systematic='nominal'):
     exceptions = ['process', var_name]
+    if systematic is not '':
+        exceptions.append('systematic')
     for var in vars_cut:
         exceptions.append(var)
     for var in sig_cut:
@@ -74,6 +77,8 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         exceptions.extend(comp_var)
     if verbose: print([ax.name for ax in h.axes()])
     x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow_sum)
+    if systematic is not '':
+        x = x.integrate('systematic',systematic)
     for reg in regionsel:
         if verbose: print('integrating ',reg)
         x = x.integrate('region',reg)
@@ -345,7 +350,10 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     if xlog:
         ax.set_xscale('function', functions=(lambda x: np.log10(x), lambda x: 10.**(x)))
     if xexp:
-        ax.set_xscale('function', functions=(lambda x: 10.**(10.*x), lambda x: np.log10(x/10.)))
+        coeff = 10.
+        if (ax.get_xlim()[1]-ax.get_xlim()[0])<0.05:
+            coeff = 100.
+        ax.set_xscale('function', functions=(lambda x: 10.**(coeff*x), lambda x: np.log10(x/coeff)))
     ax.set_ylim(0, None)
     if norm is not None:
         ax.yaxis.set_label_text('arb.')
@@ -418,6 +426,8 @@ def getPlots(args,returnHist=False):
     pwd = os.getcwd()
 
     hists_mapped = {}
+    if args.dirname is not None:
+        args.hists = [h[:-7] for h in glob.glob('%s/*.coffea'%args.dirname)]
     for h in args.hists:
         # open hists
         hists_unmapped = load('%s.coffea'%h)
@@ -425,7 +435,7 @@ def getPlots(args,returnHist=False):
         for key, val in hists_unmapped.items():
             if isinstance(val, hist.Hist):
                 if key in hists_mapped:
-                    hists_mapped[key] = hists_mapped[key] + processmap.apply(val)
+                    hists_mapped[key] = hists_mapped[key].add(processmap.apply(val))
                 else:
                     hists_mapped[key] = processmap.apply(val)
 
@@ -488,7 +498,7 @@ def getPlots(args,returnHist=False):
     if args.verbose: print('rebin',args.rebin)
 
     if not returnHist:
-        drawStack(h,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,args.regions,savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors)
+        drawStack(h,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,args.regions,savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors,args.verbose,systematic=args.systematic)
         os.chdir(pwd)
         return None
 
@@ -506,6 +516,7 @@ if __name__ == "__main__":
     #ex. python plot_stack.py --hists ../condor/Oct01/hists_sum --tag Oct01 --var jet_msd --varlabel '$m_{SD}(jet)$' --title '$\mu\tau_{h},~300<p_{T}(j)<350$' --lumi 36.7 --regions hadmu_signal --hist mass_kin --savetag hadmu_jet_pt_300_350 --sel jet_pt neginf 350. --sigsel genhtt 2.5 3.5 --dosigrat
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',      default="hists",      help="hists pickle name", nargs='+')
+    parser.add_argument('--dirname',    dest='dirname',    default=None,         help="hists dir")
     parser.add_argument('--tag',        dest='tag',        default="",           help="tag")
     parser.add_argument('--savetag',    dest='savetag',    default="",           help="savetag")
     parser.add_argument('--var',        dest='var',        default="",           help="var")
@@ -530,6 +541,7 @@ if __name__ == "__main__":
     parser.add_argument('--norm',       dest='norm',       default=None,         help='norm')
     parser.add_argument('--density',    dest='density',    action='store_true',  help='density')
     parser.add_argument('--sample',     dest='sample',     default='all',        help='sample')
+    parser.add_argument('--systematic', dest='systematic', default='nominal',    help='systematic')
     parser.add_argument('--comp',       dest='comp',       action='store_true',  help='comp')
     parser.add_argument('--compsel',    dest='compsel',    default='',           help='compsel',     nargs='+')
     parser.add_argument('--complabels', dest='complabels', default='',           help='complabels',  nargs='+')
