@@ -178,7 +178,7 @@ def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,v
 
     plt.close('all') 
 
-def getPlots(args):
+def getPlots(args,returnHist=False):
     print(args.lumi)
     lumifb = float(args.lumi)
     tag = args.tag
@@ -189,6 +189,8 @@ def getPlots(args):
     pwd = os.getcwd()
 
     hists_mapped = {}
+    if args.dirname is not None:
+        args.hists = [h[:-7] for h in glob.glob('%s/*.coffea'%args.dirname)]
     for h in args.hists:
         # open hists
         hists_unmapped = load('%s.coffea'%h)
@@ -197,7 +199,7 @@ def getPlots(args):
             if isinstance(val, hist.Hist):
                 if not args.noprocmap:
                     if key in hists_mapped:
-                        hists_mapped[key] = hists_mapped[key] + processmap.apply(val)
+                        hists_mapped[key] = hists_mapped[key].add(processmap.apply(val))
                     else:
                         hists_mapped[key] = processmap.apply(val)
                 else:
@@ -231,14 +233,20 @@ def getPlots(args):
     h = hists_mapped[hist_name]
     print(h)
         
-    drawStack(h,args.hist,var1_name,var1_label,var2_name,var2_label,args.title,lumifb,vars_cut,args.regions,args.sample,savename,args.xlimits,args.ylimits,args.rebin1,args.rebin2)
+    if not returnHist:
+        drawStack(h,args.hist,var1_name,var1_label,var2_name,var2_label,args.title,lumifb,vars_cut,args.regions,args.sample,savename,args.xlimits,args.ylimits,args.rebin1,args.rebin2)
+        os.chdir(pwd)
+        return None
 
-    os.chdir(pwd)
+    else:
+        os.chdir(pwd)
+        return h
 
 if __name__ == "__main__":
     #ex. python plot_2d.py --hists ../condor/May09/hists_sum --tag May09 --var1 lep_pt --var1label '$p_{T}(\mu)$' --var2 lep_jet_dr --var2label '$\Delta R(j,\mu)$' --title '$\tau_{h}\mu$' --lumi 41.5 --regions hadmu_signal --hist lep_kin --sample sig --savetag hadmu
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name", nargs='+')
+    parser.add_argument('--dirname',    dest='dirname',   default=None,         help="hists dir")
     parser.add_argument('--tag',        dest='tag',       default="",           help="tag")
     parser.add_argument('--savetag',    dest='savetag',   default="",           help="savetag")
     parser.add_argument('--var1',       dest='var1',      default="",           help="var1")

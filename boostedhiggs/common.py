@@ -3,9 +3,13 @@ import awkward
 from uproot_methods import TLorentzVectorArray
 
 #dataset_ordering = ['JetHT','SingleElectron','SingleMuon','MET','Tau']
-dataset_ordering = ['SingleMuon','SingleElectron','JetHT','MET','Tau']
+dataset_ordering = {
+  '2017':['SingleMuon','SingleElectron','MET','JetHT','Tau'],
+  '2018':['SingleMuon','EGamma','MET','JetHT','Tau']
+}
 
 pd_to_trig = {
+  '2017':{
     'PFHT800':"JetHT",
     'PFHT900':"JetHT",
     'AK8PFJet360_TrimMass30':"JetHT",
@@ -43,26 +47,72 @@ pd_to_trig = {
     'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg':"Tau",
     'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1':"Tau",
     'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+  },
+  '2018':{
+    'PFHT800':"JetHT",
+    'PFHT900':"JetHT",
+    'AK8PFJet360_TrimMass30':"JetHT",
+    'AK8PFHT700_TrimR0p1PT0p03Mass50':"JetHT",
+    'PFHT650_WideJetMJJ950DEtaJJ1p5':"JetHT",
+    'PFHT650_WideJetMJJ900DEtaJJ1p5':"JetHT",
+    'PFJet450':"JetHT",
+    'PFHT1050':"JetHT",
+    'AK8PFJet400_TrimMass30':"JetHT",
+    'AK8PFJet420_TrimMass30':"JetHT",
+    'AK8PFHT800_TrimMass50':"JetHT",
+    'PFJet500':"JetHT",
+    'AK8PFJet500':"JetHT",
+    'Ele50_CaloIdVT_GsfTrkIdT_PFJet165':"EGamma",
+    'Ele115_CaloIdVT_GsfTrkIdT':"EGamma",
+    "Ele15_IsoVVVL_PFHT600":"EGamma",
+    "Ele35_WPTight_Gsf":"EGamma",
+    "Ele15_IsoVVVL_PFHT450_PFMET50":"EGamma",
+    'IsoMu27':"SingleMuon",
+    'Mu50':"SingleMuon",
+    'Mu55':"SingleMuon",
+    "Mu15_IsoVVVL_PFHT600":"SingleMuon",
+    "Mu15_IsoVVVL_PFHT450_PFMET50":"SingleMuon",
+    'PFMETNoMu120_PFMHTNoMu120_IDTight':"MET",
+    'PFMETNoMu110_PFMHTNoMu110_IDTight':"MET",
+    'DoubleMediumChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTau35_Trk1_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTau40_Trk1_eta2p1_Reg':"Tau",
+    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr':"Tau",
+    'DoubleMediumChargedIsoPFTauHPS35_Trk1_TightID_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTauHPS40_Trk1_TightID_eta2p1_Reg':"Tau",
+    'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg':"Tau",
+    'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+    'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+  },
 }
 
-def isOverlap(events,dataset,triggers):
+def isOverlap(events,dataset,triggers,year):
     trig_to_pd = {}
-    for p in dataset_ordering:
+    for p in dataset_ordering[year]:
         trig_to_pd[p] = []
     for t in triggers:
-        if t not in trig_to_pd[pd_to_trig[t]]:
-            trig_to_pd[pd_to_trig[t]].append(t)
+        if t not in trig_to_pd[pd_to_trig[year][t]]:
+            trig_to_pd[pd_to_trig[year][t]].append(t)
     overlap = np.ones(events.size, dtype='bool')
-    for p in dataset_ordering:
+    for p in dataset_ordering[year]:
         if dataset.startswith(p):
             pass_pd = np.zeros(events.size, dtype='bool')
             for t in trig_to_pd[p]:
-                pass_pd = pass_pd | events.HLT[t]
+                try:
+                    pass_pd = pass_pd | events.HLT[t]
+                except:
+                    pass
             overlap = overlap & pass_pd
             break
         else:
             for t in trig_to_pd[p]:
-                overlap = overlap & np.logical_not(events.HLT[t])
+                try:
+                    overlap = overlap & np.logical_not(events.HLT[t])
+                except:
+                    pass
     return overlap
 
 

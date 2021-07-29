@@ -13,6 +13,7 @@ process_map["zll"] = [
     'DYJetsToLL_M-50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8',
     'DYJetsToLL_M-50_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8',
     'DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8',
     'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8',
     'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8',
     'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8',
@@ -38,7 +39,7 @@ process_map["zll"] = [
 #process_map["zll-ht800to1200"] = [
 #    'DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8',
 #]
-process_map["wlnu"] = [
+process_map["wjets"] = [
     'WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8',
@@ -46,6 +47,7 @@ process_map["wlnu"] = [
     'WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8',
     'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'boostedTau_WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8',
 ]
 #process_map["wqq"] = [
 #    'WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
@@ -74,6 +76,12 @@ process_map["qcd"] = [
     'QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     #'QCD_HT50to100_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
     'QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
+    'QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8',
+    'boostedTau_QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8',
 ]
 process_map["tt-dilep"] = [
     'TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8',
@@ -96,6 +104,10 @@ process_map["st"] = [
     'ST_t-channel_top_4f_InclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8',
     'ST_tW_antitop_5f_inclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8',
     'ST_tW_top_5f_inclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8',
+    'ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8',
+    'ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8',
+    'ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
+    'ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
 ]
 process_map["vv"] = [
     'WW_TuneCP5_13TeV-pythia8',
@@ -103,6 +115,8 @@ process_map["vv"] = [
     'ZZ_TuneCP5_13TeV-pythia8',
 ]
 process_map["h125"] = [
+    'GluGluHToWWToLNuQQ_M125_NNPDF31_TuneCP5_PSweights_13TeV_powheg_JHUGen710_pythia8',
+    'GluGluHToWWToLNuQQ_M125_TuneCP5_PSweight_13TeV-powheg2-jhugen727-pythia8',
     'GluGluHToTauTau',
     'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
     'VBFHToTauTau_M125_13TeV_powheg_pythia8',
@@ -113,6 +127,7 @@ process_map["h125"] = [
     'ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8',
     'ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8',
     'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
+    'boostedTau_GluGluHTauTau_boostedTaua_13TeV_user',
 ]
 #process_map["ggF-Htt"] = [
 #    'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
@@ -142,6 +157,7 @@ process_map["h125"] = [
 #    'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
 #]
 process_map["data"] = [
+#2017
     #'JetHT',
     'JetHT_pancakes-02_Run2017B-09Aug2019_UL2017-v1',
     'JetHT_pancakes-02_Run2017C-09Aug2019_UL2017-v1',
@@ -166,6 +182,22 @@ process_map["data"] = [
     'MET_pancakes-02-withPF_Run2017D-09Aug2019_UL2017_rsb-v1',
     'MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1',
     'MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1',
+#2018
+    #'SingleMuon',
+    'SingleMuon_pancakes-02_Run2018A-12Nov2019_UL2018_rsb-v1',
+    'SingleMuon_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
+    'SingleMuon_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
+    'SingleMuon_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
+    #'MET',
+    'MET_pancakes-02_Run2018A-12Nov2019_UL2018-v3',
+    'MET_pancakes-02_Run2018B-12Nov2019_UL2018_rsb-v1',
+    'MET_pancakes-02_Run2018C-12Nov2019_UL2018_rsb-v1',
+    'MET_pancakes-02_Run2018D-12Nov2019_UL2018_rsb-v2',
+    #'EGamma',
+    'EGamma_pancakes-02_Run2018A-12Nov2019_UL2018-v2',
+    'EGamma_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
+    'EGamma_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
+    'EGamma_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
 ]
 
 def apply(h):

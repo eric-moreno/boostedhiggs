@@ -20,6 +20,7 @@ from .corrections import (
     add_TopPtReweighting,
     add_jetTriggerWeight,
     add_TriggerWeight,
+    add_LeptonSFs,
 )
 #from .btag import BTagEfficiency, BTagCorrector
 
@@ -71,7 +72,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
                 "BadPFMuonFilter",
                 "BadChargedCandidateFilter",
                 "eeBadScFilter",
-                "ecalBadCalibFilterV2",
+                "ecalBadCalibFilter",
             ],
         }
 
@@ -105,16 +106,17 @@ class HtautauProcessor_NN(processor.ProcessorABC):
                 #'AK8PFJet500',
             ],
             '2018': [
-                #'Ele35_WPTight_Gsf',
-'Ele50_CaloIdVT_GsfTrkIdT_PFJet165','Ele115_CaloIdVT_GsfTrkIdT',
+                'Ele35_WPTight_Gsf',
+#'Ele50_CaloIdVT_GsfTrkIdT_PFJet165',
+'Ele115_CaloIdVT_GsfTrkIdT',
 #"Ele15_IsoVVVL_PFHT450_PFMET50",
-"Ele15_IsoVVVL_PFHT600",
-                'AK8PFJet400_TrimMass30',
-                'AK8PFJet420_TrimMass30',
-                'AK8PFHT800_TrimMass50',
-                'PFHT1050',
-                'PFJet500',
-                'AK8PFJet500',
+#"Ele15_IsoVVVL_PFHT600",
+                #'AK8PFJet400_TrimMass30',
+                #'AK8PFJet420_TrimMass30',
+                #'AK8PFHT800_TrimMass50',
+                #'PFHT1050',
+                #'PFJet500',
+                #'AK8PFJet500',
                 # 'AK8PFJet330_PFAK8BTagCSV_p17', not present in 2018D?
                 #'AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_np4',
                 #'AK4PFJet30',
@@ -150,14 +152,15 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             ],
             '2018': [
                 'Mu50',#'Mu55',
+                'IsoMu27',
 #"Mu15_IsoVVVL_PFHT450_PFMET50",
-"Mu15_IsoVVVL_PFHT600",
-                'AK8PFJet400_TrimMass30',
-                'AK8PFJet420_TrimMass30',
-                'AK8PFHT800_TrimMass50',
-                'PFHT1050',
-                'PFJet500',
-                'AK8PFJet500',
+#"Mu15_IsoVVVL_PFHT600",
+                #'AK8PFJet400_TrimMass30',
+                #'AK8PFJet420_TrimMass30',
+                #'AK8PFHT800_TrimMass50',
+                #'PFHT1050',
+                #'PFJet500',
+                #'AK8PFJet500',
                 # 'AK8PFJet330_PFAK8BTagCSV_p17', not present in 2018D?
                 #'AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_np4',
                 #'AK4PFJet30',
@@ -195,23 +198,20 @@ class HtautauProcessor_NN(processor.ProcessorABC):
                 #'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr',
             ],
             '2018': [
+                'PFHT1050',
                 'AK8PFJet400_TrimMass30',
                 'AK8PFJet420_TrimMass30',
                 'AK8PFHT800_TrimMass50',
-                'PFHT1050',
                 'PFJet500',
                 'AK8PFJet500',
-                # 'AK8PFJet330_PFAK8BTagCSV_p17', not present in 2018D?
-                #'AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_np4',
-                #'AK4PFJet30',
-                'DoubleMediumChargedIsoPFTauHPS35_Trk1_TightID_eta2p1_Reg',
-                'DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg',
-                'DoubleMediumChargedIsoPFTauHPS40_Trk1_TightID_eta2p1_Reg',
-                'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg',
-                'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1',
-                'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr',
-                'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1',
-                'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1',
+                #'DoubleMediumChargedIsoPFTauHPS35_Trk1_TightID_eta2p1_Reg',
+                #'DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg',
+                #'DoubleMediumChargedIsoPFTauHPS40_Trk1_TightID_eta2p1_Reg',
+                #'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg',
+                #'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1',
+                #'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr',
+                #'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1',
+                #'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1',
             ],
         }
 
@@ -227,7 +227,8 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             ],
         }
 
-        jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', [200.,250.,300.,350.,400.,450.,500.,550.,600.,1200.])
+        #jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', [200.,250.,300.,350.,400.,450.,500.,550.,600.,1200.])
+        #jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', [200.,450.,1200.])
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
         jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 8, 50, 210.)
         #nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$',20,0.,1.)
@@ -236,9 +237,9 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,1.])
         nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,1.])
         nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,1.])
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.999,0.9995,1.])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,0.999999,1.00001])
         massreg_bin = hist.Bin('massreg',r'$m_{NN}$', 21, 0., 210.)
-        mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', 2, 0., 160.)
+        mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', [0., 60., 500.])
         mt_jetmet_bin = hist.Bin('mt_jetmet', r'$m_{T}(j, MET)$', 10, 0., 1000.)
         oppbjet_pt_bin = hist.Bin('oppbjet_pt', r'Max opp. deepCSV-bjet $p_{T}$ [GeV]', 20, 0., 500)
         oppbtag_bin = hist.Bin('oppbtag', r'Max opp. deepCSV-b', 10, 0., 1)
@@ -252,12 +253,12 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         jet_jetmet_m_bin = hist.Bin('jetmet_m', r'Jet+MET $m$ [GeV]', 20, 0, 600.)
         jet_jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
         jetmet_dphi_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 2, 0., 3.2)
-        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,200.])
+        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,100.,150.,200.,1000.])
         met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 10, 0, 800)
         n2ddt_bin = hist.Bin('n2ddt', r'N_{2}^{DDT}', 2, -1.,1.)
-        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [250,300,400,1200])
+        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [250,280,300,350,400,500,600,1200])
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
-        antilep_bin = hist.Bin('antilep',r'Anti lepton veto',2,-0.5,1.5)
+        antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',4,-0.5,3.5)
         gentau1had_bin = hist.Bin('gentau1had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
         gentau2had_bin = hist.Bin('gentau2had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
@@ -268,6 +269,8 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             # dataset -> cut -> count
             'cutflow_hadhad': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_b_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_b_mu_iso': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
@@ -296,22 +299,16 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             #    #lep_pt_bin, jet_msd_bin, nn_disc_bin,
             #    lep_pt_bin, massreg_bin, nn_disc_bin, mt_lepmet_bin, antilep_bin,
             #),
-            'gen_nn_kin': hist.Hist(
-                'Events',
-                hist.Cat('dataset', 'Dataset'),
-                hist.Cat('region', 'Region'),
-                #lep_miso_bin, jet_msd_bin, nn_disc_bin,
-                #lep_pt_bin, jet_msd_bin, nn_disc_bin,
-                lep_pt_bin, massreg_bin, nn_disc_bin, mt_lepmet_bin, antilep_bin,
-            ),
             'met_nn_kin': hist.Hist(
                 'Events',
                 hist.Cat('dataset', 'Dataset'),
+                hist.Cat('systematic', 'Systematic'),
                 hist.Cat('region', 'Region'),
                 #met_pt_bin, jet_msd_bin, nn_disc_bin, jetmet_dphi_bin,
                 #met_pt_bin, jet_pt_bin, nn_disc_bin, jetmet_dphi_bin,
                 #met_pt_bin, jet_msd_bin, nn_disc_bin,
-                met_pt_bin, massreg_bin, nn_disc_bin, jetmet_dphi_bin, h_pt_bin, antilep_bin, n2ddt_bin,
+                #met_pt_bin, massreg_bin, nn_disc_bin, jetmet_dphi_bin, h_pt_bin, antilep_bin, n2ddt_bin,
+                met_pt_bin, massreg_bin, nn_disc_bin, jetmet_dphi_bin, h_pt_bin, antilep_bin, #jet_pt_bin,
             ),
             
         })
@@ -330,23 +327,46 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             output['sumw'][dataset] += events.genWeight.sum()
 
         trigger_met = np.zeros(events.size, dtype='bool')
+        good_trigs = len(self._met_triggers[self._year])
         for t in self._met_triggers[self._year]:
-            trigger_met = trigger_met | events.HLT[t]
+            try:
+                trigger_met = trigger_met | events.HLT[t]
+            except ValueError:
+                good_trigs = good_trigs - 1
+        if good_trigs==0:
+            raise ValueError("None of following triggers found in dataset:",self._met_triggers[self._year])
 
         trigger_hadhad = np.zeros(events.size, dtype='bool')
+        good_trigs = len(self._hadhad_triggers[self._year])
         for t in self._hadhad_triggers[self._year]:
-            trigger_hadhad = trigger_hadhad | events.HLT[t]
+            try:
+                trigger_hadhad = trigger_hadhad | events.HLT[t]
+            except ValueError:
+                good_trigs = good_trigs - 1
+        if good_trigs==0:
+            raise ValueError("None of following triggers found in dataset:",self._hadhad_triggers[self._year])
 
         trigger_hadmu = np.zeros(events.size, dtype='bool')
+        good_trigs = len(self._hadmu_triggers[self._year])
         for t in self._hadmu_triggers[self._year]:
-            trigger_hadmu = trigger_hadmu | events.HLT[t]
+            try:
+                trigger_hadmu = trigger_hadmu | events.HLT[t]
+            except ValueError:
+                good_trigs = good_trigs - 1
+        if good_trigs==0:
+            raise ValueError("None of following triggers found in dataset:",self._hadmu_triggers[self._year])
 
         trigger_hadel = np.zeros(events.size, dtype='bool')
+        good_trigs = len(self._hadel_triggers[self._year])
         for t in self._hadel_triggers[self._year]:
-            trigger_hadel = trigger_hadel | events.HLT[t]
-        #print(np.histogram(trigger))
+            try:
+                trigger_hadel = trigger_hadel | events.HLT[t]
+            except ValueError:
+                good_trigs = good_trigs - 1
+        if good_trigs==0:
+            raise ValueError("None of following triggers found in dataset:",self._hadel_triggers[self._year])
 
-        if (isRealData): overlap_removal = isOverlap(events,dataset,self._hadhad_triggers[self._year]+self._hadmu_triggers[self._year]+self._hadel_triggers[self._year]+self._met_triggers[self._year])
+        if (isRealData): overlap_removal = isOverlap(events,dataset,self._hadhad_triggers[self._year]+self._hadmu_triggers[self._year]+self._hadel_triggers[self._year]+self._met_triggers[self._year],self._year)
         else: overlap_removal = np.ones(events.size, dtype='bool')
 
         met_filters = np.ones(events.size, dtype='bool')
@@ -371,11 +391,12 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         candidatejets = fatjets[
             # https://github.com/DAZSLE/BaconAnalyzer/blob/master/Analyzer/src/VJetLoader.cc#L269
             (fatjets.pt > 200)
-            #& (abs(fatjets.eta) < 2.5)
+            & (abs(fatjets.eta) < 2.5)
             #& (fatjets.isTight)
         ]#[:, :2]
         met_p4 = TLorentzVectorArray.from_ptetaphim(awkward.JaggedArray.fromiter([[v] for v in events.PuppiMET.pt]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]), awkward.JaggedArray.fromiter([[v] for v in events.PuppiMET.phi]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]))
-        met_nopup_p4 = TLorentzVectorArray.from_ptetaphim(awkward.JaggedArray.fromiter([[v] for v in events.MET.pt]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]), awkward.JaggedArray.fromiter([[v] for v in events.MET.phi]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]))
+        #met_nopup_p4
+        #met_p4 = TLorentzVectorArray.from_ptetaphim(awkward.JaggedArray.fromiter([[v] for v in events.MET.pt]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]), awkward.JaggedArray.fromiter([[v] for v in events.MET.phi]), awkward.JaggedArray.fromiter([[v] for v in np.zeros(events.size)]))
         ak8_met_pair = candidatejets.cross(met_p4)
         ak8_met_dphi = abs(ak8_met_pair.i0.delta_phi(ak8_met_pair.i1))
         #aligned_jet = ak8_met_dphi == ak8_met_dphi.min()
@@ -385,11 +406,21 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         candidatejet = candidatejets[best_jet_idx]
         jetmet_dphi_ak8 = ak8_met_dphi[best_jet_idx]
 
+        #print('jet pt ',candidatejets.pt[(candidatejets.pt>200.).any()])
+        #print('jet phi',candidatejets.phi[(candidatejets.pt>200.).any()])
+        #print('met pt ',met_p4.pt[(candidatejets.pt>200.).any()])
+        #print('met phi',met_p4.phi[(candidatejets.pt>200.).any()])
+        #print('idx',best_jet_idx[(candidatejets.pt>200.).any()])
+        #print('mindphi',ak8_met_dphi.min()[(candidatejets.pt>200.).any()])
+
         mt_jetmet = np.sqrt(2.*ak8_met_pair.i0.pt.fillna(0)*ak8_met_pair.i1.pt*(ak8_met_pair.i1.pt.ones_like()-np.cos(ak8_met_dphi)))
 
+        #nn_disc_hadhad = awkward.JaggedArray.fromiter([[v] for v in events.PostTagger.hadhad_v1p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
+        nn_disc_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.PostTagger.hadel_v1p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
+        nn_disc_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.PostTagger.hadmu_v1p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
         nn_disc_hadhad = awkward.JaggedArray.fromiter([[v] for v in events.IN.hadhad_v4p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
-        nn_disc_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadel_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
-        nn_disc_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.GRU.hadmu_v6p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
+        #nn_disc_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.IN.hadel_v4p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
+        #nn_disc_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.IN.hadmu_v4p1])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
 
         massreg_hadhad = awkward.JaggedArray.fromiter([[v] for v in events.MassReg.hadhad_mass])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
         massreg_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.MassReg.hadel_mass])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
@@ -399,39 +430,51 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         ptreg_hadel  = awkward.JaggedArray.fromiter([[v] for v in events.MassReg.hadel_pt])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
         ptreg_hadmu  = awkward.JaggedArray.fromiter([[v] for v in events.MassReg.hadmu_pt])[candidatejet.pt.pad(1, clip=True).fillna(0.)>200.]
 
+        selection.add('ptreg_hadhad', (ptreg_hadhad > 280.).any())
+        selection.add('ptreg_hadel', (ptreg_hadel > 280.).any())
+        selection.add('ptreg_hadmu', (ptreg_hadmu > 280.).any())
+
+        selection.add('nn_disc_hadhad', (nn_disc_hadhad > 0.9999).any())
+        selection.add('nn_disc_hadel', (nn_disc_hadel > 0.95).any())
+        selection.add('nn_disc_hadmu', (nn_disc_hadmu > 0.95).any())
+
         candidatejet_rho = 2 * np.log(candidatejet.msdcorr / candidatejet.pt)
         selection.add('jetacceptance', (
             (candidatejet.pt > 200)
             #& (candidatejet.msdcorr > 40.)
-            & (abs(candidatejet.eta) < 2.4)
+            & (abs(candidatejet.eta) < 2.5)
             & (candidatejet_rho > -6.)
-            & (candidatejet_rho < -1.75)
+            & (candidatejet_rho < -1.40)
         ).any())
         selection.add('jetacceptance450Inv', (
             (candidatejet.pt <= 450)
             #& (candidatejet.msdcorr > 40.)
-            & (abs(candidatejet.eta) < 2.4)
+            & (abs(candidatejet.eta) < 2.5)
             & (candidatejet_rho > -6.)
-            & (candidatejet_rho < -1.75)
+            & (candidatejet_rho < -1.40)
         ).any())
         selection.add('jetacceptance400', (
             (candidatejet.pt > 400)
             #& (candidatejet.msdcorr > 40.)
-            & (abs(candidatejet.eta) < 2.4)
+            & (abs(candidatejet.eta) < 2.5)
             & (candidatejet_rho > -6.)
             & (candidatejet_rho < -2.)
         ).any())
         selection.add('jetacceptance450', (
             (candidatejet.pt > 450)
             #& (candidatejet.msdcorr > 40.)
-            & (abs(candidatejet.eta) < 2.4)
+            & (abs(candidatejet.eta) < 2.5)
             & (candidatejet_rho > -6.)
             & (candidatejet_rho < -2.1)
         ).any())
-        selection.add('jet_msd', (candidatejet.msdcorr > 40.).any())
+        selection.add('jet_msd', (candidatejet.msdcorr > 50.).any())
         selection.add('jetid', (candidatejet.isTight).any())
         selection.add('n2ddt', (candidatejet.n2ddt < 0.).any())
-        #print(np.histogram(candidatejet.pt.fillna(0).flatten()))
+
+        alljets = events.Jet[
+            (events.Jet.pt > 30.)
+        ]
+        selection.add('hem_cleaning', ~(((alljets.eta > -3.) & (alljets.eta < -1.3) & (alljets.phi > -1.57) & (alljets.phi < -0.87)).any() | ((met_p4.pt < 470.) & (met_p4.phi > -1.62) & (met_p4.phi < -0.62)).any()))
 
         jets = events.Jet[
             (events.Jet.pt > 30.)
@@ -453,10 +496,10 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         ak4_met_pair = jets.cross(met_p4)
         ak4_met_dphi = abs(ak4_met_pair.i0.delta_phi(ak4_met_pair.i1))
         jetmet_dphi = ak4_met_dphi[ak4_met_dphi.argmin()]
-        selection.add('jetmet_dphi', (jetmet_dphi < np.pi / 2.).any())
+        selection.add('jetmet_dphi', (jetmet_dphi < (np.pi / 2.)).any())
 
-        selection.add('met', events.PuppiMET.pt > 20.)
-        selection.add('methard', events.PuppiMET.pt > 200.)
+        selection.add('met', (met_p4.pt > 20.).any())
+        selection.add('methard', (met_p4.pt > 150.).any())
 
         el_loose_cuts = [(np.bitwise_and(np.right_shift(events.Electron.vidNestedWPBitmap,events.Electron.vidNestedWPBitmap.ones_like()*(3*k)),events.Electron.vidNestedWPBitmap.ones_like()*7) >= events.Electron.LOOSE) for k in range(10) if k != 7]
         el_tight_cuts = [(np.bitwise_and(np.right_shift(events.Electron.vidNestedWPBitmap,events.Electron.vidNestedWPBitmap.ones_like()*(3*k)),events.Electron.vidNestedWPBitmap.ones_like()*7) >= events.Electron.TIGHT) for k in range(10) if k != 7]
@@ -473,7 +516,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
 
         goodmuon = (
             (events.Muon.pt > 25)
-            & (np.abs(events.Muon.eta) < 2.4)
+            & (abs(events.Muon.eta) < 2.4)
             #& (events.Muon.sip3d < 4)
             #& (np.abs(events.Muon.dz) < 0.1)
             #& (np.abs(events.Muon.dxy) < 0.02)
@@ -485,11 +528,11 @@ class HtautauProcessor_NN(processor.ProcessorABC):
 
         goodelec = (
             (events.Electron.pt > 25)
-            & (abs(events.Electron.eta) < 2.5)
+            & (abs(events.Electron.eta) < 2.4)
             #& (events.Electron.cutBased >= events.Electron.TIGHT)
             #& (events.Electron.cutBased_HEEP).astype(bool)
-            #& elmask_tight
-            & events.Electron.mvaFall17V2noIso_WP80
+            #& events.Electron.mvaFall17V2noIso_WP80
+            & events.Electron.mvaFall17V2noIso_WP90
         )
         ngoodelecs = goodelec.sum()
         leadingelec = events.Electron[goodelec].pad(1, clip=True)
@@ -499,7 +542,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             & (abs(events.Muon.eta) < 2.4)
             #& (events.Muon.pfRelIso04_all < 0.25)
             #& (np.abs(events.Muon.dz) < 0.1)
-            #& (np.abs(events.Muon.dxy) < 0.05)
+            #& (np.abs(events.Muon.dxy) < 0.02)
             & (events.Muon.looseId).astype(bool)
             #& (events.Muon.highPtId).astype(bool)
         )
@@ -507,7 +550,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
 
         electrons = (
             (events.Electron.pt > 10)
-            & (abs(events.Electron.eta) < 2.5)
+            & (abs(events.Electron.eta) < 2.4)
             & (events.Electron.cutBased >= events.Electron.LOOSE)
             #& (events.Electron.cutBased_HEEP).astype(bool)
             #& elmask_loose
@@ -519,6 +562,11 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         else:
           tauAntiEleId = events.Tau.idAntiEle
 
+        loosetaus_el = (
+            (events.Tau.pt > 20)
+            & (abs(events.Tau.eta) < 2.3)
+            & (tauAntiEleId >= 2)
+        )
         goodtaus_el = (
             (events.Tau.pt > 20)
             & (abs(events.Tau.eta) < 2.3)
@@ -530,9 +578,12 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             & (events.Tau.idAntiMu >= 1)
         )
         etaus_p4 = TLorentzVectorArray.from_ptetaphim(events.Tau[goodtaus_el].pt.fillna(0),events.Tau[goodtaus_el].eta.fillna(0),events.Tau[goodtaus_el].phi.fillna(0),events.Tau[goodtaus_el].mass.fillna(0))
+        etausloose_p4 = TLorentzVectorArray.from_ptetaphim(events.Tau[loosetaus_el].pt.fillna(0),events.Tau[loosetaus_el].eta.fillna(0),events.Tau[loosetaus_el].phi.fillna(0),events.Tau[loosetaus_el].mass.fillna(0))
         mtaus_p4 = TLorentzVectorArray.from_ptetaphim(events.Tau[goodtaus_mu].pt.fillna(0),events.Tau[goodtaus_mu].eta.fillna(0),events.Tau[goodtaus_mu].phi.fillna(0),events.Tau[goodtaus_mu].mass.fillna(0))
         etau_ak8_pair = etaus_p4.cross(candidatejet)
         etaus_dr = (etau_ak8_pair.i0.delta_r(etau_ak8_pair.i1) < 0.8)
+        etauloose_ak8_pair = etausloose_p4.cross(candidatejet)
+        etausloose_dr = (etauloose_ak8_pair.i0.delta_r(etauloose_ak8_pair.i1) < 0.8)
         mtau_ak8_pair = mtaus_p4.cross(candidatejet)
         mtaus_dr = (mtau_ak8_pair.i0.delta_r(mtau_ak8_pair.i1) < 0.8)
 
@@ -567,7 +618,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         selection.add('onemuon', ((muons & ~goodmuon).sum() == 0) & (nelectrons == 0) & (ntaus == 0) & (ngoodelecs == 0) & (ngoodmuons == 1))
         selection.add('oneelec', (nmuons == 0) & ((electrons & ~goodelec).sum() == 0) & (ntaus == 0) & (ngoodmuons == 0) & (ngoodelecs == 1))
         selection.add('muonkin', (
-            (leadingmuon.pt > 35.)
+            (leadingmuon.pt > 30.)
             & (abs(leadingmuon.eta) < 2.4)
         ).all())
         selection.add('muonDphiAK8', (
@@ -584,21 +635,23 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         lep_ak8_pair = leadinglep.cross(candidatejet)#, nested=True)
         selection.add('lepDrAK8', (
             (lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1) < 0.8).all()
-            #(lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1) < 99.0).all()
+        ))
+        selection.add('lepDrAK8Inv', (
+            (lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1) >= 0.8).all()
         ))
 
         selection.add('muonIso', (
-            ((leadingmuon.pt > 35.)
+            ((leadingmuon.pt > 30.)
             & (leadingmuon.pt < 55.)
-            & (leadingmuon.pfRelIso04_all < 0.3))
+            & (leadingmuon.pfRelIso04_all < 0.25))
             | ((leadingmuon.pt >= 55.)
             & (leadingmuon.miniPFRelIso_all < 0.1))
         ).all())
 
         selection.add('muonIsoInv', (
-            ((leadingmuon.pt > 35.)
+            ((leadingmuon.pt > 30.)
             & (leadingmuon.pt < 55.)
-            & (leadingmuon.pfRelIso04_all >= 0.3))
+            & (leadingmuon.pfRelIso04_all >= 0.25))
             | ((leadingmuon.pt >= 55.)
             & (leadingmuon.miniPFRelIso_all >= 0.1))
         ).all())
@@ -606,7 +659,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         selection.add('elecIso', (
             ((leadingelec.pt > 40.)
             & (leadingelec.pt < 120.)
-            & (leadingelec.pfRelIso03_all < 0.15))
+            & (leadingelec.pfRelIso03_all < 0.1))
             | ((leadingelec.pt >= 120.)
             & (leadingelec.miniPFRelIso_all < 0.1))
         ).all())
@@ -614,7 +667,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         selection.add('elecIsoInv', (
             ((leadingelec.pt > 40.)
             & (leadingelec.pt < 120.)
-            & (leadingelec.pfRelIso03_all >= 0.15))
+            & (leadingelec.pfRelIso03_all >= 0.1))
             | ((leadingelec.pt >= 120.)
             & (leadingelec.miniPFRelIso_all >= 0.1))
         ).all())
@@ -645,8 +698,9 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             add_pileup_weight(weights, events.Pileup.nPU, self._year, dataset)
             bosons = getBosons(events)
             genBosonPt = bosons.pt.pad(1, clip=True).fillna(0)
-            if ('TT' in dataset):
-                add_TopPtReweighting(weights, getParticles(events,6,6).pt.pad(2, clip=True), self._year, dataset) #123 gives a weight of 1
+            #print('hpt ',bosons.pt[(candidatejets.pt>200).any()])
+            #print('hphi',bosons.phi[(candidatejets.pt>200).any()])
+            add_TopPtReweighting(weights, getParticles(events,6,6,['isLastCopy']).pt.pad(2, clip=True), self._year, dataset) #123 gives a weight of 1
             add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
             genflavor = matchedBosonFlavor(candidatejet, bosons)
             genlepflavor = matchedBosonFlavorLep(candidatejet, bosons)
@@ -657,31 +711,38 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
-            #add_TriggerWeight(w_hadhad, candidatejet.msdcorr, candidatejet.pt, leadinglep.pt, self._year, "hadhad")
-            #add_TriggerWeight(w_hadel, candidatejet.msdcorr, candidatejet.pt, leadinglep.pt, self._year, "hadel")
-            #add_TriggerWeight(w_hadmu, candidatejet.msdcorr, candidatejet.pt, leadinglep.pt, self._year, "hadmu")
+            add_LeptonSFs(w_hadel, leadinglep.pt, leadinglep.eta, self._year, "elec")
+            add_LeptonSFs(w_hadmu, leadinglep.pt, leadinglep.eta, self._year, "muon")
+            add_TriggerWeight(w_hadhad, candidatejet.msdcorr, candidatejet.pt, leadinglep.pt, self._year, "hadhad")
             #output['btagWeight'].fill(dataset=dataset, val=self._btagSF.addBtagWeight(weights, ak4_away)) #FIXME
 
         regions = {
-            'hadhad_signal': ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met'],
-            'hadhad_signal_met': ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jetacceptance450Inv', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem'],
-            'hadhad_cr_b_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'muonDphiAK8', 'muonIsoInv'],#,'jetlsf'],
-            'hadhad_cr_b_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'muonDphiAK8', 'muonIso'],#,'jetlsf'],
-            'hadhad_cr_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'muonDphiAK8', 'muonIsoInv'],#,'jetlsf'],
-            'hadhad_cr_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'muonDphiAK8', 'muonIso'],#,'jetlsf'],
-            'hadmu_signal': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso'],#, 'antiMuId', 'jetlsf'],
-            'hadel_signal': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso'],#, 'antiElId', 'jetlsf'],
-            'hadmu_cr_qcd': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_qcd': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv'],#, 'antiElId','jetlsf'],
-            'hadmu_cr_b': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_b': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso'],#, 'antiElId','jetlsf'],
-            'hadmu_cr_w': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_w': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso'],#, 'antiElId','jetlsf'],
+            'hadhad_signal': ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met'],# 'ptreg_hadhad'],
+            'hadhad_signal_met': ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem'],# 'ptreg_hadhad'],
+            'hadhad_cr_b': ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met'],# 'ptreg_hadhad'],
+            'hadhad_cr_b_met': ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08'],# 'ptreg_hadhad'],
+            'hadhad_cr_b_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIsoInv'],# 'ptreg_hadhad'],#,'jetlsf'],
+            'hadhad_cr_b_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso'],# 'ptreg_hadhad'],#,'jetlsf'],
+            'hadhad_cr_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv'],# 'ptreg_hadhad'],#,'jetlsf'],
+            'hadhad_cr_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso'],# 'ptreg_hadhad'],#,'jetlsf'],
+            'hadmu_signal': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId', 'jetlsf'],
+            'hadel_signal': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId', 'jetlsf'],
+            'hadmu_cr_qcd': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
+            'hadel_cr_qcd': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
+            'hadmu_cr_b': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
+            'hadel_cr_b': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
+            'hadmu_cr_w': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
+            'hadel_cr_w': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
             #'noselection': [],
         }
+        if (self._year == '2018'):
+            for r in regions:
+                regions[r].append('hem_cleaning')
         w_dict = {
             'hadhad_signal': w_hadhad,
             'hadhad_signal_met': w_hadhadmet,
+            'hadhad_cr_b': w_hadhad,
+            'hadhad_cr_b_met': w_hadhadmet,
             'hadhad_cr_b_mu': w_hadmu,
             'hadhad_cr_b_mu_iso': w_hadmu,
             'hadhad_cr_mu': w_hadmu,
@@ -706,6 +767,8 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         allcuts_hadmu_cr_qcd = set()
         allcuts_hadhad = set()
         allcuts_hadhad_met = set()
+        allcuts_hadhad_cr_b = set()
+        allcuts_hadhad_cr_b_met = set()
         allcuts_hadhad_cr_b_mu = set()
         allcuts_hadhad_cr_b_mu_iso = set()
         allcuts_hadhad_cr_mu = set()
@@ -720,50 +783,58 @@ class HtautauProcessor_NN(processor.ProcessorABC):
         output['cutflow_hadmu_cr_qcd'][dataset]['none'] += float(w_dict['hadmu_cr_qcd'].weight().sum())
         output['cutflow_hadhad'][dataset]['none'] += float(w_dict['hadhad_signal'].weight().sum())
         output['cutflow_hadhad_met'][dataset]['none'] += float(w_dict['hadhad_signal_met'].weight().sum())
+        output['cutflow_hadhad_cr_b'][dataset]['none'] += float(w_dict['hadhad_cr_b'].weight().sum())
+        output['cutflow_hadhad_cr_b_met'][dataset]['none'] += float(w_dict['hadhad_cr_b_met'].weight().sum())
         output['cutflow_hadhad_cr_b_mu'][dataset]['none'] += float(w_dict['hadhad_cr_b_mu'].weight().sum())
         output['cutflow_hadhad_cr_b_mu_iso'][dataset]['none'] += float(w_dict['hadhad_cr_b_mu_iso'].weight().sum())
         output['cutflow_hadhad_cr_mu'][dataset]['none'] += float(w_dict['hadhad_cr_mu'].weight().sum())
         output['cutflow_hadhad_cr_mu_iso'][dataset]['none'] += float(w_dict['hadhad_cr_mu_iso'].weight().sum())
-        for cut in regions['hadel_signal']:
+        for cut in regions['hadel_signal']+['ptreg_hadel','nn_disc_hadel']:
             allcuts_hadel.add(cut)
             output['cutflow_hadel'][dataset][cut] += float(w_dict['hadel_signal'].weight()[selection.all(*allcuts_hadel)].sum())
-        for cut in regions['hadmu_signal']:
+        for cut in regions['hadmu_signal']+['ptreg_hadmu','nn_disc_hadmu']:
             allcuts_hadmu.add(cut)
             output['cutflow_hadmu'][dataset][cut] += float(w_dict['hadmu_signal'].weight()[selection.all(*allcuts_hadmu)].sum())
-        for cut in regions['hadel_cr_b']:
+        for cut in regions['hadel_cr_b']+['ptreg_hadel','nn_disc_hadel']:
             allcuts_hadel_cr_b.add(cut)
             output['cutflow_hadel_cr_b'][dataset][cut] += float(w_dict['hadel_cr_b'].weight()[selection.all(*allcuts_hadel_cr_b)].sum())
-        for cut in regions['hadmu_cr_b']:
+        for cut in regions['hadmu_cr_b']+['ptreg_hadmu','nn_disc_hadmu']:
             allcuts_hadmu_cr_b.add(cut)
             output['cutflow_hadmu_cr_b'][dataset][cut] += float(w_dict['hadmu_cr_b'].weight()[selection.all(*allcuts_hadmu_cr_b)].sum())
-        for cut in regions['hadel_cr_w']:
+        for cut in regions['hadel_cr_w']+['ptreg_hadel','nn_disc_hadel']:
             allcuts_hadel_cr_w.add(cut)
             output['cutflow_hadel_cr_w'][dataset][cut] += float(w_dict['hadel_cr_w'].weight()[selection.all(*allcuts_hadel_cr_w)].sum())
-        for cut in regions['hadmu_cr_w']:
+        for cut in regions['hadmu_cr_w']+['ptreg_hadmu','nn_disc_hadmu']:
             allcuts_hadmu_cr_w.add(cut)
             output['cutflow_hadmu_cr_w'][dataset][cut] += float(w_dict['hadmu_cr_w'].weight()[selection.all(*allcuts_hadmu_cr_w)].sum())
-        for cut in regions['hadel_cr_qcd']:
+        for cut in regions['hadel_cr_qcd']+['ptreg_hadel','nn_disc_hadel']:
             allcuts_hadel_cr_qcd.add(cut)
             output['cutflow_hadel_cr_qcd'][dataset][cut] += float(w_dict['hadel_cr_qcd'].weight()[selection.all(*allcuts_hadel_cr_qcd)].sum())
-        for cut in regions['hadmu_cr_qcd']:
+        for cut in regions['hadmu_cr_qcd']+['ptreg_hadmu','nn_disc_hadmu']:
             allcuts_hadmu_cr_qcd.add(cut)
             output['cutflow_hadmu_cr_qcd'][dataset][cut] += float(w_dict['hadmu_cr_qcd'].weight()[selection.all(*allcuts_hadmu_cr_qcd)].sum())
-        for cut in regions['hadhad_signal']:
+        for cut in regions['hadhad_signal']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad.add(cut)
             output['cutflow_hadhad'][dataset][cut] += float(w_dict['hadhad_signal'].weight()[selection.all(*allcuts_hadhad)].sum())
-        for cut in regions['hadhad_signal_met']:
+        for cut in regions['hadhad_signal_met']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad_met.add(cut)
             output['cutflow_hadhad_met'][dataset][cut] += float(w_dict['hadhad_signal_met'].weight()[selection.all(*allcuts_hadhad_met)].sum())
-        for cut in regions['hadhad_cr_b_mu']:
+        for cut in regions['hadhad_cr_b']+['ptreg_hadhad','nn_disc_hadhad']:
+            allcuts_hadhad_cr_b.add(cut)
+            output['cutflow_hadhad_cr_b'][dataset][cut] += float(w_dict['hadhad_cr_b'].weight()[selection.all(*allcuts_hadhad_cr_b)].sum())
+        for cut in regions['hadhad_cr_b_met']+['ptreg_hadhad','nn_disc_hadhad']:
+            allcuts_hadhad_cr_b_met.add(cut)
+            output['cutflow_hadhad_cr_b_met'][dataset][cut] += float(w_dict['hadhad_cr_b_met'].weight()[selection.all(*allcuts_hadhad_cr_b_met)].sum())
+        for cut in regions['hadhad_cr_b_mu']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad_cr_b_mu.add(cut)
             output['cutflow_hadhad_cr_b_mu'][dataset][cut] += float(w_dict['hadhad_cr_b_mu'].weight()[selection.all(*allcuts_hadhad_cr_b_mu)].sum())
-        for cut in regions['hadhad_cr_b_mu_iso']:
+        for cut in regions['hadhad_cr_b_mu_iso']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad_cr_b_mu_iso.add(cut)
             output['cutflow_hadhad_cr_b_mu_iso'][dataset][cut] += float(w_dict['hadhad_cr_b_mu_iso'].weight()[selection.all(*allcuts_hadhad_cr_b_mu_iso)].sum())
-        for cut in regions['hadhad_cr_mu']:
+        for cut in regions['hadhad_cr_mu']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad_cr_mu.add(cut)
             output['cutflow_hadhad_cr_mu'][dataset][cut] += float(w_dict['hadhad_cr_mu'].weight()[selection.all(*allcuts_hadhad_cr_mu)].sum())
-        for cut in regions['hadhad_cr_mu_iso']:
+        for cut in regions['hadhad_cr_mu_iso']+['ptreg_hadhad','nn_disc_hadhad']:
             allcuts_hadhad_cr_mu_iso.add(cut)
             output['cutflow_hadhad_cr_mu_iso'][dataset][cut] += float(w_dict['hadhad_cr_mu_iso'].weight()[selection.all(*allcuts_hadhad_cr_mu_iso)].sum())
 
@@ -775,14 +846,20 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             #'btagWeightDown',
             #'btagEffStatUp',
             #'btagEffStatDown',
+            'TopPtReweightUp',
         ]
+        if isRealData:
+            systematics = [None]
 
-        def fill(region, systematic, wmod=None):
+        def fill(region, systematic, wmod=None, realData=False):
             selections = regions[region]
             cut = selection.all(*selections)
             sname = 'nominal' if systematic is None else systematic
             if wmod is None:
-                weight = w_dict[region].weight(modifier=systematic)[cut]
+                if not realData:
+                    weight = w_dict[region].weight(modifier=systematic)[cut]
+                else:
+                    weight = w_dict[region].weight(modifier=None)[cut]
             else:
                 weight = w_dict[region].weight()[cut] * wmod[cut]
 
@@ -793,17 +870,18 @@ class HtautauProcessor_NN(processor.ProcessorABC):
                 nn_disc = nn_disc_hadhad
                 massreg = massreg_hadhad
                 ptreg = ptreg_hadhad
-                antilep = mtaus_dr.astype(float)
+                antilep = np.minimum(mtaus_dr.any().astype(float),etausloose_dr.any().astype(float))
             if 'hadel' in region:
                 nn_disc = nn_disc_hadel
                 massreg = massreg_hadel
                 ptreg = ptreg_hadel
-                antilep = etaus_dr.astype(float)
+                antilep = etaus_dr.any().astype(float)
+                antilep = antilep+etausloose_dr.any().astype(float)-np.ones_like(antilep)
             if 'hadmu' in region:
                 nn_disc = nn_disc_hadmu
                 massreg = massreg_hadmu
                 ptreg = ptreg_hadmu
-                antilep = mtaus_dr.astype(float)
+                antilep = mtaus_dr.any().astype(float)
 
             bmaxind = ak4_away.btagDeepB.argmax()
             #output['jet_nn_kin'].fill(
@@ -835,6 +913,7 @@ class HtautauProcessor_NN(processor.ProcessorABC):
             output['met_nn_kin'].fill(
                 dataset=dataset,
                 region=region,
+                systematic=sname,
                 met_pt=normalize(met_p4.pt),
                 #jet_msd=normalize(candidatejet.msdcorr),
                 massreg=normalize(massreg),
@@ -843,15 +922,16 @@ class HtautauProcessor_NN(processor.ProcessorABC):
                 jetmet_dphi=normalize(jetmet_dphi_ak8),
                 #genhtt=normalize(gentautaudecay),
                 h_pt=normalize(ptreg),
-                n2ddt=normalize(candidatejet.n2ddt),
-                antilep=normalize(antilep),
+                #n2ddt=normalize(candidatejet.n2ddt),
+                #jet_pt=normalize(candidatejet.pt),
+                antilep=antilep[cut],
                 weight=weight,
             )
 
 
         for region in regions:
             for systematic in systematics:
-                fill(region, systematic)
+                fill(region, systematic, realData=isRealData)
         #    if 'GluGluHToTauTau' in dataset:
         #        for i in range(9):
         #            fill(region, 'LHEScale_%d' % i, events.LHEScaleWeight[:, i])

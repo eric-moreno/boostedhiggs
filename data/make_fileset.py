@@ -10,8 +10,10 @@ dirlist = [
     #["2017/", "2017",["Run20","hadd","UL","tmp"]],
     #["2018/UL", "2018UL",["200211_180642"]],
     #["Jan21/", "2017UL",[]],
-    ["Apr28/", "2017UL",[]],
-    #["Mar29/", "BoostedTau",[]],
+    #["Apr28/", "2017UL",[]],
+    ["Jun08/", "2017UL",[]],
+    #["Jun19/", "2018UL",[]],
+    #["Apr13/", "BoostedTau",[]],
 ]
 
 def eos_rec_search(startdir,suffix,skiplist,dirs):

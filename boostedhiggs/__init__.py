@@ -2,6 +2,7 @@ from .version import __version__
 from .hbbprocessor import HbbProcessor
 from .htautauprocessor import HtautauProcessor
 from .htautauprocessor_nn import HtautauProcessor_NN
+from .htautauprocessor_Z import HtautauProcessor_Z
 from .htautauprocessor_boostedtau import HtautauProcessor_BoostedTau
 from .htautauprocessor_gen import HtautauProcessor_Gen
 from .htautauprocessor_lepid import HtautauProcessor_LepID
@@ -15,6 +16,7 @@ __all__ = [
     'HbbProcessor',
     'HtautauProcessor',
     'HtautauProcessor_NN',
+    'HtautauProcessor_Z',
     'HtautauProcessor_BoostedTau',
     'HtautauProcessor_Gen',
     'HtautauProcessor_LepID',

@@ -94,4 +94,4 @@ if args.doscale:
   
 util.save(flist[0],'%s/%s.coffea' % (indir,args.outname))
 for x in chunk_names:
-  os.system("rm %s" % (indir,x))
+  os.system("rm %s" % x)

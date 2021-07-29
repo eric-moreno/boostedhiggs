@@ -36,7 +36,7 @@ process_latex = {
                  #'zll-ht400to600': r'Z($\ell\ell$) $400<HT<600$',
                  #'zll-ht600to800': r'Z($\ell\ell$) $600<HT<800$',
                  #'zll-ht800to1200': r'Z($\ell\ell$) $800<HT<1200$',
-                 'wlnu': r'W($\ell\nu$)',
+                 'wjets': r'W($\ell\nu$)',
                  'vv': 'Diboson',
                  'h125': r'H(125)',
                  "ggF-Htt":"ggF-Htt",
@@ -60,7 +60,7 @@ color_map = {
                  'vqq':'darkorange',
                  'qcd':'royalblue',
                  'zll':'darkorchid',
-                 'wlnu':'forestgreen',
+                 'wjets':'forestgreen',
                  'vv':'lightpink',
                  'h125':'snow',
 }
@@ -69,10 +69,10 @@ import re
 nosig = re.compile("(?!h125)(?!data)")
 #nosig = re.compile("(?!ggF-Htt)(?!VBF-Htt)(?!Wm-Htt)(?!Wp-Htt)(?!ZH-Htt)(?!ggZll-Htt)(?!ggZvv-Htt)(?!ggZqq-Htt)(?!tt-Htt)(?!h125)(?!data)")
 
-#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
-#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)")
-#nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!zqq)(?!wlnu)(?!vv)(?!wqq)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wjets)(?!vv)(?!wqq)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!vqq)(?!wjets)(?!vv)(?!zll)")
+#nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!zqq)(?!wjets)(?!vv)(?!wqq)(?!zll)")
 
-nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll)(?!data)") 
+nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wjets)(?!vv)(?!zll)(?!data)") 
 
-#nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wlnu)(?!vv)(?!zll-ht100to200)(?!zll-ht1200to2500)(?!zll-ht200to400)(?!zll-ht2500toinf)(?!zll-ht400to600)(?!zll-ht600to800)(?!zll-ht800to1200)(?!data)") 
+#nobkg = re.compile("(?!qcd)(?!tt-dilep)(?!tt-semilep)(?!tt-had)(?!st)(?!vqq)(?!wjets)(?!vv)(?!zll-ht100to200)(?!zll-ht1200to2500)(?!zll-ht200to400)(?!zll-ht2500toinf)(?!zll-ht400to600)(?!zll-ht600to800)(?!zll-ht800to1200)(?!data)") 

@@ -3,17 +3,22 @@ import os, sys
 import plot_stack
 import plot_cutflow
 import plot_2d
+import samplelists
 
-infilePre = '../condor/May14_NN/hists_sum_'
+infilePre = '../condor/Jun10_NN/hists_sum_'
 useData = True
-lumi = 36.7
-tag = "NNTest_May14"
+#lumi = 36.7
+lumi = 41.5
+year = '2017'
+#lumi = 59.7
+#tag = "NNTest_Jun30_2018"
+tag = "NNTest_Jun10_HWW"
 massVar = "massreg"
 massRange = [50.,210.]
 massLabel = r"$m_{NN}$"
 
-hadHadCut = 0.9999
-hadLepCut = 0.95
+hadHadCut = 0.99999
+hadLepCut = 0.99
 
 histListBase = [
   #"jet_nn_kin", 
@@ -28,12 +33,12 @@ srHist = "met_nn_kin"
 regionList = [
   "hadhad_signal",
   "hadhad_signal_met",
-  "hadhad_cr_b",
-  "hadhad_cr_b_met",
-  "hadhad_cr_mu",
-  "hadhad_cr_mu_iso",
-  "hadhad_cr_b_mu",
-  "hadhad_cr_b_mu_iso",
+  #"hadhad_cr_b",
+  #"hadhad_cr_b_met",
+  #"hadhad_cr_mu",
+  #"hadhad_cr_mu_iso",
+  #"hadhad_cr_b_mu",
+  #"hadhad_cr_b_mu_iso",
   "hadmu_signal",
   "hadel_signal",
   "hadmu_cr_qcd",
@@ -90,7 +95,7 @@ plotList = {
     "titleAdd":["", r", $NN>NNCUT$", "", "", "", r", $NN>NNCUT$"],
     "selStr":["", "_nnpass", "", "_zoom", "", "_nnpass"],
     "sels":[{}, {"nn_disc":["NNCUT",None]}, {}, {"nn_disc":[0.9,None]}, {}, {"nn_disc":["NNCUT",None]}],
-    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.00001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}, {"dosigrat":True}, {"dosigrat":True}],
+    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.00001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True,"rebin":[0.9,0.95,0.99,0.995,0.999,0.9995,0.9999,1.00001]}, {"dosigrat":True}, {"dosigrat":True}],
     "blindSel":["", "", ["None", hadLepCut], ["None", hadLepCut], "", ""],
     "addOptsBase":"",
   },
@@ -111,7 +116,7 @@ def StringRemap(inputObj, lepType, nnCut):
     return newObj
   
 looseList = ["hadhad_signal", "hadhad_signal_met", "hadhad_cr_b", "hadhad_cr_b_met", "hadhad_cr_b_mu", "hadhad_cr_b_mu_iso", "hadhad_cr_mu", "hadhad_cr_mu_iso", "hadel_signal", "hadmu_signal", "hadel_cr_b", "hadel_cr_w", "hadel_cr_qcd", "hadmu_cr_b", "hadmu_cr_w", "hadmu_cr_qcd"]
-lepLooseNN = "0.10"
+lepLooseNN = "0.9"
 hadLooseNN = "0.995"
 
 def addPassFail(origList, region, ptList, keepBlind=True):
@@ -151,80 +156,8 @@ def addPassFail(origList, region, ptList, keepBlind=True):
   newList = {obj:origList[obj]+passFailList[obj] if obj in passFailList else origList[obj] for obj in origList}
   return newList
 
-mcSamples = [
-  #"QCD", 
-  #"TT", 
-  #"ST", 
-  #"WJetsToLNu", 
-  #"DYJetsToLL", 
-  #"VJetsToQQ", 
-  #"HTauTau",
-  "DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8",
-  "DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8",
-  "DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8",
-  "DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8",
-  "QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  #"QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  #"QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8",
-  "ST_s-channel_4f_hadronicDecays_TuneCP5_13TeV-amcatnlo-pythia8",
-  "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8",
-  "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8",
-  "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8",
-  "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8",
-  "ST_tW_top_5f_inclusiveDecays_TuneCP5_PSweights_13TeV-powheg-pythia8",
-  "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
-  "TTToHadronic_TuneCP5_13TeV-powheg-pythia8",
-  "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
-  "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "WJetsToQQ_HT-800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "ZJetsToQQ_HT400to600_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "ZJetsToQQ_HT600to800_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "ZJetsToQQ_HT-800toInf_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8",
-  "GluGluHToTauTau_M125_13TeV_powheg_pythia8",
-  "VBFHToTauTau_M125_13TeV_powheg_pythia8",
-  "WminusHToTauTau_M125_13TeV_powheg_pythia8",
-  "WplusHToTauTau_M125_13TeV_powheg_pythia8",
-  "ZHToTauTau_M125_13TeV_powheg_pythia8",
-  "ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8",
-  "ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8",
-  "ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8",
-  "ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8",
-]
-
-dataSamples = [
-  #"SingleMuon", 
-  #"JetHT", 
-  #"SingleElectron",
-  #"MET",
-  "SingleElectron_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1",
-  "SingleElectron_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1",
-  "SingleElectron_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1",
-  "SingleElectron_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v2",
-  "JetHT_pancakes-02_Run2017C-09Aug2019_UL2017-v1",
-  "JetHT_pancakes-02_Run2017D-09Aug2019_UL2017-v1",
-  "JetHT_pancakes-02_Run2017E-09Aug2019_UL2017-v1",
-  "JetHT_pancakes-02_Run2017F-09Aug2019_UL2017-v1",
-  "SingleMuon_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1",
-  "SingleMuon_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1",
-  "SingleMuon_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1",
-  "SingleMuon_pancakes-02-withPF_Run2017F-09Aug2019_UL2017-v1",
-  "MET_pancakes-02-withPF_Run2017C-09Aug2019_UL2017_rsb-v1",
-  "MET_pancakes-02-withPF_Run2017D-09Aug2019_UL2017_rsb-v1",
-  "MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1",
-  "MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1",
-]
+mcSamples = samplelists.getSamplesMC(year)
+dataSamples = samplelists.getSamplesData(year)
 
 cutTitleMap = {
   "cutflow_hadhad":r'\tau_{h}\tau_{h}',
@@ -307,7 +240,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[100.,150.]},
     "sigSel":{},
     "saveLabel":"",
   },
@@ -318,7 +251,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[300,450],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"",
   },
@@ -329,7 +262,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[50.,150.]},
     "sigSel":{},
     "saveLabel":"",
   },
@@ -598,7 +531,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[100.,200.]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[100.,150.]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
   },
@@ -620,7 +553,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,200.]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[50.,150.]},
     "sigSel":{},
     "saveLabel":"_invdphisel",
   },
@@ -796,7 +729,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'antilep':[0.5,None],'met_pt':[100.,200.],'jetmet_dphi':[None,1.6]},
+    "specSel":{'antilep':[0.5,None],'met_pt':[100.,150.],'jetmet_dphi':[None,1.6]},
     "sigSel":{},
     "saveLabel":"_antilep",
   },
@@ -818,7 +751,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'antilep':[0.5,None],'met_pt':[50.,200.],'jetmet_dphi':[None,1.6]},
+    "specSel":{'antilep':[0.5,None],'met_pt':[50.,150.],'jetmet_dphi':[None,1.6]},
     "sigSel":{},
     "saveLabel":"_antilep",
   },
@@ -884,7 +817,7 @@ print('AntiLep')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 regionList = [
@@ -906,7 +839,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
+    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[100.,150.]},
     "sigSel":{},
     "saveLabel":"_n2sel",
   },
@@ -928,7 +861,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "specSel":{'n2ddt':[None,0.],'jetmet_dphi':[None,1.6],'met_pt':[50.,150.]},
     "sigSel":{},
     "saveLabel":"_n2sel",
   },
@@ -1005,7 +938,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[100.,200.]},
+    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[100.,150.]},
     "sigSel":{},
     "saveLabel":"_n2cut",
   },
@@ -1027,7 +960,7 @@ region_opts = {
     "blind":True,
     "ptList":[0],#[450,1200],
     "cutNN":hadHadCut,
-    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,200.]},
+    "specSel":{'n2ddt':[0.,None],'jetmet_dphi':[None,1.6],'met_pt':[50.,150.]},
     "sigSel":{},
     "saveLabel":"_n2cut",
   },
@@ -1275,7 +1208,7 @@ print('Low MET')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 region_opts = {
@@ -1286,7 +1219,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
   },
@@ -1297,7 +1230,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
   },
@@ -1309,7 +1242,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
   },
@@ -1320,7 +1253,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[None,1.6],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET",
   },
@@ -1337,7 +1270,7 @@ print('High MET')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 region_opts = {
@@ -1348,7 +1281,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
   },
@@ -1359,7 +1292,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
   },
@@ -1371,7 +1304,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
   },
@@ -1382,7 +1315,7 @@ region_opts = {
     "blind":False,
     "ptList":[0],#[400,1200],
     "cutNN":hadHadCut,
-    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[200.,None]},
+    "specSel":{'jetmet_dphi':[1.6,None],'met_pt':[150.,None]},
     "sigSel":{},
     "saveLabel":"_highMET_invdphisel",
   },
@@ -1399,7 +1332,7 @@ print('High MET, inv dPhi')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=False)
 print("Done")
 
 #regionList = [

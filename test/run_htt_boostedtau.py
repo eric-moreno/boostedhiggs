@@ -26,7 +26,7 @@ def run_processor(year,selsamples,starti,endi,outname):
 
 
 if __name__ == "__main__":
-    #ex. python run_htt.py --year 2018 --starti 0 --endi -1 --selsamples GluGluHToTauTau --outname htt_runtest
+    #python run_htt_boostedtau.py --year 2017 --selsamples boostedTau_GluGluHTauTau_boostedTaua_13TeV_user --starti 0 --endi 2 --outname htt_boostedtau
     parser = argparse.ArgumentParser()
     parser.add_argument('--year',       dest='year',       default='2017',       help="year",        type=str)
     parser.add_argument('--starti',     dest='starti',     default=0,            help="start index", type=int)
