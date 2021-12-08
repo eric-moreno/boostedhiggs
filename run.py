@@ -22,6 +22,9 @@ def main(args):
     if args.processor == "hww":
         from boostedhiggs.hwwprocessor import HwwProcessor
         p = HwwProcessor(year=args.year, jet_arbitration='met', el_wp="wp80")
+    elif args.processor == 'htt':
+        from boostedhiggs.httprocessor import HttProcessor
+        p = HttProcessor(year = args.year)
     else:
         warnings.warn('Warning: no processor declared')
         return
