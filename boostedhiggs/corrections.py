@@ -196,3 +196,41 @@ def is_overlap(events,dataset,triggers,year):
                 if t in events.HLT.fields:
                     overlap = overlap & np.logical_not(events.HLT[t])
     return overlap
+
+#from https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/240924/1/s10052-017-5389-1.pdf
+Vpt_corr_bins = np.array([
+    30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0, 750.0, 800.0, 850.0, 900.0, 950.0, 1000.0, 1100.0, 1200.0, 1300.0, 1400.0, 1600.0, 1800.0, 2000.0, 2200.0, 2400.0, 2600.0, 2800.0, 3000.0, 6500.0
+])
+Vpt_corr_value = np.array([
+    1.003846859, 1.005303426, 0.9947071550000002, 0.98928453, 0.9850576999999998, 0.9813048799999999, 0.9778652800000001, 0.97445919, 0.9710953100000002, 0.9677317199999999, 0.9642441799999999, 0.9608947800000001, 0.9525394399999999, 0.9365518699999998, 0.9219756100000001, 0.9087814499999999, 0.8968980000000001, 0.8859843000000001, 0.8760160999999999, 0.8671511999999999, 0.8583182999999999, 0.8507631, 0.8431063999999999, 0.8362730999999999, 0.8303883000000001, 0.8242617999999999, 0.8194368000000001, 0.8138635, 0.8077816999999999, 0.8017448, 0.7931413999999999, 0.7852697, 0.7775183999999999, 0.7692830000000002, 0.7558978, 0.7443137, 0.7334527, 0.7233202, 0.7140055999999999, 0.7045699000000001, 0.691076, 0.6890300000000001
+])
+
+def add_VJets_NLOkFactor(weights, genBosonPt, year, dataset):
+    #if (year == '2017' or year == '2018') and 'ZJetsToQQ_HT' in dataset:
+    #    nlo_over_lo_qcd = compiled['2017_Z_nlo_qcd'](genBosonPt)
+    #    nlo_over_lo_ewk = compiled['Z_nlo_over_lo_ewk'](genBosonPt)
+    #elif (year == '2017' or year == '2018') and 'WJetsToQQ_HT' in dataset:
+    #    nlo_over_lo_qcd = compiled['2017_W_nlo_qcd'](genBosonPt)
+    #    nlo_over_lo_ewk = compiled['W_nlo_over_lo_ewk'](genBosonPt)
+    #elif year == '2016' and 'DYJetsToQQ' in dataset:
+    #    nlo_over_lo_qcd = compiled['2016_Z_nlo_qcd'](genBosonPt)
+    #    nlo_over_lo_ewk = compiled['Z_nlo_over_lo_ewk'](genBosonPt)
+    #elif year == '2016' and 'WJetsToQQ' in dataset:
+    #    nlo_over_lo_qcd = compiled['2016_W_nlo_qcd'](genBosonPt)
+    #    nlo_over_lo_ewk = compiled['W_nlo_over_lo_ewk'](genBosonPt)
+    if 'DYJetsToLL_Pt' in dataset:
+        nlo_over_lo_qcd = np.ones_like(ak.to_numpy(genBosonPt).flatten())
+        nlo_over_lo_ewk = Vpt_corr_value[np.digitize(np.clip(ak.to_numpy(genBosonPt).flatten(),Vpt_corr_bins[0], Vpt_corr_bins[-1]), Vpt_corr_bins)-1]
+    else:
+        return
+    weights.add('VJets_NLOkFactor', nlo_over_lo_qcd * nlo_over_lo_ewk)
+
+def add_TopPtReweighting(weights, topPt, year, dataset):
+#$SF(p_T)=e^{0.0615-0.0005\cdot p_T}$ for data/POWHEG+Pythia8
+    if 'TT' in dataset:
+        toppt_weight1 = np.exp(0.0615-0.0005*np.clip(topPt[:,0],0.,500.))
+        toppt_weight2 = np.exp(0.0615-0.0005*np.clip(topPt[:,1],0.,500.))
+    else:
+        toppt_weight1 = np.ones_like(topPt[:,0])
+        toppt_weight2 = np.ones_like(topPt[:,1])
+    weights.add('TopPtReweight', np.sqrt(toppt_weight1 * toppt_weight2), np.ones_like(toppt_weight1), np.sqrt(toppt_weight1 * toppt_weight2))

@@ -13,8 +13,8 @@ from .corrections import (
     corrected_msoftdrop,
 #    n2ddt_shift,
     add_pileup_weight,
-#    add_VJets_NLOkFactor,
-#    add_TopPtReweighting,
+    add_VJets_NLOkFactor,
+    add_TopPtReweighting,
 #    add_jetTriggerWeight,
 #    add_TriggerWeight,
 #    add_LeptonSFs,
@@ -42,8 +42,9 @@ def normalize(val, cut=None):
         return ar
 
 class HttProcessor(processor.ProcessorABC):
-    def __init__(self, year="2017", jet_arbitration='met'):
+    def __init__(self, year="2017", jet_arbitration='met', plotopt=0):
         self._year = year
+        self._plotopt = plotopt
         self._jet_arbitration = jet_arbitration
         
         self._triggers = {
@@ -184,28 +185,39 @@ class HttProcessor(processor.ProcessorABC):
             },
         }[year]
 
+        jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 40, 200., 1200.)
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
-        jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 8, 50, 210.)
-        nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,1.])
-        nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,0.996,0.997,0.998,0.999,1.])
-        nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$', [0.,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.96,0.97,0.98,0.99,0.995,1.])
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,0.999999,1.00001])
-        massreg_bin = hist.Bin('massreg',r'$m_{NN}$', 21, 0., 210.)
-        mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', [0., 60., 500.])
-        mt_jetmet_bin = hist.Bin('mt_jetmet', r'$m_{T}(j, MET)$', 10, 0., 1000.)
+        jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 50, 0., 500.)
+        nn_hadhad_bin = hist.Bin('nn_hadhad',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        nn_hadhad_qcd_bin = hist.Bin('nn_hadhad_qcd',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        nn_hadhad_wjets_bin = hist.Bin('nn_hadhad_wjets',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        ztagger_mu_qcd_bin = hist.Bin('ztagger_mu_qcd',r'$Z^{\mu\tau}_{NN}[QCD]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        ztagger_mu_mm_bin = hist.Bin('ztagger_mu_mm',r'$Z^{\mu\tau}_{NN}[Z\mu\mu]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        ztagger_mu_hm_bin = hist.Bin('ztagger_mu_hm',r'$Z^{\mu\tau}_{NN}[Z\mu\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,0.999999,0.9999999,1.000001])
+        massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.,450.,500.])
+        massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
+        ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 100, 0., 1.)
+        mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', 50, 0., 500.)
+        mt_jetmet_bin = hist.Bin('mt_jetmet', r'$m_{T}(j, MET)$', 100, 0., 1000.)
         oppbjet_pt_bin = hist.Bin('oppbjet_pt', r'Max opp. deepCSV-bjet $p_{T}$ [GeV]', 20, 0., 500)
         oppbtag_bin = hist.Bin('oppbtag', r'Max opp. deepCSV-b', 10, 0., 1)
-        lep_pt_bin = hist.Bin('lep_pt', r'Lepton $p_{T}$ [GeV]', 8, 40, 200)
+        lep_pt_bin = hist.Bin('lep_pt', r'Lepton $p_{T}$ [GeV]', 50, 0., 500.)
         lep_eta_bin = hist.Bin('lep_eta', r'Lepton $\eta$', 20, -3., 3.)
         jet_lsf3_bin = hist.Bin('lsf3', r'Jet LSF$_3$', 20, 0., 1.)
         lep_jet_dr_bin = hist.Bin('lep_jet_dr', r'$\Delta R(jet,lepton)$', 40, 0., 4.)
-        lep_miso_bin = hist.Bin('miso', r'Lepton miniIso', [0.,0.025,0.05,0.075,0.1,0.2,0.4,0.6,0.8,1.])
-        jet_jetlep_m_bin = hist.Bin('jetlep_m', r'Jet+lepton $m$ [GeV]', 20, 0, 600.)
-        jet_jetmet_m_bin = hist.Bin('jetmet_m', r'Jet+MET $m$ [GeV]', 20, 0, 600.)
-        jet_jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
-        jetmet_dphi_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 2, 0., 3.2)
-        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,100.,150.,200.,1000.])
-        met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 10, 0, 800)
+        lep_miso_bin = hist.Bin('lep_miso', r'Lepton miniIso', 80, 0., 0.4)
+        jetlep_m_bin = hist.Bin('jetlep_m', r'Jet-lepton $m$ [GeV]', 20, 0, 200.)
+        jetmet_m_bin = hist.Bin('jetmet_m', r'Jet+MET $m$ [GeV]', 20, 0, 600.)
+        jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
+        jetmet_dphi_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 2, 0., 3.14)
+        jetmet_dphi_fine_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 35, 0., 3.5)
+        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,75.,100.,150.,1000.])
+        met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 100, 0, 1000)
+        met_pup_pt_bin = hist.Bin('met_pup_pt', r'PUPPI MET [GeV]', 100, 0, 1000)
+        n2ddt_bin = hist.Bin('n2ddt', r'N_{2}^{DDT}', 2, -1.,1.)
         h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [250,280,300,350,400,500,600,1200])
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
@@ -213,34 +225,79 @@ class HttProcessor(processor.ProcessorABC):
         gentau1had_bin = hist.Bin('gentau1had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
         gentau2had_bin = hist.Bin('gentau2had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
 
+        self._altplots = (
+            { 'jet_pt':jet_pt_bin, 'jet_eta':jet_eta_bin, 'jet_msd':jet_msd_bin, 'mt_lepmet':mt_lepmet_bin, 'mt_jetmet': mt_jetmet_bin, 'lep_pt':lep_pt_bin, 'lep_eta':lep_eta_bin, 'lep_jet_dr':lep_jet_dr_bin, 'n2ddt':n2ddt_bin, 'jetlep_m':jetlep_m_bin, 'met_nopup_pt':met_nopup_pt_bin, 'met_pup_pt':met_pup_pt_bin, 'jetmet_dphi':jetmet_dphi_fine_bin, 'massreg':massreg_fine_bin, 'ztagger':ztagger_bin},
+            { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu_qcd':ztagger_mu_qcd_bin, 'ztagger_mu_mm':ztagger_mu_mm_bin, 'ztagger_mu_hm':ztagger_mu_hm_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin}, 
+        )[self._plotopt-1]
+
         self._accumulator = processor.dict_accumulator({
             # dataset -> sumw
             'sumw': processor.defaultdict_accumulator(float),
             # dataset -> cut -> count
-            'cutflow_hadhad': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'cutflow_hadhad_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'cutflow_hadhad_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_signal_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            #'cutflow_hadhad_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_b_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'cutflow_hadhad_cr_b_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b_met_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b_met_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            #'cutflow_hadhad_cr_b_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_b_mu_iso': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadhad_cr_mu_iso': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'cutflow_hadel': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'cutflow_hadmu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_mu_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_b_mu_iso_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_mu_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadhad_cr_mu_iso_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadel_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadel_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadel_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             'cutflow_hadmu_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-            'met_nn_kin': hist.Hist(
-                'Events',
-                hist.Cat('dataset', 'Dataset'),
-                hist.Cat('systematic', 'Systematic'),
-                hist.Cat('region', 'Region'),
-                met_pt_bin, massreg_bin, nn_disc_bin, jetmet_dphi_bin, h_pt_bin, antilep_bin,
-            ),
+            'cutflow_hadel_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadel_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+            'cutflow_hadmu_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
         })
+        if self._plotopt==0:
+            self._accumulator.add(processor.dict_accumulator({
+                'met_nn_kin': hist.Hist(
+                    'Events',
+                    hist.Cat('dataset', 'Dataset'),
+                    hist.Cat('systematic', 'Systematic'),
+                    hist.Cat('region', 'Region'),
+                    met_pt_bin, massreg_bin, nn_disc_bin, h_pt_bin, 
+                )}
+            ))
+        elif self._plotopt>0:
+            self._accumulator.add(processor.dict_accumulator({
+                '%s_kin'%n: hist.Hist(
+                    'Events',
+                    hist.Cat('dataset', 'Dataset'),
+                    hist.Cat('systematic', 'Systematic'),
+                    hist.Cat('region', 'Region'),
+                    self._altplots[n], nn_disc_bin,
+                    ) for n in self._altplots
+                }
+            ))
 
 
     @property
@@ -353,9 +410,11 @@ class HttProcessor(processor.ProcessorABC):
         best_ak8_met_dphi = ak.firsts(ak.to_regular(ak8_met_dphi[best_ak8_idx]))
         mt_jetmet = np.sqrt(2. * ak8s.pt * mets.pt * (1 - np.cos(ak8_met_dphi)))
 
-        nn_disc_hadel = events.IN.hadel_v5p1
-        nn_disc_hadmu = events.IN.hadmu_v5p1
-        nn_disc_hadhad = events.IN.hadhad_v5p1_multi_Higgs
+        nn_disc_hadel = events.IN.hadel_v6
+        nn_disc_hadmu = events.IN.hadmu_v6
+        nn_disc_hadhad = events.IN.hadhad_v6_multi_Higgs
+        nn_disc_hadhad_qcd = events.IN.hadhad_v6_multi_QCD
+        nn_disc_hadhad_wjets = events.IN.hadhad_v6_multi_WJets
 
         massreg_hadel = events.MassReg.hadel_mass
         massreg_hadmu = events.MassReg.hadmu_mass
@@ -372,6 +431,16 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('nn_disc_hadel', nn_disc_hadel>0.95)
         selection.add('nn_disc_hadmu', nn_disc_hadmu>0.95)
         selection.add('nn_disc_hadhad', nn_disc_hadhad>0.9999)
+
+        ztagger_el = events.Ztagger.v6_Zee_Zhe
+        ztagger_mu = events.Ztagger.hadmu_v6_multi_Zhm
+        ztagger_mu_mm = events.Ztagger.hadmu_v6_multi_Zmm
+        ztagger_mu_qcd = events.Ztagger.hadmu_v6_multi_QCD
+
+        selection.add('ztagger_el', ztagger_el < 0.01)
+        selection.add('ztagger_mu', ztagger_mu > 0.95)
+        selection.add('ztagger_elInv', ztagger_el >= 0.01)
+        selection.add('ztagger_muInv', ztagger_mu <= 0.95)
         
         selection.add('jetacceptance', (
             (best_ak8.pt > 200.)
@@ -466,8 +535,11 @@ class HttProcessor(processor.ProcessorABC):
         minidx = ak.argmin(ak4_met_dphi, axis=1, keepdims=True)
         ak4_met_mindphi = ak4_met_dphi[minidx]
         selection.add('jetmet_dphi', ak.firsts(ak4_met_mindphi < np.pi/2))
+        selection.add('jetmet_dphiInv', ak.firsts(ak4_met_mindphi >= np.pi/2))
 
         selection.add('met', met.pt > 20.)
+        selection.add('met50', met.pt > 50.)
+        selection.add('met100', met.pt > 100.)
         selection.add('methard', met.pt>150.)
 
         #muons
@@ -565,6 +637,8 @@ class HttProcessor(processor.ProcessorABC):
 
         selection.add('antiElId', ak.any(etau_ak8_dr < 0.8, -1))
         selection.add('antiMuId', ak.any(mtau_ak8_dr < 0.8, -1))
+        selection.add('antiId', ak.any(etau_ak8_dr < 0.8, -1) & ak.any(mtau_ak8_dr < 0.8, -1))
+        selection.add('antiIdInv',~(ak.any(etau_ak8_dr < 0.8, -1) & ak.any(mtau_ak8_dr < 0.8, -1)))
 
         one_el = (
             ~ak.any(electrons & ~goodelectrons, 1)
@@ -649,8 +723,8 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('elecDphiAK8', ele_ak8_dphi > 2*np.pi/3)
 
         lep_ak8_dr = best_ak8_p4.delta_r(leadinglep)
-        selection.add('lepDrAk8', lep_ak8_dr < 0.8)
-        selection.add('lepDrAk8Inv', lep_ak8_dr >= 0.8)
+        selection.add('lepDrAK8', lep_ak8_dr < 0.8)
+        selection.add('lepDrAK8Inv', lep_ak8_dr >= 0.8)
 
         selection.add('muonIso', (
             ((leadingmuon.pt > 30)
@@ -710,8 +784,8 @@ class HttProcessor(processor.ProcessorABC):
             bosons = getBosons(events)
             genBosonPt = ak.fill_none(ak.pad_none(bosons.pt, 1, clip=True), 0)
             #I don't have an implementation of these
-            #add_TopPtReweighting(weights, getParticles(events,6,6,['isLastCopy']).pt.pad(2, clip=True), self._year, dataset) #123 gives a weight of 1
-            #add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
+            add_TopPtReweighting(weights, ak.pad_none(getParticles(events,6,6,['isLastCopy']).pt, 2, clip=True), self._year, dataset) #123 gives a weight of 1
+            add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
             genflavor = matchedBosonFlavor(best_ak8, bosons)
             genlepflavor = matchedBosonFlavorLep(best_ak8, bosons)
             genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events,True)
@@ -725,139 +799,114 @@ class HttProcessor(processor.ProcessorABC):
             #add_TriggerWeight(w_hadhad, best_ak8.msdcorr, best_ak8.pt, leadinglep.pt, self._year, "hadhad")
 
         regions = {
-            'hadhad_signal': ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met'],# 'ptreg_hadhad'],
-            'hadhad_signal_met': ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem'],# 'ptreg_hadhad'],
-            'hadhad_cr_b': ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met'],# 'ptreg_hadhad'],
-            'hadhad_cr_b_met': ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08'],# 'ptreg_hadhad'],
-            'hadhad_cr_b_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAk8Inv', 'muonIsoInv'],# 'ptreg_hadhad'],#,'jetlsf'],
-            'hadhad_cr_b_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAk8Inv', 'muonIso'],# 'ptreg_hadhad'],#,'jetlsf'],
-            'hadhad_cr_mu': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8Inv', 'muonIsoInv'],# 'ptreg_hadhad'],#,'jetlsf'],
-            'hadhad_cr_mu_iso': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8Inv', 'muonIso'],# 'ptreg_hadhad'],#,'jetlsf'],
-            'hadmu_signal': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8', 'mt_lepmet', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId', 'jetlsf'],
-            'hadel_signal': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8', 'mt_lepmet', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId', 'jetlsf'],
-            'hadmu_cr_qcd': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAk8', 'muonIsoInv'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_qcd': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAk8', 'elecIsoInv'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
-            'hadmu_cr_b': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAk8', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_b': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAk8', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
-            'hadmu_cr_w': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8', 'mt_lepmetInv', 'muonIso'],# 'ptreg_hadmu'],#, 'antiMuId','jetlsf'],
-            'hadel_cr_w': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAk8', 'mt_lepmetInv', 'elecIso'],# 'ptreg_hadel'],#, 'antiElId','jetlsf'],
+            'hadhad_signal':               ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met','antiId','jetmet_dphi'],
+            'hadhad_signal_met':           ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphi'],
+            'hadhad_cr_anti_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiIdInv','jetmet_dphi'],
+            'hadhad_cr_dphi_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphiInv'],
+            #'hadhad_cr_b':                 ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met'],
+            'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphi'],
+            'hadhad_cr_b_met_anti_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiIdInv','jetmet_dphi'],
+            'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphiInv'],
+            #'hadhad_cr_b_mu':              ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIsoInv'],
+            'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
+            'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphi'],
+            'hadhad_cr_mu_iso':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
+            'hadhad_cr_b_mu_iso_anti_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
+            'hadhad_cr_mu_anti_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiIdInv','jetmet_dphi'],
+            'hadhad_cr_mu_iso_anti_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
+            'hadhad_cr_b_mu_iso_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
+            'hadhad_cr_mu_dphi_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphiInv'],
+            'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
+            'hadmu_signal':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_mu'],
+            'hadel_signal':          ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_el'],
+            'hadmu_cr_ztag_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
+            'hadel_cr_ztag_inv':     ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
+            'hadmu_cr_dphi_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphiInv','ztagger_mu'],
+            'hadel_cr_dphi_inv':     ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphiInv','ztagger_el'],
+            'hadmu_cr_qcd_ztag_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphi','ztagger_muInv'],
+            'hadel_cr_qcd_ztag_inv': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphi','ztagger_elInv'],
+            'hadmu_cr_qcd_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphiInv','ztagger_mu'],
+            'hadel_cr_qcd_dphi_inv': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphiInv','ztagger_el'],
+            'hadmu_cr_qcd':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphi','ztagger_mu'],
+            'hadel_cr_qcd':          ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphi','ztagger_el'],
+            'hadmu_cr_b':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphi','ztagger_mu'],
+            'hadel_cr_b':            ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphi','ztagger_el'],
+            'hadmu_cr_b_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphi','ztagger_muInv'],
+            'hadel_cr_b_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphi','ztagger_elInv'],
+            'hadmu_cr_b_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphiInv','ztagger_mu'],
+            'hadel_cr_b_dphi_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphiInv','ztagger_el'],
+            'hadmu_cr_w':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphi','ztagger_mu'],
+            'hadel_cr_w':            ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphi','ztagger_el'],
+            'hadmu_cr_w_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
+            'hadel_cr_w_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
+            'hadmu_cr_w_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphiInv','ztagger_mu'],
+            'hadel_cr_w_dphi_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphiInv','ztagger_el'],
             #'noselection': [],
         }
         if (self._year == '2018'):
             for r in regions:
                 regions[r].append('hem_cleaning')
 
-        w_dict = {
-            'hadhad_signal': w_hadhad,
-            'hadhad_signal_met': w_hadhadmet,
-            'hadhad_cr_b': w_hadhad,
-            'hadhad_cr_b_met': w_hadhadmet,
-            'hadhad_cr_b_mu': w_hadmu,
-            'hadhad_cr_b_mu_iso': w_hadmu,
-            'hadhad_cr_mu': w_hadmu,
-            'hadhad_cr_mu_iso': w_hadmu,
-            'hadmu_signal': w_hadmu,
-            'hadel_signal': w_hadel,
-            'hadmu_cr_qcd': w_hadmu,
-            'hadel_cr_qcd': w_hadel,
-            'hadmu_cr_b': w_hadmu,
-            'hadel_cr_b': w_hadel,
-            'hadmu_cr_w': w_hadmu,
-            'hadel_cr_w': w_hadel,
-        }
+        if self._plotopt>0:
+            for r in regions:
+                if 'hadhad' in r:
+                    regions[r].extend(['ptreg_hadhad','methard'])
+                elif 'hadel' in r:
+                    regions[r].extend(['ptreg_hadel','met100'])
+                elif 'hadmu' in r:
+                    regions[r].extend(['ptreg_hadmu','met100'])
 
-        allcuts_hadel = set()
-        allcuts_hadmu = set()
-        allcuts_hadel_cr_b = set()
-        allcuts_hadmu_cr_b = set()
-        allcuts_hadel_cr_w = set()
-        allcuts_hadmu_cr_w = set()
-        allcuts_hadel_cr_qcd = set()
-        allcuts_hadmu_cr_qcd = set()
-        allcuts_hadhad = set()
-        allcuts_hadhad_met = set()
-        allcuts_hadhad_cr_b = set()
-        allcuts_hadhad_cr_b_met = set()
-        allcuts_hadhad_cr_b_mu = set()
-        allcuts_hadhad_cr_b_mu_iso = set()
-        allcuts_hadhad_cr_mu = set()
-        allcuts_hadhad_cr_mu_iso = set()
-        output['cutflow_hadel'][dataset]['none'] += float(w_dict['hadel_signal'].weight().sum())
-        output['cutflow_hadmu'][dataset]['none'] += float(w_dict['hadmu_signal'].weight().sum())
-        output['cutflow_hadel_cr_b'][dataset]['none'] += float(w_dict['hadel_cr_b'].weight().sum())
-        output['cutflow_hadmu_cr_b'][dataset]['none'] += float(w_dict['hadmu_cr_b'].weight().sum())
-        output['cutflow_hadel_cr_w'][dataset]['none'] += float(w_dict['hadel_cr_w'].weight().sum())
-        output['cutflow_hadmu_cr_w'][dataset]['none'] += float(w_dict['hadmu_cr_w'].weight().sum())
-        output['cutflow_hadel_cr_qcd'][dataset]['none'] += float(w_dict['hadel_cr_qcd'].weight().sum())
-        output['cutflow_hadmu_cr_qcd'][dataset]['none'] += float(w_dict['hadmu_cr_qcd'].weight().sum())
-        output['cutflow_hadhad'][dataset]['none'] += float(w_dict['hadhad_signal'].weight().sum())
-        output['cutflow_hadhad_met'][dataset]['none'] += float(w_dict['hadhad_signal_met'].weight().sum())
-        output['cutflow_hadhad_cr_b'][dataset]['none'] += float(w_dict['hadhad_cr_b'].weight().sum())
-        output['cutflow_hadhad_cr_b_met'][dataset]['none'] += float(w_dict['hadhad_cr_b_met'].weight().sum())
-        output['cutflow_hadhad_cr_b_mu'][dataset]['none'] += float(w_dict['hadhad_cr_b_mu'].weight().sum())
-        output['cutflow_hadhad_cr_b_mu_iso'][dataset]['none'] += float(w_dict['hadhad_cr_b_mu_iso'].weight().sum())
-        output['cutflow_hadhad_cr_mu'][dataset]['none'] += float(w_dict['hadhad_cr_mu'].weight().sum())
-        output['cutflow_hadhad_cr_mu_iso'][dataset]['none'] += float(w_dict['hadhad_cr_mu_iso'].weight().sum())
+        w_dict = {}
+        for r in regions:
+            if 'hadhad' in r and 'met' not in r:
+                w_dict[r] = w_hadhad 
+            elif 'hadhad' in r and 'met' in r:
+                w_dict[r] = w_hadhadmet 
+            if 'hadel' in r:
+                w_dict[r] = w_hadel
+            if 'hadmu' in r:
+                w_dict[r] = w_hadmu
 
-        for cut in regions['hadel_signal']+['ptreg_hadel','nn_disc_hadel']:
-            allcuts_hadel.add(cut)
-            output['cutflow_hadel'][dataset][cut] += float(w_dict['hadel_signal'].weight()[selection.all(*allcuts_hadel)].sum())
-        for cut in regions['hadmu_signal']+['ptreg_hadmu','nn_disc_hadmu']:
-            allcuts_hadmu.add(cut)
-            output['cutflow_hadmu'][dataset][cut] += float(w_dict['hadmu_signal'].weight()[selection.all(*allcuts_hadmu)].sum())
-        for cut in regions['hadel_cr_b']+['ptreg_hadel','nn_disc_hadel']:
-            allcuts_hadel_cr_b.add(cut)
-            output['cutflow_hadel_cr_b'][dataset][cut] += float(w_dict['hadel_cr_b'].weight()[selection.all(*allcuts_hadel_cr_b)].sum())
-        for cut in regions['hadmu_cr_b']+['ptreg_hadmu','nn_disc_hadmu']:
-            allcuts_hadmu_cr_b.add(cut)
-            output['cutflow_hadmu_cr_b'][dataset][cut] += float(w_dict['hadmu_cr_b'].weight()[selection.all(*allcuts_hadmu_cr_b)].sum())
-        for cut in regions['hadel_cr_w']+['ptreg_hadel','nn_disc_hadel']:
-            allcuts_hadel_cr_w.add(cut)
-            output['cutflow_hadel_cr_w'][dataset][cut] += float(w_dict['hadel_cr_w'].weight()[selection.all(*allcuts_hadel_cr_w)].sum())
-        for cut in regions['hadmu_cr_w']+['ptreg_hadmu','nn_disc_hadmu']:
-            allcuts_hadmu_cr_w.add(cut)
-            output['cutflow_hadmu_cr_w'][dataset][cut] += float(w_dict['hadmu_cr_w'].weight()[selection.all(*allcuts_hadmu_cr_w)].sum())
-        for cut in regions['hadel_cr_qcd']+['ptreg_hadel','nn_disc_hadel']:
-            allcuts_hadel_cr_qcd.add(cut)
-            output['cutflow_hadel_cr_qcd'][dataset][cut] += float(w_dict['hadel_cr_qcd'].weight()[selection.all(*allcuts_hadel_cr_qcd)].sum())
-        for cut in regions['hadmu_cr_qcd']+['ptreg_hadmu','nn_disc_hadmu']:
-            allcuts_hadmu_cr_qcd.add(cut)
-            output['cutflow_hadmu_cr_qcd'][dataset][cut] += float(w_dict['hadmu_cr_qcd'].weight()[selection.all(*allcuts_hadmu_cr_qcd)].sum())
-        for cut in regions['hadhad_signal']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad.add(cut)
-            output['cutflow_hadhad'][dataset][cut] += float(w_dict['hadhad_signal'].weight()[selection.all(*allcuts_hadhad)].sum())
-        for cut in regions['hadhad_signal_met']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_met.add(cut)
-            output['cutflow_hadhad_met'][dataset][cut] += float(w_dict['hadhad_signal_met'].weight()[selection.all(*allcuts_hadhad_met)].sum())
-        for cut in regions['hadhad_cr_b']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_b.add(cut)
-            output['cutflow_hadhad_cr_b'][dataset][cut] += float(w_dict['hadhad_cr_b'].weight()[selection.all(*allcuts_hadhad_cr_b)].sum())
-        for cut in regions['hadhad_cr_b_met']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_b_met.add(cut)
-            output['cutflow_hadhad_cr_b_met'][dataset][cut] += float(w_dict['hadhad_cr_b_met'].weight()[selection.all(*allcuts_hadhad_cr_b_met)].sum())
-        for cut in regions['hadhad_cr_b_mu']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_b_mu.add(cut)
-            output['cutflow_hadhad_cr_b_mu'][dataset][cut] += float(w_dict['hadhad_cr_b_mu'].weight()[selection.all(*allcuts_hadhad_cr_b_mu)].sum())
-        for cut in regions['hadhad_cr_b_mu_iso']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_b_mu_iso.add(cut)
-            output['cutflow_hadhad_cr_b_mu_iso'][dataset][cut] += float(w_dict['hadhad_cr_b_mu_iso'].weight()[selection.all(*allcuts_hadhad_cr_b_mu_iso)].sum())
-        for cut in regions['hadhad_cr_mu']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_mu.add(cut)
-            output['cutflow_hadhad_cr_mu'][dataset][cut] += float(w_dict['hadhad_cr_mu'].weight()[selection.all(*allcuts_hadhad_cr_mu)].sum())
-        for cut in regions['hadhad_cr_mu_iso']+['ptreg_hadhad','nn_disc_hadhad']:
-            allcuts_hadhad_cr_mu_iso.add(cut)
-            output['cutflow_hadhad_cr_mu_iso'][dataset][cut] += float(w_dict['hadhad_cr_mu_iso'].weight()[selection.all(*allcuts_hadhad_cr_mu_iso)].sum()) 
+        for r in regions:
+            allcuts_reg = set()
+            output['cutflow_%s'%r][dataset]['none'] += float(w_dict[r].weight().sum())
+            if self._plotopt==0:
+                if 'hadhad' in r:
+                    addcuts = ['methard' if 'met' in r else 'met50','ptreg_hadel','nn_disc_hadhad'] 
+                elif 'hadel' in r:
+                    addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
+                elif 'hadmu' in r:
+                    addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
+            else:
+                if 'hadhad' in r:
+                    addcuts = ['nn_disc_hadhad'] 
+                elif 'hadel' in r:
+                    addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
+                elif 'hadmu' in r:
+                    addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
+            for cut in regions[r]+addcuts:
+                allcuts_reg.add(cut)
+                output['cutflow_%s'%r][dataset][cut] += float(w_dict[r].weight()[selection.all(*allcuts_reg)].sum())
 
         systematics = [
             None,
-            #'TopPtReweightUp',
+            #'jet_triggerUp',
+            #'jet_triggerDown',
+            #'btagWeightUp',
+            #'btagWeightDown',
+            #'btagEffStatUp',
+            #'btagEffStatDown',
+            'TopPtReweightUp',
+            #'TopPtReweightDown',
         ]
         if isRealData:
             systematics = [None]
 
-        def fill(region, systematic, wmod=None, realData=False):
+        def fill(region, systematic, wmod=None, realData=False, addcut=None, addname=""):
             selections = regions[region]
             cut = selection.all(*selections)
+            if addcut is not None:
+                cut = cut * addcut
             sname = 'nominal' if systematic is None else systematic
             if wmod is None:
                 if not realData:
@@ -893,23 +942,62 @@ class HttProcessor(processor.ProcessorABC):
 
             bmaxind = ak.argmax(ak4_away.btagDeepB, -1)
 
-            output['met_nn_kin'].fill(
-                dataset=dataset,
-                region=region,
-                systematic=sname,
-                met_pt=normalize(met_p4.pt),
-                massreg=normalize(massreg),
-                nn_disc=normalize(nn_disc),
-                jetmet_dphi=normalize(best_ak8_met_dphi),
-                h_pt=normalize(ptreg),
-                antilep=antilep,
-                weight=weight,
-            )
-
+            if self._plotopt==0:
+                output['met_nn_kin'].fill(
+                    dataset=dataset+addname,
+                    region=region,
+                    systematic=sname,
+                    met_pt=normalize(met_p4.pt),
+                    massreg=normalize(massreg),
+                    nn_disc=normalize(nn_disc),
+                    h_pt=normalize(ptreg),
+                    weight=weight,
+                )
+            elif self._plotopt>0:
+                altvars = {
+                    'jet_pt':candidatejet.pt, 
+                    'jet_eta':candidatejet.eta, 
+                    'jet_msd':candidatejet.msdcorr, 
+                    'mt_lepmet':mt_lepmet, 
+                    'mt_jetmet':massreg, 
+                    'lep_pt':leadinglep.pt, 
+                    'lep_eta':leadinglep.eta, 
+                    'lep_jet_dr':lep_ak8_pair.i0.delta_r(lep_ak8_pair.i1), 
+                    'n2ddt':candidatejet.n2ddt, 
+                    'jetlep_m':jet_lep_p4.mass, 
+                    'met_nopup_pt':met_nopup_p4.pt, 
+                    'met_pup_pt':met_p4.pt, 
+                    'jetmet_dphi':thejetmetdphi, 
+                    'ak4met_dphi':jetmet_dphi, 
+                    'massreg':massreg, 
+                    'ztagger':ztagger, 
+                    'lep_miso':leadinglep_miso, 
+                    'nn_hadhad':nn_disc_hadhad , 
+                    'nn_hadhad_qcd':nn_disc_hadhad_qcd, 
+                    'nn_hadhad_wjets':nn_disc_hadhad_wjets, 
+                    'ztagger_mu_qcd':ztagger_mu_qcd, 
+                    'ztagger_mu_mm':ztagger_mu_mm, 
+                    'ztagger_mu_hm':ztagger_mu, 
+                    'nn_hadel':nn_disc_hadel, 
+                    'nn_hadmu':nn_disc_hadmu, 
+                    'antilep':antilep
+                }
+                for var in self._altplots:
+                    output['%s_kin'%var].fill(
+                        **{'dataset':dataset+addname,
+                        'region':region,
+                        'systematic':sname,
+                        'weight':weight,
+                        **{var:normalize(altvars[var]), 'nn_disc':normalize(nn_disc)}}
+                    )
 
         for region in regions:
             for systematic in systematics:
-                fill(region, systematic, realData=isRealData)
+                if 'DYJets' in dataset:
+                    fill(region, systematic, realData=isRealData, addcut=ak.to_numpy(ak.any(genlepflavor>=2, -1)).flatten(), addname="_Zem")
+                    fill(region, systematic, realData=isRealData, addcut=ak.to_numpy(ak.any(genlepflavor==1, -1)).flatten(), addname="_Ztt")
+                else:
+                    fill(region, systematic, realData=isRealData)
 
         return output
 
