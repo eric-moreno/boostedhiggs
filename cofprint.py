@@ -5,16 +5,14 @@ import os
 
 import uproot
 import matplotlib.pyplot as plt
-import mplhep as hep
-plt.style.use(hep.styles.ROOT)
 import numpy as np
-
-from coffea import hist
-from coffea.util import load
 
 import pickle
 import gzip
 import math
+
+from coffea import hist
+from coffea.lookup_tools import extractor
 
 import argparse
 
@@ -25,7 +23,8 @@ import pickle
 #cfile = load('../condor/Jun10_NN/hists_sum_WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
 #cfile = load('./htt_test_spin0.coffea')
 #cfile = load('./outfiles/2017_test_0--1.hist')
-with open("./outfiles/2017_test_0--1.hist", 'rb') as f:
+with open("./outfiles/2017_Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_0_0-5.hist", 'rb') as f:
+#with open("/uscms/home/srothman/nobackup/htt/boostedhiggs/outfiles/2017_test_0--1.hist", 'rb') as f:
     cfile = pickle.load(f)
 #cfile = load('../condor/Mar17_NN/hists_sum_WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
 #cfile = load('../condor/Mar17_NN/hists_sum_WJetsToQQ_HT800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
@@ -33,8 +32,22 @@ with open("./outfiles/2017_test_0--1.hist", 'rb') as f:
 #cfile = load('../condor/Mar17_NN/hists_sum_ZJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
 #cfile = load('../condor/Mar17_NN/hists_sum_ZJetsToQQ_HT800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
 #cfile = load('htt_nntest.coffea')
-print(cfile)
+xs = {}
+with open('fileset/xsecs.json', 'r') as f:
+    xs = json.load(f)
+    
+scale1fb = {k: xs[k] * 1000. / w for k, w in cfile['sumw'].items()}
+for key in cfile:
+    if isinstance(cfile[key], hist.Hist):
+        cfile[key].scale(scale1fb, 'dataset')
+    else:
+        if key=='sumw':
+            continue
+        for samp in cfile[key]:
+            for x in cfile[key][samp]:
+                cfile[key][samp][x] = cfile[key][samp][x]*scale1fb[samp]
 hists_mapped = cfile
+print(hists_mapped)
 
 h = hists_mapped['met_nn_kin'].integrate('region','hadhad_signal_met').integrate('nn_disc',slice(0.95,None))
 #print(h.axis('met_pt').edges())

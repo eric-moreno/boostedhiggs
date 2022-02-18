@@ -26,7 +26,6 @@ install_env() {
   .env/bin/python -m ipykernel install --user
   rm -rf \$TMPDIR && unset TMPDIR
   .env/bin/python -m pip install -q git+https://github.com/CoffeaTeam/lpcjobqueue.git@v0.2.3
-  .env/bin/python -m pip install --user --editable .
   echo "done."
 }
 

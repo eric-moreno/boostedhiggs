@@ -18,6 +18,30 @@ process_map["zll"] = [
     'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8',
     'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8',
 ]
+process_map["zee"] = [
+    'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zee',
+    'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zee',
+    'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zee',
+    'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zee',
+]
+process_map["zem"] = [
+    'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zem',
+    'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zem',
+    'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zem',
+    'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zem',
+]
+process_map["zmm"] = [
+    'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zmm',
+    'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zmm',
+    'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zmm',
+    'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8_Zmm',
+]
+process_map["ztt"] = [
+    'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8_Ztt',
+    'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8_Ztt',
+    'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8_Ztt',
+    'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8_Ztt',
+]
 #process_map["zll-ht100to200"] = [
 #    'DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8',
 #]
@@ -129,6 +153,21 @@ process_map["h125"] = [
     'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
     'boostedTau_GluGluHTauTau_boostedTaua_13TeV_user',
 ]
+process_map["phi10"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi30"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi50"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi125"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi300"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
+]
 #process_map["ggF-Htt"] = [
 #    'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
 #]
@@ -157,6 +196,10 @@ process_map["h125"] = [
 #    'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
 #]
 process_map["data"] = [
+    'SingleMuon',
+    'SingleElectron',
+    'EGamma',
+    'MET',
 #2017
     #'JetHT',
     'JetHT_pancakes-02_Run2017B-09Aug2019_UL2017-v1',

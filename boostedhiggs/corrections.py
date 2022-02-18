@@ -5,6 +5,7 @@ import gzip
 import pickle
 import importlib.resources
 import correctionlib
+import json
 from coffea.lookup_tools.lookup_base import lookup_base
 from coffea import lookup_tools
 from coffea import util
@@ -12,6 +13,16 @@ from coffea import util
 with importlib.resources.path("boostedhiggs.data", "corrections.pkl.gz") as path:
     with gzip.open(path) as fin:
         compiled = pickle.load(fin)
+
+compiled['2016_pileupweight']._values = np.minimum(5, compiled['2016_pileupweight']._values)
+compiled['2016_pileupweight_puUp']._values = np.minimum(5, compiled['2016_pileupweight_puUp']._values)
+compiled['2016_pileupweight_puDown']._values = np.minimum(5, compiled['2016_pileupweight_puDown']._values)
+compiled['2017_pileupweight']._values = np.minimum(5, compiled['2017_pileupweight']._values)
+compiled['2017_pileupweight_puUp']._values = np.minimum(5, compiled['2017_pileupweight_puUp']._values)
+compiled['2017_pileupweight_puDown']._values = np.minimum(5, compiled['2017_pileupweight_puDown']._values)
+compiled['2018_pileupweight']._values = np.minimum(5, compiled['2018_pileupweight']._values)
+compiled['2018_pileupweight_puUp']._values = np.minimum(5, compiled['2018_pileupweight_puUp']._values)
+compiled['2018_pileupweight_puDown']._values = np.minimum(5, compiled['2018_pileupweight_puDown']._values)
 
 class SoftDropWeight(lookup_base):
     def _evaluate(self, pt, eta):
@@ -100,51 +111,90 @@ lumiMasks = {
     "2018": build_lumimask("Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"),
 }
 
-# TODO: Update to UL
-# Option: 0 for eta-pt, 1 for abseta-pt, 2 for pt-abseta
-lepton_sf_dict = {
-    "elec_RECO": 0,
-    "elec_ID": 0, 
-    "elec_TRIG32": 0,
-    "elec_TRIG115": 1,
-    "muon_ISO": 1,
-    "muon_ID": 1,
-    "muon_TRIG27": 2,
-    "muon_TRIG50": 2,
+basedir = 'boostedhiggs/data/'
+mutriglist = {
+    '2016preVFP':{
+        'TRIGNOISO':'NUM_Mu50_or_TkMu50_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose_abseta_pt',
+        'TRIGISO':'NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt',
+    },
+    '2016postVFP':{
+        'TRIGNOISO':'NUM_Mu50_or_TkMu50_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose_abseta_pt',
+        'TRIGISO':'NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt',
+    },
+    '2017':{
+        'TRIGNOISO':'NUM_Mu50_or_OldMu100_or_TkMu100_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose_abseta_pt',
+        'TRIGISO':'NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt',
+    },
+    '2018':{
+        'TRIGNOISO':'NUM_Mu50_or_OldMu100_or_TkMu100_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose_abseta_pt',
+        'TRIGISO':'NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt',
+    },
+}
+eltriglist = {
+    '2016preVFP':{
+        'TRIGNOISO':'EGamma_SF2D',
+        'TRIGISO':'EGamma_SF2D',
+    },
+    '2016postVFP':{
+        'TRIGNOISO':'EGamma_SF2D',
+        'TRIGISO':'EGamma_SF2D',
+    },
+    '2017':{
+        'TRIGNOISO':'EGamma_SF2D',
+        'TRIGISO':'EGamma_SF2D',
+    },
+    '2018':{
+        'TRIGNOISO':'EGamma_SF2D',
+        'TRIGISO':'EGamma_SF2D',
+    },
 }
 
-def add_leptonSFs(weights, lepton, year, match):
-    for sf in lepton_sf_dict:
-        sfoption = lepton_sf_dict[sf]
+ext = lookup_tools.extractor()
+for year in ['2016preVFP','2016postVFP','2017','2018']:
+    ext.add_weight_sets([f'muon_ID_{year} NUM_MediumPromptID_DEN_TrackerMuons_abseta_pt {basedir}Efficiencies_muon_generalTracks_Z_Run{year}_UL_ID.root'])
+    ext.add_weight_sets([f'muon_ISO_{year} NUM_LooseRelIso_DEN_MediumPromptID_abseta_pt {basedir}Efficiencies_muon_generalTracks_Z_Run{year}_UL_ISO.root'])
+    for trigopt in mutriglist[year]:
+        trigname = mutriglist[year][trigopt]
+        ext.add_weight_sets([f'muon_{trigopt}_{year} {trigname} {basedir}Efficiencies_muon_generalTracks_Z_Run{year}_UL_SingleMuonTriggers.root'])
+    ext.add_weight_sets([f'elec_RECO_{year} EGamma_SF2D {basedir}egammaEffi_ptAbove20_txt_EGM2D_UL{year}.root'])
+    ext.add_weight_sets([f'elec_ID_{year} EGamma_SF2D {basedir}egammaEffi_txt_Ele_wp90noiso_UL{year}_EGM2D.root'])
+    for trigopt in eltriglist[year]:
+        trigname = eltriglist[year][trigopt]
+        ext.add_weight_sets([f'elec_{trigopt}_{year} {trigname} {basedir}egammaEffi_txt_trigger_EGM2D_UL{year}.root'])
+ext.finalize()
+lepsf_evaluator = ext.make_evaluator()
+lepsf_keys = lepsf_evaluator.keys()
+
+def add_LeptonSFs(weights, lepton, year, match):
+    for sf in lepsf_keys:
+        if match not in sf:
+            continue
         lep_pt = np.array(ak.fill_none(lepton.pt, 0.))
         lep_eta = np.array(ak.fill_none(lepton.eta, 0.))
-        lep_abseta = np.array(ak.fill_none(abs(lepton.eta), 0.))
         if match in sf:
-            if sfoption==0:
-                nom = compiled['%s_value'%sf](lep_eta,lep_pt)
-                err = compiled['%s_error'%sf](lep_eta,lep_pt)
-            elif sfoption==1:
-                nom = compiled['%s_value'%sf](np.abs(lep_eta),lep_pt)
-                err = compiled['%s_error'%sf](np.abs(lep_eta),lep_pt)
-            elif sfoption==2:
-                nom = compiled['%s_value'%sf](lep_pt,np.abs(lep_eta))
-                err = compiled['%s_error'%sf](lep_pt,np.abs(lep_eta))
+            if 'muon' in match:
+                nom = lepsf_evaluator[sf](np.abs(lep_eta),lep_pt)
+            elif 'elec' in match:
+                nom = lepsf_evaluator[sf](lep_eta,lep_pt)
             else: 
                 print('Error: Invalid type ordering for lepton SF %s'%sf)
                 return
-            if "TRIG27" in sf:
-                nom[lep_pt>55.] = 1.
-                err[lep_pt>55.] = 0.
-            if "TRIG50" in sf:
-                nom[lep_pt<55.] = 1.
-                err[lep_pt<55.] = 0.
-            if "TRIG32" in sf:
-                nom[lep_pt>120.] = 1.
-                err[lep_pt>120.] = 0.
-            if "TRIG115" in sf:
-                nom[lep_pt<120.] = 1.
-                err[lep_pt<120.] = 0.
-            weights.add(sf, nom, nom+err, nom-err)
+            if "_TRIGISO_" in sf:
+                if 'muon' in match:
+                    nom[lep_pt>55.] = 1.
+                else:
+                    nom[lep_pt>120.] = 1.
+            if "_TRIGNOISO_" in sf:
+                if 'muon' in match:
+                    nom[lep_pt<55.] = 1.
+                else:
+                    nom[lep_pt<120.] = 1.
+            if "_ISO_" in sf:
+                if 'muon' in match:
+                    nom[lep_pt>55.] = 1.
+                else:
+                    nom[lep_pt>120.] = 1.
+            weights.add(sf, nom)
 
 def is_overlap(events,dataset,triggers,year):
     dataset_ordering = {
@@ -197,6 +247,101 @@ def is_overlap(events,dataset,triggers,year):
                     overlap = overlap & np.logical_not(events.HLT[t])
     return overlap
 
+met_trigger_file = open('boostedhiggs/data/mettrig_sfs.json','r')
+met_trigger_sfs = json.load(met_trigger_file)
+for key in met_trigger_sfs:
+    if key=='binning':
+        met_trigger_sfs[key] = np.array(met_trigger_sfs[key])
+    else:
+        met_trigger_sfs[key]['value'] = np.array(met_trigger_sfs[key]['value'])
+        met_trigger_sfs[key]['error'] = np.array(met_trigger_sfs[key]['error'])
+
+def add_METSFs(weights, met, year):
+    weights.add('MET_TRIG', met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(),met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]), met_trigger_sfs['binning'])-1])
+
+def add_pdf_weight(weights, pdf_weights):
+    nom = np.ones(len(weights.weight()))
+    up = np.ones(len(weights.weight()))
+    down = np.ones(len(weights.weight()))
+
+    # NNPDF31_nnlo_hessian_pdfas
+    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
+    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
+        # Hessian PDF weights
+        # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
+        arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
+        summed = ak.sum(np.square(arg), axis=1)
+        pdf_unc = np.sqrt((1. / 99.) * summed)
+        weights.add('PDF_weight', nom, pdf_unc + nom)
+
+        # alpha_S weights
+        # Eq. 27 of same ref
+        as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+        weights.add('aS_weight', nom, as_unc + nom)
+
+        # PDF + alpha_S weights
+        # Eq. 28 of same ref
+        pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+        weights.add('PDFaS_weight', nom, pdfas_unc + nom)
+
+    else:
+        weights.add('aS_weight', nom, up, down)
+        weights.add('PDF_weight', nom, up, down)
+        weights.add('PDFaS_weight', nom, up, down)
+
+# Jennet adds 7 point scale variations
+def add_scalevar_7pt(weights, lhe_weights):
+    nom = np.ones(len(weights.weight()))
+ 
+    if len(lhe_weights) > 0:
+        if len(lhe_weights[0]) == 9: 
+            up = np.maximum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
+                                    lhe_weights[:, 3], lhe_weights[:, 5],
+                                    lhe_weights[:, 7], lhe_weights[:, 8]])
+            down = np.minimum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
+                                      lhe_weights[:, 3], lhe_weights[:, 5],
+                                      lhe_weights[:, 7], lhe_weights[:, 8]])
+        elif len(lhe_weights[0]) > 1:
+            print("Scale variation vector has length ", len(lhe_weights[0]))
+    else:
+        up = np.ones(len(weights.weight()))
+        down = np.ones(len(weights.weight()))
+
+    weights.add('scalevar_7pt', nom, up, down)
+
+# Jennet adds 3 point scale variations
+def add_scalevar_3pt(weights, lhe_weights):
+    nom = np.ones(len(weights.weight()))
+
+    if len(lhe_weights) > 0:
+        if len(lhe_weights[0]) == 9:
+            up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 8])
+            down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 8])
+        elif len(lhe_weights[0]) > 1:
+            print("Scale variation vector has length ", len(lhe_weights[0]))
+    else:
+        up = np.ones(len(weights.weight()))
+        down = np.ones(len(weights.weight()))
+
+    weights.add('scalevar_3pt', nom, up, down)
+
+import cloudpickle
+with importlib.resources.path("boostedhiggs.data", "jec_compiled.pkl.gz") as path:
+    with gzip.open(path) as fin:
+        jmestuff = cloudpickle.load(fin)
+
+jet_factory = jmestuff["jet_factory"]
+fatjet_factory = jmestuff["fatjet_factory"]
+met_factory = jmestuff["met_factory"]
+
+
+def add_jec_variables(jets, event_rho):
+    jets["pt_raw"] = (1 - jets.rawFactor)*jets.pt
+    jets["mass_raw"] = (1 - jets.rawFactor)*jets.mass
+    jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
+    jets["event_rho"] = ak.broadcast_arrays(event_rho, jets.pt)[0]
+    return jets
+
 #from https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/240924/1/s10052-017-5389-1.pdf
 Vpt_corr_bins = np.array([
     30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0, 750.0, 800.0, 850.0, 900.0, 950.0, 1000.0, 1100.0, 1200.0, 1300.0, 1400.0, 1600.0, 1800.0, 2000.0, 2200.0, 2400.0, 2600.0, 2800.0, 3000.0, 6500.0
@@ -224,6 +369,81 @@ def add_VJets_NLOkFactor(weights, genBosonPt, year, dataset):
     else:
         return
     weights.add('VJets_NLOkFactor', nlo_over_lo_qcd * nlo_over_lo_ewk)
+
+with importlib.resources.path("boostedhiggs.data", "vjets_corrections.json") as filename:
+    vjets_kfactors = correctionlib.CorrectionSet.from_file(str(filename))
+
+
+def add_VJets_kFactors(weights, genpart, dataset):
+    """Revised version of add_VJets_NLOkFactor, for both NLO EW and ~NNLO QCD"""
+    def get_vpt(check_offshell=False):
+        """Only the leptonic samples have no resonance in the decay tree, and only
+        when M is beyond the configured Breit-Wigner cutoff (usually 15*width)
+        """
+        boson = ak.firsts(genpart[
+            ((genpart.pdgId == 23)|(abs(genpart.pdgId) == 24))
+            & genpart.hasFlags(["fromHardProcess", "isLastCopy"])
+        ])
+        if check_offshell:
+            offshell = genpart[
+                genpart.hasFlags(["fromHardProcess", "isLastCopy"])
+                & ak.is_none(boson)
+                & (abs(genpart.pdgId) >= 11) & (abs(genpart.pdgId) <= 16)
+            ].sum()
+            return ak.where(ak.is_none(boson.pt), offshell.pt, boson.pt)
+        return np.array(ak.fill_none(boson.pt, 0.))
+
+    common_systs = [
+        "d1K_NLO",
+        "d2K_NLO",
+        "d3K_NLO",
+        "d1kappa_EW",
+    ]
+    zsysts = common_systs + [
+        "Z_d2kappa_EW",
+        "Z_d3kappa_EW",
+    ]
+    wsysts = common_systs + [
+        "W_d2kappa_EW",
+        "W_d3kappa_EW",
+    ]
+
+    def add_systs(systlist, qcdcorr, ewkcorr, vpt):
+        ewknom = ewkcorr.evaluate("nominal", vpt)
+        weights.add("vjets_nominal", qcdcorr * ewknom if qcdcorr is not None else ewknom)
+        ones = np.ones_like(vpt)
+        for syst in systlist:
+            weights.add(syst, ones, ewkcorr.evaluate(syst + "_up", vpt) / ewknom, ewkcorr.evaluate(syst + "_down", vpt) / ewknom)
+
+    if "ZJetsToQQ_HT" in dataset and "TuneCUETP8M1" in dataset:
+        vpt = get_vpt()
+        qcdcorr = vjets_kfactors["Z_MLM2016toFXFX"].evaluate(vpt)
+        ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
+        add_systs(zsysts, qcdcorr, ewkcorr, vpt)
+    elif "WJetsToQQ_HT" in dataset and "TuneCUETP8M1" in dataset:
+        vpt = get_vpt()
+        qcdcorr = vjets_kfactors["W_MLM2016toFXFX"].evaluate(vpt)
+        ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
+        add_systs(wsysts, qcdcorr, ewkcorr, vpt)
+    elif "ZJetsToQQ_HT" in dataset and "TuneCP5" in dataset:
+        vpt = get_vpt()
+        qcdcorr = vjets_kfactors["Z_MLM2017toFXFX"].evaluate(vpt)
+        ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
+        add_systs(zsysts, qcdcorr, ewkcorr, vpt)
+    elif "WJetsToQQ_HT" in dataset and "TuneCP5" in dataset:
+        vpt = get_vpt()
+        qcdcorr = vjets_kfactors["W_MLM2017toFXFX"].evaluate(vpt)
+        ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
+        add_systs(wsysts, qcdcorr, ewkcorr, vpt)
+    elif ("DY1JetsToLL_M-50" in dataset or "DY2JetsToLL_M-50" in dataset or "DYJetsToLL_Pt" in dataset) and "amcnloFXFX" in dataset:
+        vpt = get_vpt(check_offshell=True)
+        ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
+        add_systs(zsysts, None, ewkcorr, vpt)
+    elif ("W1JetsToLNu" in dataset or "W2JetsToLNu" in dataset) and "amcnloFXFX" in dataset:
+        vpt = get_vpt(check_offshell=True)
+        ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
+        add_systs(wsysts, None, ewkcorr, vpt)
+
 
 def add_TopPtReweighting(weights, topPt, year, dataset):
 #$SF(p_T)=e^{0.0615-0.0005\cdot p_T}$ for data/POWHEG+Pythia8

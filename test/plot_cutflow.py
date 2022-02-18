@@ -11,7 +11,6 @@ plt.style.use(hep.styles.ROOT)
 import numpy as np
 
 from coffea import hist, processor
-from coffea.util import load
 
 import pickle
 import gzip
@@ -42,13 +41,6 @@ err_opts = {
     'edgecolor':(0,0,0,.5),
     'linewidth': 0
     }
-line_opts = {
-    'color': 'aquamarine',
-    'linewidth':2,
-    #'marker':'None',
-    'linestyle':'dashed',
-    'drawstyle':'steps'}
-
 err_opts_data = {
     'marker': '.',
     'markersize': 10.,
@@ -60,8 +52,12 @@ line_opts_nocolor = {
     'linewidth':2,
     #'marker':'None',
     'linestyle':'dashed',
-    'drawstyle':'steps'}
-
+    #'drawstyle':'steps'
+    }
+line_opts = {
+    **line_opts_nocolor,
+    'color': 'magenta',
+    }
 special_char_list = ['_','-']
 
 def getindices(s):
@@ -125,19 +121,31 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
         samp_sum = val.sum()
         all_bkg+=samp_sum
         samp_order.append([str(key)[2:-3],samp_sum])
-
     samp_order.sort(key=lambda x : x[1],reverse=True)
-    print(samp_order)
     the_order = []
     for lab in samp_order:
         for ident in x[nosig].identifiers('process'):
             if (lab[0] == ident.name):
                 the_order.insert(0,ident)
                 break
-    print(the_order)
+
+    all_sig = 0.
+    sig_order = []
+    for key,val in x[nobkg].values().items():
+        sig_sum = val.sum()
+        all_sig+=sig_sum
+        sig_order.append([str(key)[2:-3],sig_sum])
+    sig_order.sort(key=lambda x : x[1],reverse=True)
+    the_sig_order = []
+    for lab in sig_order:
+        for ident in x[nobkg].identifiers('process'):
+            if (lab[0] == ident.name):
+                the_sig_order.insert(0,ident)
+                break
 
     if colormap:
         color_order = [color_map[s[0]] for s in samp_order]
+        sig_color_order = [sig_color_map[s[0]] for s in sig_order]
         custom_cycler = (cycler(color=color_order))
         ax.set_prop_cycle(custom_cycler)
 
@@ -156,7 +164,11 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     all_sig = 0.
     for key,val in x_nobkg.values().items():
         all_sig +=val.sum()
-    if (all_sig>0.): hist.plot1d(x_nobkg,ax=ax,overlay='process',clear=False,line_opts=line_opts)
+    if (all_sig>0.): 
+        sig_cycler = (cycler(color=sig_color_order))
+        ax.set_prop_cycle(sig_cycler)
+        hist.plot1d(x_nobkg,ax=ax,overlay='process',order=the_sig_order,clear=False,line_opts=line_opts_nocolor)
+        ax.set_prop_cycle(custom_cycler)
 
     all_data = 0.
     x_data = x['data']
@@ -164,7 +176,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
         all_data +=val.sum()
     if (all_data > 0.): hist.plot1d(x_data,ax=ax,overlay='process',clear=False,error_opts=err_opts_data)
 
-    print('MC: %.4f , S: %.4f , S/sqrt(B): %.4f  -  Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data))
+    print('MC: %.4f , S: %.4f , S/sqrt(B): %.4f  -  Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg) if all_bkg>0. else 1.,all_data))
 
     ax.autoscale(axis='x', tight=True)
     #ax.set_xlim(20, 200)
@@ -183,7 +195,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     #hep.cms.cmslabel(ax, data=False, paper=False, year='2017')
     #ax.semilogy()
     ax.set_yscale("log")
-    minvals = []
+    minvals = [1.]
     for xd in x.values():
         minvals.append(min(np.trim_zeros(x.values()[xd])))
     decsplit = str(min(minvals)).split('.')
@@ -207,6 +219,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     fig,ax = plt.subplots()
 
     x.scale({(str(xd).split('\''))[1]:1./x.values()[xd][0] for xd in x.values()},'process')
+    print(x)
 
     hist.plot1d(x,
                 overlay='process',ax=ax,
@@ -266,7 +279,8 @@ def getPlots(args):
 
     for h in args.hists:
         # open hists
-        hists_unmapped = load('%s.coffea'%h)
+        with open("%s.hist"%h, 'rb') as f:
+            hists_unmapped = pickle.load(f)
         for key, val in hists_unmapped.items():
             if key in args.regions:
                 if isinstance(val, processor.accumulator.defaultdict_accumulator):
@@ -280,7 +294,7 @@ def getPlots(args):
     for h in dict_mapped.values():
         #h.scale({p: lumifb for p in h.identifiers('process')}, axis="process")
         for s in h:
-            if any([s.startswith(d) for d in ['SingleElectron','SingleMuon','JetHT','Tau','MET']]): continue
+            if any([s.startswith(d) for d in ['SingleElectron','SingleMuon','JetHT','Tau','MET','EGamma']]): continue
             print(s)
             for b in h[s]:
                 print(b)
@@ -293,9 +307,10 @@ def getPlots(args):
         drawCutflow(dict_mapped[r],args.title[ir],lumifb,r, args.defcolors)
 
     os.chdir(pwd)
+    del dict_mapped
 
 if __name__ == "__main__":
-    #ex. python plot_cutflow.py --hists htt_test --tag test --title Test --lumi 41.5 --regions cutflow_hadel
+    #python3 -u test/plot_cutflow.py --hists outfiles/2017_Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM_0_0-5 outfiles/2017_Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_0_0-5 outfiles/2017_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_0_0-5 outfiles/2017_DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8_0_0-5 --tag Test --title Test --lumi 41.5 --regions cutflow_hadmu
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name", nargs='+')
     parser.add_argument('--tag',        dest='tag',       default="",           help="tag")

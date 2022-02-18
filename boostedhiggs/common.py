@@ -4,11 +4,30 @@ from coffea.nanoevents.methods import vector
 
 #dataset_ordering = ['JetHT','SingleElectron','SingleMuon','MET','Tau']
 dataset_ordering = {
-  '2017':['SingleMuon','SingleElectron','MET','JetHT','Tau'],
-  '2018':['SingleMuon','EGamma','MET','JetHT','Tau']
+  '2016':['SingleMuon','SingleElectron','MET','JetHT'],
+  '2017':['SingleMuon','SingleElectron','MET','JetHT'],
+  '2018':['SingleMuon','EGamma','MET','JetHT']
 }
 
 pd_to_trig = {
+  '2016':{
+    "Ele27_WPTight_Gsf":'SingleElectron',
+    "Ele105_CaloIdVT_GsfTrkIdT":'SingleElectron',
+    "Photon175":'SingleElectron',
+    "Mu50":'SingleMuon',
+    "TkMu50":'SingleMuon',
+    "IsoMu24":'SingleMuon',
+    "IsoTkMu24":'SingleMuon',
+    'PFHT800':'JetHT',
+    'PFHT900':'JetHT',
+    'AK8PFJet360_TrimMass30':'JetHT',
+    'AK8PFHT700_TrimR0p1PT0p03Mass50':'JetHT',
+    'PFHT650_WideJetMJJ950DEtaJJ1p5':'JetHT',
+    'PFHT650_WideJetMJJ900DEtaJJ1p5':'JetHT',
+    'PFJet450':'JetHT',
+    "PFMETNoMu120_PFMHTNoMu120_IDTight":"MET",
+    "PFMET120_PFMHT120_IDTight":"MET",
+  },
   '2017':{
     'PFHT800':"JetHT",
     'PFHT900':"JetHT",
@@ -25,28 +44,20 @@ pd_to_trig = {
     'AK8PFJet500':"JetHT",
     'Ele50_CaloIdVT_GsfTrkIdT_PFJet165':"SingleElectron",
     'Ele115_CaloIdVT_GsfTrkIdT':"SingleElectron",
+    'Photon200':"SingleElectron",
     "Ele15_IsoVVVL_PFHT600":"SingleElectron",
     "Ele35_WPTight_Gsf":"SingleElectron",
     "Ele15_IsoVVVL_PFHT450_PFMET50":"SingleElectron",
     'IsoMu27':"SingleMuon",
     'Mu50':"SingleMuon",
+    "OldMu100":"SingleMuon",
+    "TkMu100":"SingleMuon",
     'Mu55':"SingleMuon",
     "Mu15_IsoVVVL_PFHT600":"SingleMuon",
     "Mu15_IsoVVVL_PFHT450_PFMET50":"SingleMuon",
-    'PFMETNoMu120_PFMHTNoMu120_IDTight':"MET",
-    'PFMETNoMu110_PFMHTNoMu110_IDTight':"MET",
-    'DoubleMediumChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau35_Trk1_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau40_Trk1_eta2p1_Reg':"Tau",
-    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1':"Tau",
-    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS35_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS40_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg':"Tau",
-    'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1':"Tau",
-    'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+    "PFMETNoMu120_PFMHTNoMu120_IDTight":"MET",
+    "PFMET120_PFMHT120_IDTight":"MET",
+    "PFMET120_PFMHT120_IDTight_PFHT60":"MET",
   },
   '2018':{
     'PFHT800':"JetHT",
@@ -66,26 +77,19 @@ pd_to_trig = {
     'Ele115_CaloIdVT_GsfTrkIdT':"EGamma",
     "Ele15_IsoVVVL_PFHT600":"EGamma",
     "Ele35_WPTight_Gsf":"EGamma",
+    "Ele32_WPTight_Gsf":"EGamma",
+    "Photon200":"EGamma",
     "Ele15_IsoVVVL_PFHT450_PFMET50":"EGamma",
     'IsoMu27':"SingleMuon",
+    'IsoMu24':"SingleMuon",
     'Mu50':"SingleMuon",
     'Mu55':"SingleMuon",
+    "OldMu100":"SingleMuon",
+    "TkMu100":"SingleMuon",
     "Mu15_IsoVVVL_PFHT600":"SingleMuon",
     "Mu15_IsoVVVL_PFHT450_PFMET50":"SingleMuon",
-    'PFMETNoMu120_PFMHTNoMu120_IDTight':"MET",
-    'PFMETNoMu110_PFMHTNoMu110_IDTight':"MET",
-    'DoubleMediumChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau35_Trk1_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTau40_Trk1_eta2p1_Reg':"Tau",
-    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1':"Tau",
-    'MediumChargedIsoPFTau180HighPtRelaxedIso_Trk50_eta2p1_1pr':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS35_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS40_Trk1_TightID_eta2p1_Reg':"Tau",
-    'DoubleMediumChargedIsoPFTauHPS40_Trk1_eta2p1_Reg':"Tau",
-    'MediumChargedIsoPFTau200HighPtRelaxedIso_Trk50_eta2p1':"Tau",
-    'MediumChargedIsoPFTau220HighPtRelaxedIso_Trk50_eta2p1':"Tau",
+    "PFMETNoMu120_PFMHTNoMu120_IDTight":"MET",
+    "PFMET120_PFMHT120_IDTight":"MET",
   },
 }
 
@@ -96,10 +100,10 @@ def isOverlap(events,dataset,triggers,year):
     for t in triggers:
         if t not in trig_to_pd[pd_to_trig[year][t]]:
             trig_to_pd[pd_to_trig[year][t]].append(t)
-    overlap = np.ones(events.size, dtype='bool')
+    overlap = np.ones(len(events), dtype='bool')
     for p in dataset_ordering[year]:
         if dataset.startswith(p):
-            pass_pd = np.zeros(events.size, dtype='bool')
+            pass_pd = np.zeros(len(events), dtype='bool')
             for t in trig_to_pd[p]:
                 try:
                     pass_pd = pass_pd | events.HLT[t]
