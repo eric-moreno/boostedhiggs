@@ -9,6 +9,8 @@ from coffea import processor, hist
 from coffea.nanoevents.methods import candidate, vector
 from coffea.analysis_tools import Weights, PackedSelection
 
+import onnxruntime as rt
+
 from .corrections import (
     corrected_msoftdrop,
 #    n2ddt_shift,
@@ -38,6 +40,10 @@ from .common import (
     isOverlap,
 )
 
+from .utils import (
+    runInferenceOnnx
+)
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -50,6 +56,25 @@ def normalize(val, cut=None):
         ar = ak.to_numpy(ak.fill_none(val[cut], np.nan))
         return ar
 
+_ort_options = rt.SessionOptions() 
+_ort_options.intra_op_num_threads = 1
+_ort_options.inter_op_num_threads = 1
+#_ort_options.execution_mode = rt.ExecutionMode.ORT_SEQUENTIAL
+
+_ort_sessions = {}
+#_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
+_ort_sessions['model6_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1:1_5:0_75,multiclass,allData,metCut40,take_1,model.onnx', _ort_options)
+_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
+_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
+
+_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zee_oneEl_Zhe,ohe,allData,metCut20,take_3,model.onnx', _ort_options)
+#_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zmm_oneMu_Zhm,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
+_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
+
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
+_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
+_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
+
 class HttProcessor(processor.ProcessorABC):
     def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
         self._year = year
@@ -57,7 +82,7 @@ class HttProcessor(processor.ProcessorABC):
         self._plotopt = plotopt
         self._jet_arbitration = jet_arbitration
         self._skipJER = skipJER
-        
+
         self._triggers = {
             '2016': {
                 'e': [
@@ -412,10 +437,7 @@ class HttProcessor(processor.ProcessorABC):
         #fatjets['msdcorr'] = corrected_msoftdrop(fatjets)
         fatjets['rho'] = 2*np.log(fatjets.msoftdrop/fatjets.pt) #for some reason this doesnt set the attribute properly, so you need to refer to it by the string
 
-        ak8jets = fatjets[
-            (fatjets.pt > 200)
-            & (np.abs(fatjets.eta) < 2.5)
-        ]
+        ak8jets = fatjets
 
         ak8jets_p4 = ak.zip(
             {
@@ -456,7 +478,7 @@ class HttProcessor(processor.ProcessorABC):
 
         ak8s = ak8_met_pair[:,:,'0']
         mets = ak8_met_pair[:,:,'1']
-        ak8_met_dphi = np.abs(ak8s.delta_phi(mets))
+        ak8_met_dphi = ak.mask(np.abs(ak8s.delta_phi(mets)), ((ak8s.pt > 200) & (np.abs(ak8s.eta) < 2.5)))
 
         best_ak8_idx = ak.argmin(ak8_met_dphi, axis=1, keepdims=True)
         #indexing ak8jets like ak8s works because there is only one met per event
@@ -485,24 +507,27 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu_qcd = events.Ztagger.hadmu_v6_multi_QCD
 
         except:
-            nn_disc_hadel = np.ones(nevents)
-            nn_disc_hadmu = np.ones(nevents)
-            nn_disc_hadhad = np.ones(nevents)
-            nn_disc_hadhad_qcd = np.zeros(nevents)
-            nn_disc_hadhad_wjets = np.zeros(nevents)
+
+            inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions)
+
+            nn_disc_hadel = inf_results['IN_hadel_v6'][0][:,0]
+            nn_disc_hadmu = inf_results['IN_hadmu_v6'][0][:,0]
+            nn_disc_hadhad = inf_results['model6_hadhad_multi'][0][:,0]
+            nn_disc_hadhad_qcd = inf_results['model6_hadhad_multi'][0][:,1]
+            nn_disc_hadhad_wjets = inf_results['model6_hadhad_multi'][0][:,2]
     
-            massreg_hadel = np.ones(nevents)*125.
-            massreg_hadmu = np.ones(nevents)*125.
-            massreg_hadhad = np.ones(nevents)*125.
+            massreg_hadel = inf_results['MassReg_hadel'][0][:,0]
+            massreg_hadmu = inf_results['MassReg_hadmu'][0][:,0]
+            massreg_hadhad = inf_results['MassReg_hadhad'][0][:,0]
     
-            ptreg_hadel = np.ones(nevents)*400.
-            ptreg_hadmu = np.ones(nevents)*400.
-            ptreg_hadhad = np.ones(nevents)*400.
+            ptreg_hadel = inf_results['MassReg_hadel'][0][:,1]
+            ptreg_hadmu = inf_results['MassReg_hadmu'][0][:,1]
+            ptreg_hadhad = inf_results['MassReg_hadhad'][0][:,1]
     
-            ztagger_el = np.ones(nevents)
-            ztagger_mu = np.ones(nevents)
-            ztagger_mu_mm = np.zeros(nevents)
-            ztagger_mu_qcd = np.zeros(nevents)
+            ztagger_el = inf_results['Ztagger_Zee_Zhe_v6'][0][:,0]
+            ztagger_mu = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,0]
+            ztagger_mu_qcd = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
+            ztagger_mu_mm = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
 
         selection.add('ptreg_hadel', ptreg_hadel>280.0)
         selection.add('ptreg_hadmu', ptreg_hadmu>280.0)

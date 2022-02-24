@@ -34,9 +34,9 @@ def main(args):
     if args.condor:
         uproot.open.defaults['xrootd_handler'] = uproot.source.xrootd.MultithreadedXRootDSource
 
-        executor = processor.FuturesExecutor(compression=1, status=True, workers=3)
+        executor = processor.FuturesExecutor(compression=1, status=True, workers=args.nworkers)
 
-        run = processor.Runner(executor=executor,savemetrics=True,chunksize=10000,schema=NanoAODSchema)
+        run = processor.Runner(executor=executor,savemetrics=True,chunksize=args.chunksize,schema=NanoAODSchema)
 
         out,metrics = run(fileset,'Events',processor_instance=p)
 
@@ -63,6 +63,8 @@ if __name__ == "__main__":
     parser.add_argument('--sample',     dest='sample',     default=None,         help='sample name', required=True)
     parser.add_argument('--plotopt',    dest='plotopt',    default=0,            help='plotopt',     type=int)
     parser.add_argument('--yearmod',    dest='yearmod',    default="",           help='yearmod')
+    parser.add_argument('--chunksize',  dest='chunksize',  default=10000,        help='chunksize', type=int)
+    parser.add_argument('--nworkers',   dest='nworkers',   default=3,            help='nworkers', type=int)
     parser.add_argument("--nojer",      dest="nojer",      action="store_true",  default=False, help="Run without JER")
     args = parser.parse_args()
 
