@@ -486,6 +486,8 @@ class HttProcessor(processor.ProcessorABC):
         best_ak8_p4 = ak.firsts(ak8jets_p4[best_ak8_idx])
         best_ak8_met_dphi = ak.firsts(ak.to_regular(ak8_met_dphi[best_ak8_idx]))
 
+        gotInf = True
+
         try: #FIXME: hack to not care about PFNANO vs NN postprocessed
             nn_disc_hadel = events.IN.hadel_v6
             nn_disc_hadmu = events.IN.hadmu_v6
@@ -507,40 +509,7 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu_qcd = events.Ztagger.hadmu_v6_multi_QCD
 
         except:
-
-            inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions)
-
-            nn_disc_hadel = inf_results['IN_hadel_v6'][0][:,0]
-            nn_disc_hadmu = inf_results['IN_hadmu_v6'][0][:,0]
-            nn_disc_hadhad = inf_results['model6_hadhad_multi'][0][:,0]
-            nn_disc_hadhad_qcd = inf_results['model6_hadhad_multi'][0][:,1]
-            nn_disc_hadhad_wjets = inf_results['model6_hadhad_multi'][0][:,2]
-    
-            massreg_hadel = inf_results['MassReg_hadel'][0][:,0]
-            massreg_hadmu = inf_results['MassReg_hadmu'][0][:,0]
-            massreg_hadhad = inf_results['MassReg_hadhad'][0][:,0]
-    
-            ptreg_hadel = inf_results['MassReg_hadel'][0][:,1]
-            ptreg_hadmu = inf_results['MassReg_hadmu'][0][:,1]
-            ptreg_hadhad = inf_results['MassReg_hadhad'][0][:,1]
-    
-            ztagger_el = inf_results['Ztagger_Zee_Zhe_v6'][0][:,0]
-            ztagger_mu = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,0]
-            ztagger_mu_qcd = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
-            ztagger_mu_mm = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
-
-        selection.add('ptreg_hadel', ptreg_hadel>280.0)
-        selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
-        selection.add('ptreg_hadhad', ptreg_hadhad>280.0)
-
-        selection.add('nn_disc_hadel', nn_disc_hadel>0.95)
-        selection.add('nn_disc_hadmu', nn_disc_hadmu>0.95)
-        selection.add('nn_disc_hadhad', nn_disc_hadhad>0.999999)
-
-        selection.add('ztagger_el', ztagger_el < 0.01)
-        selection.add('ztagger_mu', ztagger_mu > 0.95)
-        selection.add('ztagger_elInv', ztagger_el >= 0.01)
-        selection.add('ztagger_muInv', ztagger_mu <= 0.95)
+            gotInf = False
 
         selection.add('jetacceptance', (
             (best_ak8.pt > 200.)
@@ -1002,6 +971,68 @@ class HttProcessor(processor.ProcessorABC):
                 w_dict[r] = w_hadel
             if 'hadmu' in r:
                 w_dict[r] = w_hadmu
+
+
+        if not gotInf:
+
+            presel = np.zeros(nevents, dtype=np.bool)
+            for r in regions:
+                tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
+                presel = presel | selection.all(*tmpsel)
+
+            inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+    
+            nn_disc_hadel = np.ones(len(events))*-1.
+            nn_disc_hadmu = np.ones(len(events))*-1.
+            nn_disc_hadhad = np.ones(len(events))*-1.
+            nn_disc_hadhad_qcd = np.ones(len(events))*-1.
+            nn_disc_hadhad_wjets = np.ones(len(events))*-1.
+    
+            massreg_hadel = np.ones(len(events))*-1.
+            massreg_hadmu = np.ones(len(events))*-1.
+            massreg_hadhad = np.ones(len(events))*-1.
+    
+            ptreg_hadel = np.ones(len(events))*-1.
+            ptreg_hadmu = np.ones(len(events))*-1.
+            ptreg_hadhad = np.ones(len(events))*-1.
+    
+            ztagger_el = np.ones(len(events))*-1.
+            ztagger_mu = np.ones(len(events))*-1.
+            ztagger_mu_qcd = np.ones(len(events))*-1.
+            ztagger_mu_mm = np.ones(len(events))*-1.
+
+            nn_disc_hadel[presel] = inf_results['IN_hadel_v6'][0][:,0]
+            nn_disc_hadmu[presel] = inf_results['IN_hadmu_v6'][0][:,0]
+            nn_disc_hadhad[presel] = inf_results['model6_hadhad_multi'][0][:,0]
+            nn_disc_hadhad_qcd[presel] = inf_results['model6_hadhad_multi'][0][:,1]
+            nn_disc_hadhad_wjets[presel] = inf_results['model6_hadhad_multi'][0][:,2]
+    
+            massreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,0]
+            massreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,0]
+            massreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,0]
+    
+            ptreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,1]
+            ptreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,1]
+            ptreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,1]
+    
+            ztagger_el[presel] = inf_results['Ztagger_Zee_Zhe_v6'][0][:,0]
+            ztagger_mu[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,0]
+            ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
+            ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
+
+        selection.add('ptreg_hadel', ptreg_hadel>280.0)
+        selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
+        selection.add('ptreg_hadhad', ptreg_hadhad>280.0)
+
+        selection.add('nn_disc_hadel', nn_disc_hadel>0.95)
+        selection.add('nn_disc_hadmu', nn_disc_hadmu>0.95)
+        selection.add('nn_disc_hadhad', nn_disc_hadhad>0.999999)
+
+        selection.add('ztagger_el', ztagger_el < 0.01)
+        selection.add('ztagger_mu', ztagger_mu > 0.95)
+        selection.add('ztagger_elInv', ztagger_el >= 0.01)
+        selection.add('ztagger_muInv', ztagger_mu <= 0.95)
+
 
         for r in regions:
             allcuts_reg = set()

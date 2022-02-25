@@ -434,15 +434,23 @@ def get_taus_features(events, fatjet, jet_idx):
 
     return feature_dict
 
-def runInferenceOnnx(events, fatjet, jet_idx, sessions):
+def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
 
     # prepare inputs for both fat jets
+    sel_events = events
+    sel_fatjet = fatjet
+    sel_jet_idx = jet_idx
+    if presel is not None:
+        sel_events = sel_events[presel]
+        sel_fatjet = sel_fatjet[presel]
+        sel_jet_idx = sel_jet_idx[presel]
+
     feature_dict = {
-        **get_pfcands_evt_features(events, fatjet, jet_idx),
-        **get_svs_features(events, fatjet, jet_idx),
-        **get_elecs_features(events, fatjet, jet_idx),
-        **get_muons_features(events, fatjet, jet_idx),
-        **get_taus_features(events, fatjet, jet_idx),
+        **get_pfcands_evt_features(sel_events, sel_fatjet, sel_jet_idx),
+        **get_svs_features(sel_events, sel_fatjet, sel_jet_idx),
+        **get_elecs_features(sel_events, sel_fatjet, sel_jet_idx),
+        **get_muons_features(sel_events, sel_fatjet, sel_jet_idx),
+        **get_taus_features(sel_events, sel_fatjet, sel_jet_idx),
     }
 
     inputs_lists = {
@@ -492,5 +500,5 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions):
         )
         for m in sessions
     }
-       
+
     return tagger_outputs
