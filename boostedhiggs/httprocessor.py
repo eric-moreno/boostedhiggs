@@ -59,7 +59,6 @@ def normalize(val, cut=None):
 _ort_options = rt.SessionOptions() 
 _ort_options.intra_op_num_threads = 1
 _ort_options.inter_op_num_threads = 1
-#_ort_options.execution_mode = rt.ExecutionMode.ORT_SEQUENTIAL
 
 _ort_sessions = {}
 #_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
@@ -417,8 +416,8 @@ class HttProcessor(processor.ProcessorABC):
         import cachetools
         jec_cache = cachetools.Cache(np.inf)
         nojer = "NOJER" if self._skipJER else ""
-        fatjets = fatjet_factory[f"{self._year}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
-        jets = jet_factory[f"{self._year}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
+        fatjets = fatjet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
+        jets = jet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
         met = met_factory.build(events.MET, jets, {})
 
         shifts = [

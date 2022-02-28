@@ -257,7 +257,7 @@ for key in met_trigger_sfs:
         met_trigger_sfs[key]['error'] = np.array(met_trigger_sfs[key]['error'])
 
 def add_METSFs(weights, met, year):
-    weights.add('MET_TRIG', met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(),met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]), met_trigger_sfs['binning'])-1])
+    weights.add('MET_TRIG', met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(), met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]-1.), met_trigger_sfs['binning'])-1])
 
 def add_pdf_weight(weights, pdf_weights):
     nom = np.ones(len(weights.weight()))
@@ -301,6 +301,13 @@ def add_scalevar_7pt(weights, lhe_weights):
             down = np.minimum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
                                       lhe_weights[:, 3], lhe_weights[:, 5],
                                       lhe_weights[:, 7], lhe_weights[:, 8]])
+        elif len(lhe_weights[0]) == 8:
+            up = np.maximum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
+                                    lhe_weights[:, 3], lhe_weights[:, 4],
+                                    lhe_weights[:, 6], lhe_weights[:, 7]])
+            down = np.minimum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
+                                      lhe_weights[:, 3], lhe_weights[:, 4],
+                                      lhe_weights[:, 6], lhe_weights[:, 7]])
         elif len(lhe_weights[0]) > 1:
             print("Scale variation vector has length ", len(lhe_weights[0]))
     else:
@@ -317,6 +324,9 @@ def add_scalevar_3pt(weights, lhe_weights):
         if len(lhe_weights[0]) == 9:
             up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 8])
             down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 8])
+        elif len(lhe_weights[0]) == 8:
+            up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 7])
+            down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 7])
         elif len(lhe_weights[0]) > 1:
             print("Scale variation vector has length ", len(lhe_weights[0]))
     else:

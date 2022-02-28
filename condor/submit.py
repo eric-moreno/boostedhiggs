@@ -9,7 +9,7 @@ import sys
 
 '''
  Submit condor jobs of processor
- Run as e.g.: python submit.py Aug15 run.py 20 2017
+ Run as e.g.: python submit.py Feb27 run.py 10 2016
  Arguments:
   = [0]: tag of jobs and output dir in eos e.g. Jul1
   - [1]: script to run e.g. run.py (needs to be included in transfer_files in templ.jdl)
@@ -58,16 +58,19 @@ samples = {
             'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8', 
         ],
         '2016':[
-            'SingleMuon', 
-            'SingleElectron', 
+            #'SingleMuon', 
+            #'SingleElectron', 
             #'WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8', 
-            'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            #'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8', 
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
         ],
         '2017':[
 #            'TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8',
@@ -204,6 +207,13 @@ for reco in recos:
         njobs = int(len(totfiles[sample]) / files_per_job) + 1
 
         print(njobs)
+
+        yearmod = ""
+        if year[:4]=='2016':
+            if year=='2016':
+                yearmod=' --yearmod postVFP'
+            else:
+                yearmod=' --yearmod preVFP'
         
         for j in range(njobs):
             condor_templ_file = open(loc_base + "/condor/submit.templ.jdl")
@@ -230,7 +240,7 @@ for reco in recos:
                 line = line.replace('PROCESSOR', 'htt')
                 line = line.replace('STARTNUM', str(j * files_per_job))
                 line = line.replace('ENDNUM', str((j + 1) * files_per_job))
-                line = line.replace('ADDOPTS', addoptions)
+                line = line.replace('ADDOPTS', addoptions+yearmod)
                 line = line.replace('EOSOUT', eosoutput)
                 line = line.replace('OUTDIR', outdir)
                 sh_file.write(line)

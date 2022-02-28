@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python3 -m pip install correctionlib==2.0.0rc6
-python3 -m pip install onnxruntime=1.10.0
+python3 -m pip install onnxruntime==1.10.0
 
 # make dir for output
 mkdir outfiles

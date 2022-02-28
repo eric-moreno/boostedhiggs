@@ -156,14 +156,35 @@ process_map["h125"] = [
 process_map["phi10"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
 ]
+process_map["phi20"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+]
 process_map["phi30"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi40"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
 ]
 process_map["phi50"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
 ]
+process_map["phi75"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi100"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+]
 process_map["phi125"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi150"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi200"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+]
+process_map["phi250"] = [
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
 ]
 process_map["phi300"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',

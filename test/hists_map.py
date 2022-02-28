@@ -44,9 +44,16 @@ process_latex = {
                  'vv': 'Diboson',
                  'h125': r'H(125)',
                  'phi10': r'$\phi(\tau\tau)$, $m=10$',
+                 'phi20': r'$\phi(\tau\tau)$, $m=20$',
                  'phi30': r'$\phi(\tau\tau)$, $m=30$',
+                 'phi40': r'$\phi(\tau\tau)$, $m=40$',
                  'phi50': r'$\phi(\tau\tau)$, $m=50$',
+                 'phi75': r'$\phi(\tau\tau)$, $m=75$',
+                 'phi100': r'$\phi(\tau\tau)$, $m=100$',
                  'phi125': r'$\phi(\tau\tau)$, $m=125$',
+                 'phi150': r'$\phi(\tau\tau)$, $m=150$',
+                 'phi200': r'$\phi(\tau\tau)$, $m=200$',
+                 'phi250': r'$\phi(\tau\tau)$, $m=250$',
                  'phi300': r'$\phi(\tau\tau)$, $m=300$',
                  "ggF-Htt":"ggF-Htt",
                  "VBF-Htt":"VBF-Htt",
@@ -77,23 +84,37 @@ color_map = {
                  'vv':'lightpink',
                  'h125':'deepskyblue',
                  'phi10':'snow',
+                 'phi20':'snow',
                  'phi30':'snow',
+                 'phi40':'snow',
                  'phi50':'snow',
+                 'phi75':'snow',
+                 'phi100':'snow',
                  'phi125':'snow',
+                 'phi150':'snow',
+                 'phi200':'snow',
+                 'phi250':'snow',
                  'phi300':'snow',
 }
 sig_color_map={
                  'phi10':'g',
+                 'phi20':'c',
                  'phi30':'y',
+                 'phi40':'m',
                  'phi50':'k',
+                 'phi75':'gray',
+                 'phi100':'b',
                  'phi125':'r',
-                 'phi300':'m',
+                 'phi150':'tan',
+                 'phi200':'chartreuse',
+                 'phi250':'magenta',
+                 'phi300':'hotpink',
 }
 
 import re
 #nosig = re.compile("(?!phi125)(?!h125)(?!data)")
-nosig = re.compile("(?!phi10)(?!phi30)(?!phi50)(?!phi125)(?!phi300)(?!data)")
-noqcd = re.compile("(?!qcd)(?!phi10)(?!phi30)(?!phi50)(?!phi125)(?!phi300)(?!data)")
+nosig = re.compile("(?!phi10)(?!phi20)(?!phi30)(?!phi40)(?!phi50)(?!phi75)(?!phi100)(?!phi125)(?!phi150)(?!phi200)(?!phi250)(?!phi300)(?!data)")
+noqcd = re.compile("(?!qcd)(?!phi10)(?!phi20)(?!phi30)(?!phi40)(?!phi50)(?!phi75)(?!phi100)(?!phi125)(?!phi150)(?!phi200)(?!phi250)(?!phi300)(?!data)")
 #nosig = re.compile("(?!ggF-Htt)(?!VBF-Htt)(?!Wm-Htt)(?!Wp-Htt)(?!ZH-Htt)(?!ggZll-Htt)(?!ggZvv-Htt)(?!ggZqq-Htt)(?!tt-Htt)(?!h125)(?!data)")
 
 #nobkg = re.compile("(?!qcd)(?!tt)(?!st)(?!zqq)(?!wjets)(?!vv)(?!wqq)(?!zll)")
