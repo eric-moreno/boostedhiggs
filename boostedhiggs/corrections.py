@@ -14,9 +14,12 @@ with importlib.resources.path("boostedhiggs.data", "corrections.pkl.gz") as path
     with gzip.open(path) as fin:
         compiled = pickle.load(fin)
 
-compiled['2016_pileupweight']._values = np.minimum(5, compiled['2016_pileupweight']._values)
-compiled['2016_pileupweight_puUp']._values = np.minimum(5, compiled['2016_pileupweight_puUp']._values)
-compiled['2016_pileupweight_puDown']._values = np.minimum(5, compiled['2016_pileupweight_puDown']._values)
+compiled['2016preVFP_pileupweight']._values = np.minimum(5, compiled['2016preVFP_pileupweight']._values)
+compiled['2016preVFP_pileupweight_puUp']._values = np.minimum(5, compiled['2016preVFP_pileupweight_puUp']._values)
+compiled['2016preVFP_pileupweight_puDown']._values = np.minimum(5, compiled['2016preVFP_pileupweight_puDown']._values)
+compiled['2016postVFP_pileupweight']._values = np.minimum(5, compiled['2016postVFP_pileupweight']._values)
+compiled['2016postVFP_pileupweight_puUp']._values = np.minimum(5, compiled['2016postVFP_pileupweight_puUp']._values)
+compiled['2016postVFP_pileupweight_puDown']._values = np.minimum(5, compiled['2016postVFP_pileupweight_puDown']._values)
 compiled['2017_pileupweight']._values = np.minimum(5, compiled['2017_pileupweight']._values)
 compiled['2017_pileupweight_puUp']._values = np.minimum(5, compiled['2017_pileupweight_puUp']._values)
 compiled['2017_pileupweight_puDown']._values = np.minimum(5, compiled['2017_pileupweight_puDown']._values)

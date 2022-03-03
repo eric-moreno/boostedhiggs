@@ -858,7 +858,7 @@ class HttProcessor(processor.ProcessorABC):
         else:
             weights.add('genweight', events.genWeight)
             #weights.add('L1PreFiring', events.L1PreFiringWeight.Nom, events.L1PreFiringWeight.Up, events.L1PreFiringWeight.Down)
-            add_pileup_weight(weights, events.Pileup.nPU, self._year)
+            add_pileup_weight(weights, events.Pileup.nPU, self._year+self._yearmod)
             if "LHEPdfWeight" in events.fields:
                 add_pdf_weight(weights, events.LHEPdfWeight)
             else:
