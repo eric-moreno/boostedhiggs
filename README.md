@@ -78,6 +78,8 @@ singularity exec -B ${PWD}:/srv -B /uscmst1b_scratch -B /eos/uscms/store/user/cm
   /bin/bash --rcfile /srv/.bashrc
 ```
 
+In order to use the ONNX inference you must run `pip install onnxruntime` in the singularity shell (only needed one time).
+
 ### With python environments
 This option is not recommended as we have found	some problems with uproot.
 ```
