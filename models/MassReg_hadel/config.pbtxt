@@ -1,0 +1,26 @@
+name: "MassReg_hadel"
+platform: "onnxruntime_onnx"
+max_batch_size: 0
+input[
+{
+    name: "inputParticle"
+    data_type: TYPE_FP32
+    dims: [-1, 30, 10]
+},
+{
+    name: "inputSV"
+    data_type: TYPE_FP32
+    dims: [-1, 5, 13]
+},
+{
+    name: "inputEvent"
+    data_type: TYPE_FP32
+    dims: [-1, 12]
+}]
+output[
+{
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [-1, 2]
+}
+]
