@@ -41,7 +41,8 @@ from .common import (
 )
 
 from .utils import (
-    runInferenceOnnx
+    runInferenceOnnx,
+    runInferenceTriton
 )
 
 import logging
@@ -73,6 +74,8 @@ _ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/da
 _ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
 _ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
+
+
 
 class HttProcessor(processor.ProcessorABC):
     def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
@@ -979,7 +982,8 @@ class HttProcessor(processor.ProcessorABC):
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
 
-            inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+            #inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
     
             nn_disc_hadel = np.ones(len(events))*-1.
             nn_disc_hadmu = np.ones(len(events))*-1.
@@ -999,26 +1003,31 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu = np.ones(len(events))*-1.
             ztagger_mu_qcd = np.ones(len(events))*-1.
             ztagger_mu_mm = np.ones(len(events))*-1.
+            #print(inf_results)
 
-            nn_disc_hadel[presel] = inf_results['IN_hadel_v6'][0][:,0]
-            nn_disc_hadmu[presel] = inf_results['IN_hadmu_v6'][0][:,0]
-            nn_disc_hadhad[presel] = inf_results['model6_hadhad_multi'][0][:,0]
-            nn_disc_hadhad_qcd[presel] = inf_results['model6_hadhad_multi'][0][:,1]
-            nn_disc_hadhad_wjets[presel] = inf_results['model6_hadhad_multi'][0][:,2]
-    
-            massreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,0]
-            massreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,0]
-            massreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,0]
-    
-            ptreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,1]
-            ptreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,1]
-            ptreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,1]
-    
-            ztagger_el[presel] = inf_results['Ztagger_Zee_Zhe_v6'][0][:,0]
-            ztagger_mu[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,0]
-            ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
-            ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
+            print("PASS", 'getting hadel')
 
+            nn_disc_hadel[presel] = inf_results['hadel'][:,0]
+            nn_disc_hadmu[presel] = inf_results['hadmu'][:,0]
+            nn_disc_hadhad[presel] = inf_results['hadhad'][:,0]
+            nn_disc_hadhad_qcd[presel] = inf_results['hadhad'][:,1]
+            nn_disc_hadhad_wjets[presel] = inf_results['hadhad'][:,2]
+    
+            massreg_hadel[presel] = inf_results['MassReg_hadel'][:,0]
+            massreg_hadmu[presel] = inf_results['MassReg_hadmu'][:,0]
+            massreg_hadhad[presel] = inf_results['MassReg_hadhad'][:,0]
+    
+            ptreg_hadel[presel] = inf_results['MassReg_hadel'][:,1]
+            ptreg_hadmu[presel] = inf_results['MassReg_hadmu'][:,1]
+            ptreg_hadhad[presel] = inf_results['MassReg_hadhad'][:,1]
+    
+            ztagger_el[presel] = inf_results['Ztag_Zee_Zhe'][:,0]
+            ztagger_mu[presel] = inf_results['Ztag_Zmm_Zhm'][:,0]
+            ztagger_mu_qcd[presel] = inf_results['Ztag_Zmm_Zhm'][:,1]
+            ztagger_mu_mm[presel] = inf_results['Ztag_Zmm_Zhm'][:,2]
+            print("PASS", 'got inf results')
+
+        print("PASS", "selecting...")
         selection.add('ptreg_hadel', ptreg_hadel>280.0)
         selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
         selection.add('ptreg_hadhad', ptreg_hadhad>280.0)
@@ -1031,7 +1040,7 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('ztagger_mu', ztagger_mu > 0.95)
         selection.add('ztagger_elInv', ztagger_el >= 0.01)
         selection.add('ztagger_muInv', ztagger_mu <= 0.95)
-
+        print("PASS", "selected.")
 
         for r in regions:
             allcuts_reg = set()
