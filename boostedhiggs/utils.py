@@ -543,6 +543,7 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
 URL = "0.0.0.0:8071"
 verbose = False
 triton_client = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
+import multiprocessing
 
 def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
 
@@ -630,19 +631,19 @@ def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
 
     '''
 
-    print("PASS","about to make tritoninputs dict")
+    print("PASS","about to make tritoninputs dict", multiprocessing.current_process())
     nevt = np.sum(presel)
     print("PASS", nevt, 'events')
     tritoninputs = {
-        'elec' : tritongrpcclient.InferInput("elec", [nevt, 2, 20], 'FP32'),
-        'muon' : tritongrpcclient.InferInput("muon", [nevt, 2, 16], 'FP32'),
-        'tau' : tritongrpcclient.InferInput('tau', [nevt, 3, 18], 'FP32'),
+        'elec' : tritongrpcclient.InferInput("inputEl", [nevt, 2, 20], 'FP32'),
+        'muon' : tritongrpcclient.InferInput("inputMu", [nevt, 2, 16], 'FP32'),
+        'tau' : tritongrpcclient.InferInput('inputTau', [nevt, 3, 18], 'FP32'),
         #'evt' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
-        'evt_z' : tritongrpcclient.InferInput('evt_z', [nevt, 11], 'FP32'),
-        'evt_reg' : tritongrpcclient.InferInput('evt_reg', [nevt, 12], 'FP32'),
-        'sv' : tritongrpcclient.InferInput('sv', [nevt, 5, 13], 'FP32'),
-        'pf_reg' : tritongrpcclient.InferInput('pf_reg', [nevt, 30, 10], 'FP32'),
-        'pf' : tritongrpcclient.InferInput('pf', [nevt, 30, 22], 'FP32'),
+        'evt_z' : tritongrpcclient.InferInput('inputEvent', [nevt, 11], 'FP32'),
+        'evt_reg' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
+        'sv' : tritongrpcclient.InferInput('inputSV', [nevt, 5, 13], 'FP32'),
+        'pf_reg' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 10], 'FP32'),
+        'pf' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 22], 'FP32'),
     }
 
     print("PASS", 'filling tritoninputs')
@@ -654,27 +655,29 @@ def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
 
     print("PASS", 'setting up output')
     outputs = []
-    for key in inference_model_dict.keys():
-        outputs.append(tritongrpcclient.InferRequestedOutput(key))
+    #for key in inference_model_dict.keys():
+        #outputs.append(tritongrpcclient.InferRequestedOutput(key))
+    outputs.append(tritongrpcclient.InferRequestedOutput("output"))
 
     print("PASS", 'getting outputs')
-    '''
+    resultdict = {}
     for key in inference_model_dict.keys():
         print("PASS", "\t",key)
         results = triton_client.infer(
                 model_name = key,
                 inputs = [tritoninputs[name] for name in inference_model_dict[key]],
-                outputs = [output])
+                outputs = outputs)
         result_data = results.as_numpy('output')
         print("PASS",key, result_data.shape)
+        resultdict[key] = result_data
     '''
     results = triton_client.infer(
             model_name = 'ensemble',
             inputs = tritoninputs.values(),
             outputs = outputs)
-    resultdict = {}
     for key in inference_model_dict.keys():
         resultdict[key] = results.as_numpy(key)
         print(key, resultdict[key].shape)
+    '''
 
     return resultdict
