@@ -633,7 +633,6 @@ def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
 
     print("PASS","about to make tritoninputs dict", multiprocessing.current_process())
     nevt = np.sum(presel)
-    print("PASS", nevt, 'events')
     tritoninputs = {
         'elec' : tritongrpcclient.InferInput("inputEl", [nevt, 2, 20], 'FP32'),
         'muon' : tritongrpcclient.InferInput("inputMu", [nevt, 2, 16], 'FP32'),
@@ -646,29 +645,27 @@ def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
         'pf' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 22], 'FP32'),
     }
 
-    print("PASS", 'filling tritoninputs')
+    print("PASS", 'filling tritoninputs', multiprocessing.current_process())
     size = 0
     for key in tagger_inputs.keys():
         tritoninputs[key].set_data_from_numpy(tagger_inputs[key])
         size += len(tritoninputs[key]._get_content())
-    print("PASS", "size =",size)
 
-    print("PASS", 'setting up output')
+    print("PASS", 'setting up output', multiprocessing.current_process())
     outputs = []
     #for key in inference_model_dict.keys():
         #outputs.append(tritongrpcclient.InferRequestedOutput(key))
     outputs.append(tritongrpcclient.InferRequestedOutput("output"))
 
-    print("PASS", 'getting outputs')
+    print("PASS", 'getting outputs', multiprocessing.current_process())
     resultdict = {}
     for key in inference_model_dict.keys():
-        print("PASS", "\t",key)
+        print("PASS", "\t",key, multiprocessing.current_process())
         results = triton_client.infer(
                 model_name = key,
                 inputs = [tritoninputs[name] for name in inference_model_dict[key]],
                 outputs = outputs)
         result_data = results.as_numpy('output')
-        print("PASS",key, result_data.shape)
         resultdict[key] = result_data
     '''
     results = triton_client.infer(
@@ -680,4 +677,5 @@ def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
         print(key, resultdict[key].shape)
     '''
 
+    print("PASS", "end of triton function", multiprocessing.current_process())
     return resultdict

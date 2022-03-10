@@ -9,6 +9,8 @@ from coffea import processor, hist
 from coffea.nanoevents.methods import candidate, vector
 from coffea.analysis_tools import Weights, PackedSelection
 
+import multiprocessing
+
 import onnxruntime as rt
 
 from .corrections import (
@@ -362,6 +364,7 @@ class HttProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
+        print("TOP OF PROCESS", multiprocessing.current_process())
         dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
         selection = PackedSelection(dtype="uint64")
@@ -392,6 +395,7 @@ class HttProcessor(processor.ProcessorABC):
 
             triggermasks[channel] = trigger
     
+        print("made triggermasks", multiprocessing.current_process())
         if isRealData:
             overlap_removal = isOverlap(events, dataset, self._triggers['e'] + self._triggers['mu'] + self._triggers['had'] + self._triggers['met'], self._year)
         else:
@@ -490,6 +494,7 @@ class HttProcessor(processor.ProcessorABC):
 
         gotInf = True
 
+        print("looking for nn outputs...", multiprocessing.current_process())
         try: #FIXME: hack to not care about PFNANO vs NN postprocessed
             nn_disc_hadel = events.IN.hadel_v6
             nn_disc_hadmu = events.IN.hadmu_v6
@@ -702,6 +707,7 @@ class HttProcessor(processor.ProcessorABC):
             behavior = vector.behavior,
             with_name='PtEtaPhiMLorentzVector'
         )
+        print("made particles", multiprocessing.current_process())
         
         etau_ak8_pair = ak.cartesian((etaus_p4, best_ak8_p4))
         etau_ak8_dr = etau_ak8_pair[:,:,'0'].delta_r(etau_ak8_pair[:,:,'1'])
@@ -975,6 +981,7 @@ class HttProcessor(processor.ProcessorABC):
                 w_dict[r] = w_hadmu
 
 
+        print("about to get inference", multiprocessing.current_process())
         if not gotInf:
 
             presel = np.zeros(nevents, dtype=np.bool)
@@ -1005,7 +1012,7 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu_mm = np.ones(len(events))*-1.
             #print(inf_results)
 
-            print("PASS", 'getting hadel')
+            print("PASS", 'getting hadel', multiprocessing.current_process())
 
             nn_disc_hadel[presel] = inf_results['hadel'][:,0]
             nn_disc_hadmu[presel] = inf_results['hadmu'][:,0]
@@ -1025,9 +1032,9 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu[presel] = inf_results['Ztag_Zmm_Zhm'][:,0]
             ztagger_mu_qcd[presel] = inf_results['Ztag_Zmm_Zhm'][:,1]
             ztagger_mu_mm[presel] = inf_results['Ztag_Zmm_Zhm'][:,2]
-            print("PASS", 'got inf results')
+            print("PASS", 'got inf results', multiprocessing.current_process())
 
-        print("PASS", "selecting...")
+        print("PASS", "selecting...", multiprocessing.current_process())
         selection.add('ptreg_hadel', ptreg_hadel>280.0)
         selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
         selection.add('ptreg_hadhad', ptreg_hadhad>280.0)
@@ -1040,8 +1047,9 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('ztagger_mu', ztagger_mu > 0.95)
         selection.add('ztagger_elInv', ztagger_el >= 0.01)
         selection.add('ztagger_muInv', ztagger_mu <= 0.95)
-        print("PASS", "selected.")
+        print("PASS", "selected.", multiprocessing.current_process())
 
+        print("PASS", "processing regions", multiprocessing.current_process())
         for r in regions:
             allcuts_reg = set()
             output['cutflow_%s'%r][dataset]['none'] += float(w_dict[r].weight().sum())
@@ -1182,6 +1190,7 @@ class HttProcessor(processor.ProcessorABC):
                         **{var:normalize(altvars[var]), 'nn_disc':normalize(nn_disc)}}
                     )
 
+        print("applying systematics", multiprocessing.current_process())
         for region in regions:
             for systematic in systematics:
                 if 'DYJets' in dataset:
@@ -1190,7 +1199,9 @@ class HttProcessor(processor.ProcessorABC):
                 else:
                     fill(region, systematic, realData=isRealData)
 
+        print("done", multiprocessing.current_process())
         return output
 
     def postprocess(self, accumulator):
+        print("postprocess", multiprocessing.current_process())
         return accumulator
