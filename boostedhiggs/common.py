@@ -140,7 +140,7 @@ def match(left, right, metric, maximum=np.inf):
     '''
     lr = ak.cartesian((left, right))
     mval = metric(lr[:,:,'0'], lr[:,:,'1'])
-    idx = ak.argmin(mval, -1)
+    idx = ak.argmin(mval, -1, keepdims=True)
     if maximum < np.inf:
         return lr['1'][mval[idx] < maximum]
     else:
@@ -149,19 +149,19 @@ def match(left, right, metric, maximum=np.inf):
 
 def matchedBosonFlavor(candidates, bosons, maxdR=0.8):
     matched = match(candidates, bosons, lambda a, b: a.delta_r(b), maxdR)
-    childid = abs(matched.children.pdgId)
-    genflavor = ak.flatten(ak.any(childid == 5, -1)) * 3 \
-              + ak.flatten(ak.any(childid == 4, -1)) * 2 \
-              + ak.flatten(ak.all(childid < 4, -1)) * 1
+    childid = ak.pad_none(abs(matched.children.pdgId), 1, axis=1)
+    genflavor = (ak.any(childid == 5, -1)) * 3 \
+              + (ak.any(childid == 4, -1)) * 2 \
+              + (ak.all(childid < 4, -1)) * 1
     return ak.fill_none(genflavor, 0)
 
 def matchedBosonFlavorLep(candidates, bosons, maxdR=0.8):
     matched = match(candidates, bosons, lambda a, b: a.delta_r(b), maxdR)
-    childid = abs(matched.children.pdgId)
-    genflavor = ak.flatten(ak.any(childid == 13, -1)) * 3 \
-              + ak.flatten(ak.any(childid == 11, -1)) * 2 \
-              + ak.flatten(ak.any(childid == 15, -1)) * 1 \
-              + ak.flatten(ak.all((childid != 15) & (childid != 13) & (childid != 11), -1)) * 0
+    childid = ak.pad_none(abs(matched.children.pdgId), 1, axis=1)
+    genflavor = (ak.any(childid == 13, -1)) * 3 \
+              + (ak.any(childid == 11, -1)) * 2 \
+              + (ak.any(childid == 15, -1)) * 1 \
+              + (ak.all((childid != 15) & (childid != 13) & (childid != 11), -1)) * 0
     return ak.fill_none(genflavor, 0)
 
 def getHTauTauDecayInfo(events,mod=False):

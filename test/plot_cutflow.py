@@ -144,8 +144,8 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
                 break
 
     if colormap:
-        color_order = [color_map[s[0]] for s in samp_order]
-        sig_color_order = [sig_color_map[s[0]] for s in sig_order]
+        color_order = [color_map[s[0]] for s in samp_order[::-1]]
+        sig_color_order = [sig_color_map[s[0]] for s in sig_order[::-1]]
         custom_cycler = (cycler(color=color_order))
         ax.set_prop_cycle(custom_cycler)
 
@@ -188,6 +188,9 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     for xl in old_labels:
         #if ('H(125)' in xl): xl = xl + " (x 50)"
         new_labels.append(xl)
+    if "Stat. Unc." in new_labels:
+        new_labels = new_labels[new_labels.index("Stat. Unc.")-1::-1] + [new_labels[new_labels.index("Stat. Unc.")]] + new_labels[:new_labels.index("Stat. Unc."):-1] 
+        old_handles = old_handles[new_labels.index("Stat. Unc.")-1::-1] + [old_handles[new_labels.index("Stat. Unc.")]] + old_handles[:new_labels.index("Stat. Unc."):-1] 
     leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='lower left')
     lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     cmstext = plt.text(0., 1., "CMS",fontsize=19,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
@@ -321,4 +324,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     getPlots(args)
-
