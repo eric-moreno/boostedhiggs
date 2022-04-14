@@ -170,6 +170,8 @@ lepsf_keys = lepsf_evaluator.keys()
 
 def add_LeptonSFs(weights, lepton, year, match):
     for sf in lepsf_keys:
+        if year not in sf:
+            continue
         if match not in sf:
             continue
         lep_pt = np.array(ak.fill_none(lepton.pt, 0.))

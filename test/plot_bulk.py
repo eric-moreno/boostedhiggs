@@ -13,6 +13,7 @@ lumi_dict = {
 
 doAlt = 0
 doAltCutflow = True
+skipCutflow = False
 altplots = ({ 
     'jet_pt':r"$p_{T}(j)$", 
     'jet_eta':r"$\eta(j)$", 
@@ -48,8 +49,8 @@ lepExceptions = ['antilep']
 useData = True
 year = '2017'
 lumi = lumi_dict[year]
-infilePre = '../condor/Dec01_NN_%s/hists_sum_'%year
-tag = "NNTest_Dec01_%s"%year
+infilePre = 'condor/Apr10_%s_UL/hists_sum_'%year
+tag = "Apr12_%s_UL"%year
 massVar = "massreg"
 massRange = [0.,500.]
 massLabel = r"$m_{NN}$"
@@ -191,7 +192,7 @@ plotList = {
     "selStr":["", "_nnpass", "", "_zoom", "", "_nnpass"],
     "sels":[{}, {"nn_disc":["NNCUT",None]}, {}, {"nn_disc":[0.9,None]}, {}, {"nn_disc":["NNCUT",None]}],
     #"addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True,"rebin":[0.9,0.95,0.99,0.995,0.999,0.9995,0.9999,1.000001]}, {"dosigrat":True}, {"dosigrat":True}],
-    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True,"rebin":[0.9,0.95,0.99,0.995,0.999,0.9995,0.9999,1.000001]}, {}, {}],
+    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True,"rebin":[0.9,0.95,0.99,0.995,0.999,0.9995,1.000001]}, {}, {}],
     "blindSel":["", "", ["None", hadLepCut], ["None", hadLepCut], "", ""],
     "addOptsBase":{"signame":["phi10","phi30","phi50","phi125","phi300"]},
   },
@@ -252,7 +253,7 @@ def addPassFail(origList, region, ptList, keepBlind=True):
       "selStr":["_jet%sto%s_nn%s"%(str(ptList[ip]),str(ptList[ip+1]),nnCats[ic]) for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "sels":[{"h_pt":[ptList[ip],ptList[ip+1]], "nn_disc":nnSel[ic], massVar:massRange} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "sels":[{"h_pt":[ptList[ip],ptList[ip+1]], "nn_disc":nnSel[ic]} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
-      "addOpts":[{} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
+      "addOpts":[{} if nnCats[ic]=="fail" else {"forcetop":['ztt']} for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
       "blindSel":[nnBlind[ic] for ic in range(len(nnCats)) for ip in range(len(ptList)-1)],
     }
   else:
@@ -263,7 +264,7 @@ def addPassFail(origList, region, ptList, keepBlind=True):
       "selStr":["_nn%s"%(nnCats[ic]) for ic in range(len(nnCats))],
       "sels":[{"nn_disc":nnSel[ic], massVar:massRange} for ic in range(len(nnCats))],
       "sels":[{"nn_disc":nnSel[ic]} for ic in range(len(nnCats))],
-      "addOpts":[{} for ic in range(len(nnCats))],
+      "addOpts":[{} if nnCats[ic]=="fail" else {"forcetop":['ztt']} for ic in range(len(nnCats))],
       "blindSel":[nnBlind[ic] for ic in range(len(nnCats))],
     }
   newList = {obj:origList[obj]+passFailList[obj] if obj in passFailList else origList[obj] for obj in origList}
@@ -335,11 +336,11 @@ class CutflowArgs:
 
 cutflowArgs = CutflowArgs(infileList, tag, [cutTitleMap[c] for c in cutList], lumi, cutList, True)
 
-if doAlt==0 or doAltCutflow:
+if (doAlt==0 or doAltCutflow) and not skipCutflow:
   plot_cutflow.getPlots(cutflowArgs)
 
 class StackArgs:
-  def __init__(self, hists, tag, savetag, var, varlabel, title, regions, hist, lumi=50., sel='', sigsel='', xlimits='', xlog=False, xexp=False, blind='', solo=False, sigscale=50, sigstack=False, noratio=False, dosigrat=False, overflow='allnan', rebin=[1], norm=None, density=False, sample='all', comp=False, compsel='', complabels='', defcolors=True, verbose=False, dirname=None, qcd=[], qcdshapesel='', qcdnumsel='', qcddensel=''):
+  def __init__(self, hists, tag, savetag, var, varlabel, title, regions, hist, lumi=50., sel='', sigsel='', xlimits='', xlog=False, xexp=False, blind='', solo=False, sigscale=50, sigstack=False, noratio=False, dosigrat=False, overflow='allnan', rebin=[1], norm=None, density=False, sample='all', comp=False, compsel='', complabels='', defcolors=True, forcetop=[], verbose=False, png=False, dirname=None, qcd=[], qcdshapesel='', qcdnumsel='', qcddensel=''):
     self.hists = hists
     self.dirname = dirname
     self.tag = tag
@@ -370,7 +371,9 @@ class StackArgs:
     self.compsel = compsel
     self.complabels = complabels
     self.defcolors = defcolors
+    self.forcetop = forcetop
     self.verbose = verbose
+    self.png = png
     self.qcd = qcd
     self.qcdshapesel = qcdshapesel
     self.qcdnumsel = qcdnumsel
@@ -844,6 +847,7 @@ region_opts = {
   },
 }
 
+qcdRegions = {r:[] for r in region_opts}
 
 def doPlotting(infileList,tag,lumi,region,hist,plotList,regopts,qcd_args={},add_opts={},sample='all', keepBlind=True):
   if (hist==srHist): 
@@ -885,9 +889,9 @@ def doPlotting(infileList,tag,lumi,region,hist,plotList,regopts,qcd_args={},add_
     print(ndict)
     print(comb_opt_dict)
     print(regopts["sigSel"])
+    #comb_opt_dict.update({"forcetop":['ztt']})
     #plot_stack.drawStack(cofhist,hist,thePlotList["varName"][ivar],thePlotList["varLabel"][ivar],regopts["titleBase"]+thePlotList["titleAdd"][ivar],sample,lumi,ndict,regopts["sigSel"],[region],region+thePlotList["selStr"][ivar]+regopts["saveLabel"],**comb_opt_dict)
     plot_stack.drawStack(cofhist,hist,thePlotList["varName"][ivar],thePlotList["varLabel"][ivar],regopts["titleBase"]+thePlotList["titleAdd"][ivar],sample,lumi,ndict,regopts["sigSel"],'',region+thePlotList["selStr"][ivar]+regopts["saveLabel"],qcd_hists=qcdhists,**comb_opt_dict)
-
   os.chdir(pwd)
   del cofhist
 
@@ -895,7 +899,8 @@ print('Nominal')
 for region in regionList:
   for hist in region_opts[region]["histList"]:
     print(region, hist)
-    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])
+    #qcd_args = {'qcd':qcdRegions[region]}
+    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region])#,qcd_args=qcd_args)
 print("Done")
 
 if doAlt > 0:
@@ -1554,7 +1559,7 @@ for region in regionList:
     print(region, hist)
     #plotList[hist]["addOptsBase"]["qcd"] = 
     qcd_args = {'qcd':qcdRegions[region]}
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
 print("Done")
 
 region_opts = {
@@ -1677,7 +1682,7 @@ for region in regionList:
     print(region, hist)
     #plotList[hist]["addOptsBase"]["qcd"] = 
     qcd_args = {'qcd':qcdRegions[region]}
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
 print("Done")
 
 region_opts = {
@@ -1800,7 +1805,7 @@ for region in regionList:
     print(region, hist)
     #plotList[hist]["addOptsBase"]["qcd"] = 
     qcd_args = {'qcd':qcdRegions[region]}
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
 print("Done")
 
 region_opts = {
@@ -1923,7 +1928,7 @@ for region in regionList:
     print(region, hist)
     #plotList[hist]["addOptsBase"]["qcdshapesel"] = 
     qcd_args = {'qcd':qcdRegions[region]}
-    doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
+    #doPlotting(infileList,tag,lumi,region,hist,plotList,region_opts[region],keepBlind=True,qcd_args=qcd_args)
 print("Done")
 
 #regionList = [
