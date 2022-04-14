@@ -57,7 +57,7 @@ def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,v
     exceptions = ['process', var1_name, var2_name]
     for var,val in vars_cut.items():
         exceptions.append(var)
-    if (regionsel is not ''):
+    if (regionsel!=''):
         exceptions.append('region')
     print([ax.name for ax in h.axes()])
     x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow)
@@ -82,7 +82,7 @@ def drawStack(h,sel,var1_name,var1_label,var2_name,var2_label,plottitle,lumifb,v
     elif (sample!='all'):
         histo = x[sample]
 
-    histo = histo.sum(*[ax for ax in histo.axes() if ax.name is 'process'])
+    histo = histo.sum(*[ax for ax in histo.axes() if ax.name=='process'])
 
     xaxis = var1_name
     histo.axis(xaxis).label = var1_label
@@ -190,10 +190,11 @@ def getPlots(args,returnHist=False):
 
     hists_mapped = {}
     if args.dirname is not None:
-        args.hists = [h[:-7] for h in glob.glob('%s/*.coffea'%args.dirname)]
+        args.hists = [h[:-7] for h in glob.glob('%s/*.hist'%args.dirname)]
     for h in args.hists:
         # open hists
-        hists_unmapped = load('%s.coffea'%h)
+        with open("%s.hist"%h, 'rb') as f:
+            hists_unmapped = pickle.load(f)
         # map to hists
         for key, val in hists_unmapped.items():
             if isinstance(val, hist.Hist):
@@ -244,6 +245,7 @@ def getPlots(args,returnHist=False):
 
 if __name__ == "__main__":
     #ex. python plot_2d.py --hists ../condor/May09/hists_sum --tag May09 --var1 lep_pt --var1label '$p_{T}(\mu)$' --var2 lep_jet_dr --var2label '$\Delta R(j,\mu)$' --title '$\tau_{h}\mu$' --lumi 41.5 --regions hadmu_signal --hist lep_kin --sample sig --savetag hadmu
+    #--var1 nn_disc --var1label "NN" --var2 ztagger_el --var2label "Z_{NN}" --title 'mt' --lumi 41.5 --regions hadel_signal --hist ztagger_el_kin --savetag hadel
     parser = argparse.ArgumentParser()
     parser.add_argument('--hists',      dest='hists',     default="hists",      help="hists pickle name", nargs='+')
     parser.add_argument('--dirname',    dest='dirname',   default=None,         help="hists dir")
