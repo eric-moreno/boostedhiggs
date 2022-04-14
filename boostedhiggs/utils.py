@@ -606,6 +606,7 @@ def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
         **get_taus_features(sel_events, sel_fatjet, sel_jet_idx),
     }
 
+    ''' 
     inputs_lists = {
         'pf':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge', 'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight', 'pf_puppiWeightNoLep', 'pf_trkChi2', 'pf_vtxChi2'],
         'pf_reg':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge', 'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight', 'pf_puppiWeightNoLep','pf_idreg'],
@@ -619,7 +620,55 @@ def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
     }
     inputs_lists['pf'][-3:-3] = ['pf_id%i'%iid for iid in range(11)]
     #inputs_lists['pf_reg'][-1:-1] = ['pf_id%i'%iid for iid in range(11)]
-       
+    '''
+    inputs_lists = {
+        'pf':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge',
+            'pf_dz', 'pf_dzErr', 'pf_d0', 'pf_d0Err',
+            'pf_puppiWeight', 'pf_puppiWeightNoLep', 'pf_trkChi2', 'pf_vtxChi2'],
+        'pf_reg':['pf_pt_real', 'pf_eta', 'pf_phi', 'pf_charge',
+            'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight',
+            'pf_puppiWeightNoLep','pf_idreg'],
+        'sv':['sv_dlen', 'sv_dlenSig', 'sv_dxy', 'sv_dxySig',
+            'sv_chi2', 'sv_pAngle', 'sv_x', 'sv_y',
+            'sv_z', 'sv_pt', 'sv_mass', 'sv_eta',
+            'sv_phi'],
+        'muon':['muon_charge', 'muon_dxy', 'muon_dxyErr', 'muon_dz',
+            'muon_dzErr', 'muon_eta', 'muon_ip3d', 'muon_nStations',
+            'muon_nTrackerLayers', 'muon_pfRelIso03_all', 'muon_pfRelIso03_chg', 'muon_phi',
+            'muon_pt', 'muon_segmentComp', 'muon_sip3d', 'muon_tkRelIso'],
+        'elec':['elec_charge', 'elec_convVeto', 'elec_deltaEtaSC', 'elec_dr03EcalRecHitSumEt',
+            'elec_dr03HcalDepth1TowerSumEt', 'elec_dr03TkSumPt', 'elec_dxy', 'elec_dxyErr',
+            'elec_dz', 'elec_dzErr', 'elec_eInvMinusPInv', 'elec_eta',
+            'elec_hoe', 'elec_ip3d', 'elec_lostHits', 'elec_phi',
+            'elec_pt', 'elec_r9', 'elec_sieie', 'elec_sip3d'],
+        #'tau':['tau_charge', 'tau_chargedIso', 'tau_dxy', 'tau_dz',
+        #     'tau_eta', 'tau_leadTkDeltaEta', 'tau_leadTkDeltaPhi', 'tau_leadTkPtOverTauPt',
+        #     'tau_mass', 'tau_neutralIso', 'tau_phi', 'tau_photonsOutsideSignalCone',
+        #     'tau_pt', 'tau_rawAntiEle', 'tau_rawIso', 'tau_rawIsodR03'], #preUL
+        'tau':['tau_charge', 'tau_chargedIso', 'tau_eta', 'tau_leadTkDeltaEta', 
+            'tau_leadTkDeltaPhi', 'tau_leadTkPtOverTauPt', 'tau_mass', 'tau_neutralIso', 
+            'tau_phi', 'tau_photonsOutsideSignalCone', 'tau_pt', 'tau_rawAntiEle2018', 
+            'tau_rawIso', 'tau_rawIsodR03'],
+        'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
+            'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
+            'jet_chhadronnum','jet_nehadronnum'],
+        'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
+            'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
+            'jet_chhadronnum'],#,'jet_nehadronnum'],
+        #'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
+        #     'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
+        #     'jet_chhadronnum','jet_nehadronnum','jet_unity','jet_unity'],
+        #'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
+        #     'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
+        #     'jet_chhadronnum','jet_nehadronnum','jet_unity'],
+        'evt_reg':['met_covXX','met_covXY','met_covYY','met_dphi',
+            'met_pt','met_significance','pupmet_pt','pupmet_dphi',
+            'jet_msd','jet_pt','jet_eta','jet_phi'],
+    }
+    inputs_lists['pf'][-2:-2] = ['pf_id%i'%iid for iid in range(11)]
+
+    
+    '''
     tagger_inputs = {
         input_name: np.concatenate(
             [
@@ -636,7 +685,29 @@ def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
         #print(len(events))
         #print(np.sum(presel))
         #print(input_name, tagger_inputs[input_name].shape)
+    '''
+    tagger_inputs = {
+        input_name: np.concatenate(
+            [
+                np.expand_dims(feature_dict[key], 1)
+                for key in inputs_lists[input_name]
+            ],
+            axis=1,
+        ).transpose((0,2,1) if 'evt' not in input_name or len(sel_events.MET.covXX)>1 else (0,1))
+        for input_name in inputs_lists
+    }
+    for feat in list(feature_dict):
+        del feature_dict[feat]
+    del feature_dict
 
+    for input_name in tagger_inputs:
+        if input_name.startswith('evt'):
+            tagger_inputs[input_name] = np.reshape(tagger_inputs[input_name],(-1,len(inputs_lists[input_name])))
+        print(len(events))
+        print(np.sum(presel))
+        print(input_name, tagger_inputs[input_name].shape)
+
+    '''
     inference_model_dict = {
         'hadel':['elec','evt_z','pf','sv','tau'],
         'hadmu':['evt_z','muon','pf','sv','tau'],
@@ -646,8 +717,17 @@ def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
         'MassReg_hadmu':['evt_reg','pf_reg','sv'],
         'Ztag_Zee_Zhe':['elec','evt_z','pf','sv','tau'],
         'Ztag_Zmm_Zhm':['evt_z','muon','pf','sv','tau'],
+    }'''
+    inference_model_dict = {
+        'IN_hadel_v6':['pf','sv','elec','tau','evt_z'],
+        'IN_hadmu_v6':['pf','sv','muon','tau','evt_z'],
+        'IN_hadhad_multi_v6':['pf','sv','tau','evt_z'],
+        'MassReg_hadhad':['evt_reg','pf_reg','sv'],
+        'MassReg_hadel':['evt_reg','pf_reg','sv'],
+        'MassReg_hadmu':['evt_reg','pf_reg','sv'],
+        'Ztagger_Zee_Zhe_v6':['pf','sv','elec','tau','evt_z'],
+        'Ztagger_Zmm_Zhm_v6':['pf','sv','muon','tau','evt_z'],
     }
-
     # run inference for both fat jets
 
     '''
