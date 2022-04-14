@@ -4,7 +4,7 @@ executable              = DIRECTORY/PREFIX_JOBID.sh
 should_transfer_files   = YES
 transfer_input_files    = boostedhiggs,run.py,JSON
 when_to_transfer_output = ON_EXIT_OR_EVICT
-request_memory          = 5000
+request_memory          = MEMREQUEST
 use_x509userproxy       = true
 x509userproxy           = /uscms/home/drankin/x509up_u47452
 

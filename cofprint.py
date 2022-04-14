@@ -23,7 +23,7 @@ import pickle
 #cfile = load('../condor/Jun10_NN/hists_sum_WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')
 #cfile = load('./htt_test_spin0.coffea')
 #cfile = load('./outfiles/2017_test_0--1.hist')
-with open("./outfiles/2017_Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_0_0-5.hist", 'rb') as f:
+with open("./outfiles/2017_Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_2_0-2.hist", 'rb') as f:
 #with open("/uscms/home/srothman/nobackup/htt/boostedhiggs/outfiles/2017_test_0--1.hist", 'rb') as f:
     cfile = pickle.load(f)
 #cfile = load('../condor/Mar17_NN/hists_sum_WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8.coffea')

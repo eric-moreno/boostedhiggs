@@ -32,15 +32,20 @@ def main(args):
     print(fileset)
 
     if args.condor:
+        uproot.open.defaults['xrootd_handler'] = uproot.source.xrootd.XRootDSource
+
+        executor = processor.IterativeExecutor(status=True, workers=args.nworkers)
+
+        run = processor.Runner(executor=executor,savemetrics=False,chunksize=args.chunksize,schema=NanoAODSchema)
+        out = run(fileset,'Events',processor_instance=p)
+
+    else:
         uproot.open.defaults['xrootd_handler'] = uproot.source.xrootd.MultithreadedXRootDSource
-
-        executor = processor.FuturesExecutor(compression=1, status=True, workers=args.nworkers)
-
+        executor = processor.FuturesExecutor(compression=4, status=True, workers=args.nworkers)
         run = processor.Runner(executor=executor,savemetrics=True,chunksize=args.chunksize,schema=NanoAODSchema)
-
         out,metrics = run(fileset,'Events',processor_instance=p)
-
         print(f"Metrics: {metrics}")
+
 
     filehandler = open(f'outfiles/{args.year}_{args.sample}_{args.plotopt}_{args.starti}-{args.endi}.hist', 'wb')
     pickle.dump(out, filehandler)
@@ -51,6 +56,10 @@ if __name__ == "__main__":
     # inside a condor job: python run.py --year 2017 --processor hww --condor --starti 0 --endi 1 --fileset metadata.json --sample GluGluHToWWToLNuQQ_M125_TuneCP5_PSweight_13TeV-powheg2-jhugen727-pythia8
     # inside a dask job:  python run.py --year 2017 --processor hww --dask --fileset metadata.json --sample GluGluHToWWToLNuQQ_M125_TuneCP5_PSweight_13TeV-powheg2-jhugen727-pythia8
     #python run.py --year 2017 --processor htt --fileset fileset/fileset_2017_UL_NANO.json --sample DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8
+    print('--------------------------------------------------------')
+    print('!!  YOU HACKED THE INFERENCE TO MESS WITH PT ORDERING !!')
+    print('!!      ARE YOU SURE THIS SHOULD STILL BE HERE??      !!')
+    print('--------------------------------------------------------')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--year',       dest='year',       default='2017',       help="year", type=str)

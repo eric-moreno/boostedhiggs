@@ -63,7 +63,7 @@ line_opts = {
 overflow_sum = 'all'
 #overflow_sum = 'allnan'
 
-def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,verbose=False,signame=[],systematic='nominal',qcd_hists=[],qcd_cut_shape={},qcd_cut_num={},qcd_cut_den={}):
+def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,forcetop=[],verbose=False,signame=[],systematic='nominal',qcd_hists=[],qcd_cut_shape={},qcd_cut_num={},qcd_cut_den={},savepng=False):
     exceptions = ['process', var_name]
     qcd_shape_exceptions = ['process', var_name]
     qcd_num_exceptions = ['process']
@@ -286,7 +286,11 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             if verbose: print(key,val)
 
         samp_order.sort(key=lambda x : x[1],reverse=True)
-        sig_order.sort(key=lambda x : x[1],reverse=False)
+        sig_order.sort(key=lambda x : x[1],reverse=True)
+        for topsamp in forcetop:
+            if topsamp in [samp[0] for samp in samp_order]:
+                samptup = samp_order.pop([samp[0] for samp in samp_order].index(topsamp))
+                samp_order.insert(0,samptup)
 
         if verbose: print(samp_order)
         if verbose: print(sig_order)
@@ -301,11 +305,11 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         sig_color_order = []
 
         if colormap:
-            color_order = [color_map[s[0]] for s in samp_order]
+            color_order = [color_map[s[0]] for s in samp_order[::-1]]
             if (sigstack):
-                color_order = [color_map[s[0]] for s in sig_order] + color_order
+                color_order = [color_map[s[0]] for s in sig_order[::-1]] + color_order
             else:
-                sig_color_order = [sig_color_map[s[0]] for s in sig_order]
+                sig_color_order = [sig_color_map[s[0]] for s in sig_order[::-1]]
                 
             custom_cycler = (cycler(color=color_order))
             sig_cycler = (cycler(color=sig_color_order))
@@ -457,6 +461,9 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         #if (('H(125)' in xl or '\phi' in xl) and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
         if (('\phi' in xl) and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
         new_labels.append(xl)
+    if "Stat. Unc." in new_labels:
+        new_labels = new_labels[new_labels.index("Stat. Unc.")-1::-1] + [new_labels[new_labels.index("Stat. Unc.")]] + new_labels[:new_labels.index("Stat. Unc."):-1] 
+        old_handles = old_handles[new_labels.index("Stat. Unc.")-1::-1] + [old_handles[new_labels.index("Stat. Unc.")]] + old_handles[:new_labels.index("Stat. Unc."):-1] 
     if not docomp:
         leg = ax.legend(handles=old_handles,labels=new_labels,title=r'%s'%plottitle,frameon=True,framealpha=1.0,facecolor='white',ncol=(2 if len(x.identifiers('process')) > 4 else 1))
     else:
@@ -472,7 +479,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         issim = False
     addtext = ax.text(0.085, 1., "%sPreliminary"%("Simulation " if issim else ""),fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
     #hep.cms.cmslabel(ax, data=False, paper=False, year='2017')
-    fig.savefig("%s_%s_%s_%s_lumi%i%s.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
+    fig.savefig("%s_%s_%s_%s_lumi%i%s.%s"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else ''),"png" if savepng else "pdf"))
     if verbose: print("%s_%s_%s_%s_lumi%i%s.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
     ax.semilogy()
     minvals = []
@@ -492,7 +499,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         ax.set_ylim(ax.get_ylim()[1]/10.,ax.get_ylim()[1]*80.)
     else:
         ax.set_ylim(logmin/10. if logmin>1. else 0.1, ax.get_ylim()[1]*80.)
-    fig.savefig("%s_%s_%s_%s_lumi%i%s_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
+    fig.savefig("%s_%s_%s_%s_lumi%i%s_logy.%s"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else ''),"png" if savepng else "pdf"))
     if verbose: print("%s_%s_%s_%s_lumi%i%s_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
 
     plt.close('all') 
@@ -512,11 +519,11 @@ def getPlots(args,returnHist=False):
     qcdRegions = []
     if canDoMultijet:
       qcdRegions = args.qcd
-    print(qcdRegions)
+    if args.verbose: print(qcdRegions)
 
     hists_mapped = {}
     if args.dirname is not None:
-        args.hists = [h[:-7] for h in glob.glob('%s/*.coffea'%args.dirname)]
+        args.hists = [h[:-7] for h in glob.glob('%s/*.hist'%args.dirname)]
     for h in args.hists:
         # open hists
         
@@ -538,7 +545,12 @@ def getPlots(args,returnHist=False):
                         for r in qcdRegions:
                             hists_mapped[r] = processmap.apply(val).integrate('region',[r])
 
-    hist_mapped = hists_mapped[hist_name]
+    if hist_name in hists_mapped:
+        hist_mapped = hists_mapped[hist_name]
+    else:
+        print('%s not in hist_mapped...'%hist_name)
+        print({key:hists_unmapped[key] for key in hists_unmapped if isinstance(hists_unmapped[key], hist.Hist)})
+        exit()
     qcd_hists = [hists_mapped[r] for r in qcdRegions]
     del hists_mapped
 
@@ -612,16 +624,13 @@ def getPlots(args,returnHist=False):
     if args.verbose: print('rebin',args.rebin)
 
     if not returnHist:
-        drawStack(hist_mapped,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,'',savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors,args.verbose,args.signame,systematic=args.systematic,qcd_hists=qcd_hists,qcd_cut_shape=qcd_cut_shape,qcd_cut_num=qcd_cut_num,qcd_cut_den=qcd_cut_den)
+        drawStack(hist_mapped,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,'',savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors,args.forcetop,args.verbose,args.signame,systematic=args.systematic,qcd_hists=qcd_hists,qcd_cut_shape=qcd_cut_shape,qcd_cut_num=qcd_cut_num,qcd_cut_den=qcd_cut_den,savepng=args.png)
         os.chdir(pwd)
         return None
 
     else:
         os.chdir(pwd)
-        if canDoMultijet:
-            return hist_mapped,qcd_hists
-        else:
-            return hist_mapped,None
+        return hist_mapped,qcd_hists
 
 if __name__ == "__main__":
 
@@ -664,7 +673,9 @@ if __name__ == "__main__":
     parser.add_argument('--compsel',     dest='compsel',     default='',           help='compsel',     nargs='+')
     parser.add_argument('--complabels',  dest='complabels',  default='',           help='complabels',  nargs='+')
     parser.add_argument('--defcolors',   dest='defcolors',   action='store_false', help='defcolors')
+    parser.add_argument('--forcetop',    dest='forcetop',    default=[],           help='force to top of plot',      nargs='+')
     parser.add_argument('--verbose',     dest='verbose',     action='store_true',  help='verbose')
+    parser.add_argument('--png',         dest='png',         action='store_true',  help='png')
     parser.add_argument('--qcd',         dest='qcd',         default=[],           help='qcd (shape,num,den)',    nargs='+')
     parser.add_argument('--qcdshapesel', dest='qcdshapesel', default='',           help='qcdshapesel',            nargs='+')
     parser.add_argument('--qcdnumsel',   dest='qcdnumsel',   default='',           help='qcdnumsel',              nargs='+')

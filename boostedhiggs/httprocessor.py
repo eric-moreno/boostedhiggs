@@ -1,10 +1,12 @@
 from functools import partial
 import numpy as np
 import awkward as ak
+from numpy import isreal
 import hist as hist2
 import json
 from copy import deepcopy
 
+import cachetools
 from coffea import processor, hist
 from coffea.nanoevents.methods import candidate, vector
 from coffea.analysis_tools import Weights, PackedSelection
@@ -59,16 +61,23 @@ def normalize(val, cut=None):
 _ort_options = rt.SessionOptions() 
 _ort_options.intra_op_num_threads = 1
 _ort_options.inter_op_num_threads = 1
+_ort_options.enable_cpu_mem_arena = False
+_ort_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
 
 _ort_sessions = {}
 #_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
-_ort_sessions['model6_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1:1_5:0_75,multiclass,allData,metCut40,take_1,model.onnx', _ort_options)
-_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
-_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
+_ort_sessions['IN_hadhad_multi_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1_0_75_0_5,multiclass,allData,UL,metCut40,sigShaped,norm,take_4,model.onnx', _ort_options)
+_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
+_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
+#print([i.name for i in _ort_sessions['IN_hadhad_multi_v6'].get_inputs()])
+#print([i.name for i in _ort_sessions['IN_hadel_v6'].get_inputs()])
+#print([i.name for i in _ort_sessions['IN_hadmu_v6'].get_inputs()])
 
-_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zee_oneEl_Zhe,ohe,allData,metCut20,take_3,model.onnx', _ort_options)
-#_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zmm_oneMu_Zhm,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
-_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
+_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zhe_Zee_oneEl,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
+_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zhm_Zmm_oneMu,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
+#_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
+#print([i.name for i in _ort_sessions['Ztagger_Zee_Zhe_v6'].get_inputs()])
+#print([i.name for i in _ort_sessions['Ztagger_Zmm_Zhm_v6'].get_inputs()])
 
 _ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
@@ -220,13 +229,16 @@ class HttProcessor(processor.ProcessorABC):
         nn_hadhad_wjets_bin = hist.Bin('nn_hadhad_wjets',r'$NN_{\tau_{h}\tau_{h}}$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
         nn_hadel_bin = hist.Bin('nn_hadel',r'$NN_{e\tau_{h}}$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
         nn_hadmu_bin = hist.Bin('nn_hadmu',r'$NN_{\mu\tau_{h}}$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
-        ztagger_mu_qcd_bin = hist.Bin('ztagger_mu_qcd',r'$Z^{\mu\tau}_{NN}[QCD]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
-        ztagger_mu_mm_bin = hist.Bin('ztagger_mu_mm',r'$Z^{\mu\tau}_{NN}[Z\mu\mu]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
-        ztagger_mu_hm_bin = hist.Bin('ztagger_mu_hm',r'$Z^{\mu\tau}_{NN}[Z\mu\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        #ztagger_mu_qcd_bin = hist.Bin('ztagger_mu_qcd',r'$Z^{\mu\tau}_{NN}[QCD]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        #ztagger_mu_mm_bin = hist.Bin('ztagger_mu_mm',r'$Z^{\mu\tau}_{NN}[Z\mu\mu]$', [0.,0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,0.9,1.])
+        #ztagger_mu_bin = hist.Bin('ztagger_mu',r'$Z^{\mu\tau}_{NN}[Z\mu\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        #ztagger_el_bin = hist.Bin('ztagger_el',r'$Z^{e\tau}_{NN}[Ze\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
+        ztagger_mu_bin = hist.Bin('ztagger_mu', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
+        ztagger_el_bin = hist.Bin('ztagger_el', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,0.999999,0.9999999,1.000001])
         massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.,450.,500.])
         massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
-        ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 100, 0., 1.)
+        ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 101, 0., 1.01)
         mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', 50, 0., 500.)
         mt_jetmet_bin = hist.Bin('mt_jetmet', r'$m_{T}(j, MET)$', 100, 0., 1000.)
         oppbjet_pt_bin = hist.Bin('oppbjet_pt', r'Max opp. deepCSV-bjet $p_{T}$ [GeV]', 20, 0., 500)
@@ -255,7 +267,7 @@ class HttProcessor(processor.ProcessorABC):
 
         self._altplots = (
             { 'jet_pt':jet_pt_bin, 'jet_eta':jet_eta_bin, 'jet_msd':jet_msd_bin, 'mt_lepmet':mt_lepmet_bin, 'mt_jetmet': mt_jetmet_bin, 'lep_pt':lep_pt_bin, 'lep_eta':lep_eta_bin, 'lep_jet_dr':lep_jet_dr_bin, 'n2b1':n2b1_bin, 'jetlep_m':jetlep_m_bin, 'met_nopup_pt':met_nopup_pt_bin, 'met_pup_pt':met_pup_pt_bin, 'jetmet_dphi':jetmet_dphi_fine_bin, 'massreg':massreg_fine_bin, 'ztagger':ztagger_bin},
-            { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu_qcd':ztagger_mu_qcd_bin, 'ztagger_mu_mm':ztagger_mu_mm_bin, 'ztagger_mu_hm':ztagger_mu_hm_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin}, 
+            { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu':ztagger_mu_bin, 'ztagger_el':ztagger_el_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin, 'massreg':massreg_fine_bin}, 
             {'met_pt':met_pup_pt_bin, 'met_trigger':met_trigger_bin},
         )[self._plotopt-1]
 
@@ -413,30 +425,31 @@ class HttProcessor(processor.ProcessorABC):
         else:
             fatjets = events.CustomAK8Puppi
 
-        import cachetools
-        jec_cache = cachetools.Cache(np.inf)
-        nojer = "NOJER" if self._skipJER else ""
-        fatjets = fatjet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
-        jets = jet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
-        met = met_factory.build(events.MET, jets, {})
+        if not isRealData:
+            jec_cache = cachetools.Cache(np.inf)
+            nojer = "NOJER" if self._skipJER else ""
+            fatjets = fatjet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
+            jets = jet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
+            met = met_factory.build(events.MET, jets, {})
 
-        shifts = [
-            ({"Jet": jets, "FatJet": fatjets, "MET": met}, None),
-            ({"Jet": jets.JES_jes.up, "FatJet": fatjets.JES_jes.up, "MET": met.JES_jes.up}, "JESUp"),
-            ({"Jet": jets.JES_jes.down, "FatJet": fatjets.JES_jes.down, "MET": met.JES_jes.down}, "JESDown"),
-            ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.up}, "UESUp"),
-            ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.down}, "UESDown"),
-        ]
-        if not self._skipJER:
-            shifts.extend([
-                ({"Jet": jets.JER.up, "FatJet": fatjets.JER.up, "MET": met.JER.up}, "JERUp"),
-                ({"Jet": jets.JER.down, "FatJet": fatjets.JER.down, "MET": met.JER.down}, "JERDown"),
-            ])
+            shifts = [
+                ({"Jet": jets, "FatJet": fatjets, "MET": met}, None),
+                ({"Jet": jets.JES_jes.up, "FatJet": fatjets.JES_jes.up, "MET": met.JES_jes.up}, "JESUp"),
+                ({"Jet": jets.JES_jes.down, "FatJet": fatjets.JES_jes.down, "MET": met.JES_jes.down}, "JESDown"),
+                ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.up}, "UESUp"),
+                ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.down}, "UESDown"),
+            ]
+            if not self._skipJER:
+                shifts.extend([
+                    ({"Jet": jets.JER.up, "FatJet": fatjets.JER.up, "MET": met.JER.up}, "JERUp"),
+                    ({"Jet": jets.JER.down, "FatJet": fatjets.JER.down, "MET": met.JER.down}, "JERDown"),
+                ])
 
         #fatjets['msdcorr'] = corrected_msoftdrop(fatjets)
         fatjets['rho'] = 2*np.log(fatjets.msoftdrop/fatjets.pt) #for some reason this doesnt set the attribute properly, so you need to refer to it by the string
 
         ak8jets = fatjets
+        #del fatjets
 
         ak8jets_p4 = ak.zip(
             {
@@ -478,6 +491,9 @@ class HttProcessor(processor.ProcessorABC):
         ak8s = ak8_met_pair[:,:,'0']
         mets = ak8_met_pair[:,:,'1']
         ak8_met_dphi = ak.mask(np.abs(ak8s.delta_phi(mets)), ((ak8s.pt > 200) & (np.abs(ak8s.eta) < 2.5)))
+        #del ak8s
+        #del mets
+        #del ak8_met_pair
 
         best_ak8_idx = ak.argmin(ak8_met_dphi, axis=1, keepdims=True)
         #indexing ak8jets like ak8s works because there is only one met per event
@@ -487,7 +503,7 @@ class HttProcessor(processor.ProcessorABC):
 
         gotInf = True
 
-        try: #FIXME: hack to not care about PFNANO vs NN postprocessed
+        if hasattr(events, 'IN'):
             nn_disc_hadel = events.IN.hadel_v6
             nn_disc_hadmu = events.IN.hadmu_v6
             nn_disc_hadhad = events.IN.hadhad_v6_multi_Higgs
@@ -504,10 +520,10 @@ class HttProcessor(processor.ProcessorABC):
     
             ztagger_el = events.Ztagger.v6_Zee_Zhe
             ztagger_mu = events.Ztagger.hadmu_v6_multi_Zhm
-            ztagger_mu_mm = events.Ztagger.hadmu_v6_multi_Zmm
-            ztagger_mu_qcd = events.Ztagger.hadmu_v6_multi_QCD
+            #ztagger_mu_mm = events.Ztagger.hadmu_v6_multi_Zmm
+            #ztagger_mu_qcd = events.Ztagger.hadmu_v6_multi_QCD
 
-        except:
+        else:
             gotInf = False
 
         selection.add('jetacceptance', (
@@ -558,6 +574,7 @@ class HttProcessor(processor.ProcessorABC):
                 & (met.phi < -0.62)
             )
         )
+        #del alljets
 
         selection.add('hem_cleaning', ~hem_cleaning)
 
@@ -593,6 +610,9 @@ class HttProcessor(processor.ProcessorABC):
                 ak.max(ak4_away.btagDeepB, 1) <= self._btagWPs['medium'])
         selection.add('ak4btagMedium08', 
                 ak.max(ak4_away.btagDeepB, 1) > self._btagWPs['medium'])
+        #del ak8s
+        #del ak4s
+        #del ak4_ak8_pair
 
         ak4_met_pair = ak.cartesian( (ak4jets, met) )
         ak4s = ak4_met_pair[:,:,'0']
@@ -603,6 +623,10 @@ class HttProcessor(processor.ProcessorABC):
         ak4_met_mindphi = ak4_met_dphi[minidx]
         selection.add('jetmet_dphi', best_ak8_met_dphi < np.pi/2)
         selection.add('jetmet_dphiInv', best_ak8_met_dphi >= np.pi/2)
+
+        #del ak4s
+        #del mets
+        #del ak4_met_pair
 
         selection.add('met', met.pt > 20.)
         selection.add('met50', met.pt > 50.)
@@ -708,6 +732,10 @@ class HttProcessor(processor.ProcessorABC):
 
         mtau_ak8_pair = ak.cartesian((mtaus_p4, best_ak8_p4))
         mtau_ak8_dr = mtau_ak8_pair[:,:,'0'].delta_r(mtau_ak8_pair[:,:,'1'])
+
+        #del etau_ak8_pair
+        #del etauloose_ak8_pair
+        #del mtau_ak8_pair
 
         selection.add('antiElId', ak.any(etau_ak8_dr < 0.8, -1))
         selection.add('antiMuId', ak.any(mtau_ak8_dr < 0.8, -1))
@@ -845,19 +873,19 @@ class HttProcessor(processor.ProcessorABC):
         See also corrections.py and common.py
         '''
         if isRealData:
-            genflavor = ak.zeros_like(best_ak8.pt)
+            #genflavor = ak.zeros_like(best_ak8.pt)
             w_hadhad = deepcopy(weights)
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
-            genHTauTauDecay = ak.zeros_like(best_ak8.pt)
-            genHadTau1Decay = ak.zeros_like(best_ak8.pt)
-            genHadTau2Decay = ak.zeros_like(best_ak8.pt)
-            genHadTau2Decay = ak.zeros_like(best_ak8.pt)
-            genTauTaudecay = ak.zeros_like(best_ak8.pt)
+            #del weights
+            #genHTauTauDecay = ak.zeros_like(best_ak8.pt)
+            #genHadTau1Decay = ak.zeros_like(best_ak8.pt)
+            #genHadTau2Decay = ak.zeros_like(best_ak8.pt)
+            #genTauTaudecay = ak.zeros_like(best_ak8.pt)
         else:
             weights.add('genweight', events.genWeight)
-            #weights.add('L1PreFiring', events.L1PreFiringWeight.Nom, events.L1PreFiringWeight.Up, events.L1PreFiringWeight.Down)
+            #weights.add('L1PreFiring', events.L1PreFiringWeight.Nom, events.L1PreFiringWeight.Up, events.L1PreFiringWeight.Dn)
             add_pileup_weight(weights, events.Pileup.nPU, self._year+self._yearmod)
             if "LHEPdfWeight" in events.fields:
                 add_pdf_weight(weights, events.LHEPdfWeight)
@@ -869,21 +897,22 @@ class HttProcessor(processor.ProcessorABC):
             else:
                 add_scalevar_7pt(weights,[])
                 add_scalevar_3pt(weights,[])
+            add_TopPtReweighting(weights, ak.pad_none(getParticles(events,6,6,['isLastCopy']).pt, 2, clip=True), self._year, dataset) #123 gives a weight of 1
             bosons = getBosons(events)
             genBosonPt = ak.fill_none(ak.pad_none(bosons.pt, 1, clip=True), 0)
-            #I don't have an implementation of these
-            add_TopPtReweighting(weights, ak.pad_none(getParticles(events,6,6,['isLastCopy']).pt, 2, clip=True), self._year, dataset) #123 gives a weight of 1
             add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
-            genflavor = matchedBosonFlavor(best_ak8, bosons)
+            #genflavor = matchedBosonFlavor(best_ak8, bosons)
             genlepflavor = matchedBosonFlavorLep(best_ak8, bosons)
-            genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events,True)
+
+            #genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events,True)
             w_hadhad = deepcopy(weights)
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
+            #del weights
             #also need implementation here
-            add_LeptonSFs(w_hadel, leadinglep, self._year, "elec")
-            add_LeptonSFs(w_hadmu, leadinglep, self._year, "muon")
+            add_LeptonSFs(w_hadel, leadinglep, self._year+self._yearmod, "elec")
+            add_LeptonSFs(w_hadmu, leadinglep, self._year+self._yearmod, "muon")
             add_METSFs(w_hadhadmet, met.pt, self._year+self._yearmod)
             #add_TriggerWeight(w_hadhad, best_ak8.msoftdrop, best_ak8.pt, leadinglep.pt, self._year, "hadhad")
 
@@ -971,7 +1000,6 @@ class HttProcessor(processor.ProcessorABC):
             if 'hadmu' in r:
                 w_dict[r] = w_hadmu
 
-
         if not gotInf:
 
             presel = np.zeros(nevents, dtype=np.bool)
@@ -979,8 +1007,6 @@ class HttProcessor(processor.ProcessorABC):
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
 
-            inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
-    
             nn_disc_hadel = np.ones(len(events))*-1.
             nn_disc_hadmu = np.ones(len(events))*-1.
             nn_disc_hadhad = np.ones(len(events))*-1.
@@ -995,29 +1021,40 @@ class HttProcessor(processor.ProcessorABC):
             ptreg_hadmu = np.ones(len(events))*-1.
             ptreg_hadhad = np.ones(len(events))*-1.
     
-            ztagger_el = np.ones(len(events))*-1.
-            ztagger_mu = np.ones(len(events))*-1.
-            ztagger_mu_qcd = np.ones(len(events))*-1.
-            ztagger_mu_mm = np.ones(len(events))*-1.
+            ztagger_el = np.ones(len(events))*1.
+            ztagger_mu = np.ones(len(events))*1.
+            #ztagger_mu_qcd = np.ones(len(events))*1.
+            #ztagger_mu_mm = np.ones(len(events))*1.
 
-            nn_disc_hadel[presel] = inf_results['IN_hadel_v6'][0][:,0]
-            nn_disc_hadmu[presel] = inf_results['IN_hadmu_v6'][0][:,0]
-            nn_disc_hadhad[presel] = inf_results['model6_hadhad_multi'][0][:,0]
-            nn_disc_hadhad_qcd[presel] = inf_results['model6_hadhad_multi'][0][:,1]
-            nn_disc_hadhad_wjets[presel] = inf_results['model6_hadhad_multi'][0][:,2]
+            if ak.sum(best_ak8.pt,0)>0.:
+                inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+        
+                nn_disc_hadel[presel] = np.nan_to_num(inf_results['IN_hadel_v6'][0][:,0])
+                nn_disc_hadmu[presel] = np.nan_to_num(inf_results['IN_hadmu_v6'][0][:,0])
+                nn_disc_hadhad[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,0])
+                nn_disc_hadhad_qcd[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,1])
+                nn_disc_hadhad_wjets[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,2])
     
-            massreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,0]
-            massreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,0]
-            massreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,0]
-    
-            ptreg_hadel[presel] = inf_results['MassReg_hadel'][0][:,1]
-            ptreg_hadmu[presel] = inf_results['MassReg_hadmu'][0][:,1]
-            ptreg_hadhad[presel] = inf_results['MassReg_hadhad'][0][:,1]
-    
-            ztagger_el[presel] = inf_results['Ztagger_Zee_Zhe_v6'][0][:,0]
-            ztagger_mu[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,0]
-            ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
-            ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
+                massreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,0])
+                massreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,0])
+                massreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,0])
+        
+                ptreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,1])
+                ptreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,1])
+                ptreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,1])
+        
+                ztagger_el[presel] = np.nan_to_num(inf_results['Ztagger_Zee_Zhe_v6'][0][:,0], nan=1.)
+                ztagger_mu[presel] = np.nan_to_num(inf_results['Ztagger_Zmm_Zhm_v6'][0][:,0], nan=1.)
+                #ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
+                #ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
+                #del inf_results
+
+        #print('hadel  ',np.histogram(nn_disc_hadel,bins=np.linspace(-0.1,1.1,13)))
+        #print('hadmu  ',np.histogram(nn_disc_hadmu,bins=np.linspace(-0.1,1.1,13)))
+        #print('hadhad ',np.histogram(nn_disc_hadhad,bins=np.linspace(-0.1,1.1,13)))
+        #print('hadel  ',np.histogram(nn_disc_hadel))
+        #print('hadmu  ',np.histogram(nn_disc_hadmu))
+        #print('hadhad ',np.histogram(nn_disc_hadhad))
 
         selection.add('ptreg_hadel', ptreg_hadel>280.0)
         selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
@@ -1025,13 +1062,14 @@ class HttProcessor(processor.ProcessorABC):
 
         selection.add('nn_disc_hadel', nn_disc_hadel>0.95)
         selection.add('nn_disc_hadmu', nn_disc_hadmu>0.95)
-        selection.add('nn_disc_hadhad', nn_disc_hadhad>0.999999)
+        selection.add('nn_disc_hadhad', nn_disc_hadhad>0.9999)
 
-        selection.add('ztagger_el', ztagger_el < 0.01)
-        selection.add('ztagger_mu', ztagger_mu > 0.95)
-        selection.add('ztagger_elInv', ztagger_el >= 0.01)
-        selection.add('ztagger_muInv', ztagger_mu <= 0.95)
-
+        selection.add('ztagger_el', ztagger_el < 0.99)
+        selection.add('ztagger_mu', ztagger_mu < 0.95)
+        #selection.add('ztagger_mu', ztagger_mu > 0.95) #preUL
+        selection.add('ztagger_elInv', ztagger_el >= 0.99)
+        selection.add('ztagger_muInv', ztagger_mu >= 0.95)
+        #selection.add('ztagger_muInv', ztagger_mu <= 0.95) #preUL
 
         for r in regions:
             allcuts_reg = set()
@@ -1113,7 +1151,20 @@ class HttProcessor(processor.ProcessorABC):
                 antilep = ak.any(mtau_ak8_dr < 0.8, -1)
                 ztagger = ztagger_mu
 
-            bmaxind = ak.argmax(ak4_away.btagDeepB, -1)
+#            if region=='hadel_signal':
+#                print('s',nevents)
+#                print('s',{wem:w_dict[region].weight(wem) for wem in w_dict[region].variations})
+#                print('s',ak.sum(weight[ak.any((genlepflavor!=1), axis=1)*cut]))
+#                print('s',ak.sum(weight[ak.any((genlepflavor==1), axis=1)*cut]))
+#            if region=='hadel_cr_ztag_inv':
+#                print('c',nevents)
+#                print('c',{wem:w_dict[region].weight(wem) for wem in w_dict[region].variations})
+#                print('c',ak.sum(weight[ak.any((genlepflavor!=1), axis=1)*cut]))
+#                print('c',ak.sum(weight[ak.any((genlepflavor==1), axis=1)*cut]))
+
+            #if 'signal' in region: print(region,np.histogram(massreg[cut]))
+
+            #bmaxind = ak.argmax(ak4_away.btagDeepB, -1)
 
             if self._plotopt==0:
                 output['met_nn_kin'].fill(
@@ -1126,6 +1177,14 @@ class HttProcessor(processor.ProcessorABC):
                     h_pt=normalize(ptreg),
                     weight=weight,
                 )
+#                if 'signal' in region:
+#                    print('\tdataset',dataset+addname)
+#                    print('\tregion',region)
+#                    print('\tmet',np.histogram(normalize(met_p4.pt)))
+#                    print('\tmassreg',np.histogram(normalize(massreg)))
+#                    print('\tnn',np.histogram(normalize(nn_disc)))
+#                    print('\tptreg',np.histogram(normalize(ptreg)))
+#                    print('\tweight',np.histogram(normalize(weight)))
             elif self._plotopt==3:
                 output['met_nn_kin'].fill(
                     dataset=dataset+addname,
@@ -1157,9 +1216,11 @@ class HttProcessor(processor.ProcessorABC):
                     'nn_hadhad':nn_disc_hadhad , 
                     'nn_hadhad_qcd':nn_disc_hadhad_qcd, 
                     'nn_hadhad_wjets':nn_disc_hadhad_wjets, 
-                    'ztagger_mu_qcd':ztagger_mu_qcd, 
-                    'ztagger_mu_mm':ztagger_mu_mm, 
-                    'ztagger_mu_hm':ztagger_mu, 
+                    #'ztagger_mu_qcd':ztagger_mu_qcd, 
+                    #'ztagger_mu_mm':ztagger_mu_mm, 
+                    #'ztagger_mu_hm':ztagger_mu, 
+                    'ztagger_mu':ztagger_mu, 
+                    'ztagger_el':ztagger_el, 
                     'nn_hadel':nn_disc_hadel, 
                     'nn_hadmu':nn_disc_hadmu, 
                     'antilep':antilep
@@ -1172,16 +1233,49 @@ class HttProcessor(processor.ProcessorABC):
                         'weight':weight,
                         **{var:normalize(altvars[var]), 'nn_disc':normalize(nn_disc)}}
                     )
+            #del nn_disc
+            #del massreg
+            #del ptreg
+            #del antilep
+            #del ztagger
 
+        #print('ztagger_el(ee) ',np.histogram(ztagger_el[ak.fill_none(ak.any((genlepflavor!=1), axis=1),True)],bins=np.linspace(0.,1.01,102)))
+        #print('ztagger_mu(mm) ',np.histogram(ztagger_mu[ak.fill_none(ak.any((genlepflavor!=1), axis=1),True)],bins=np.linspace(0.,1.01,102)))
+        #print('ztagger_el(eh) ',np.histogram(ztagger_el[ak.fill_none(ak.any((genlepflavor==1), axis=1),False)],bins=np.linspace(0.,1.01,102)))
+        #print('ztagger_mu(mh) ',np.histogram(ztagger_mu[ak.fill_none(ak.any((genlepflavor==1), axis=1),False)],bins=np.linspace(0.,1.01,102)))
         for region in regions:
             for systematic in systematics:
                 if 'DYJets' in dataset:
-                    fill(region, systematic, realData=isRealData, addcut=ak.to_numpy(ak.any(genlepflavor>=2, -1)).flatten(), addname="_Zem")
-                    fill(region, systematic, realData=isRealData, addcut=ak.to_numpy(ak.any(genlepflavor==1, -1)).flatten(), addname="_Ztt")
+                    fill(region, systematic, realData=isRealData, addcut=ak.fill_none(ak.any((genlepflavor!=1), axis=1),True), addname="_Zem")
+                    fill(region, systematic, realData=isRealData, addcut=ak.fill_none(ak.any((genlepflavor==1), axis=1),False), addname="_Ztt")
                 else:
                     fill(region, systematic, realData=isRealData)
+
+#        del w_hadhad
+#        del w_hadhadmet
+#        del w_hadel
+#        del w_hadmu
+#
+#        del w_dict
+#        del nn_disc_hadel
+#        del nn_disc_hadmu
+#        del nn_disc_hadhad
+#        del nn_disc_hadhad_qcd
+#        del nn_disc_hadhad_wjets
+#
+#        del massreg_hadel
+#        del massreg_hadmu
+#        del massreg_hadhad
+#
+#        del ptreg_hadel
+#        del ptreg_hadmu
+#        del ptreg_hadhad
+#
+#        del ztagger_el
+#        del ztagger_mu
 
         return output
 
     def postprocess(self, accumulator):
+
         return accumulator
