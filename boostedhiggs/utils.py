@@ -5,7 +5,6 @@ from coffea.nanoevents.methods import candidate, vector
 
 import tritonclient.grpc as triton_grpc
 import tritonclient.http as triton_http
-import onnxruntime as rt
 import tritongrpcclient
 
 
@@ -540,12 +539,9 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
 
     return tagger_outputs
 
-URL = "0.0.0.0:8071"
-verbose = False
-triton_client = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
 import multiprocessing
 
-def runInferenceTriton(events, fatjet, jet_idx, sessions, presel=None):
+def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
 
     # prepare inputs for both fat jets
     sel_events = events

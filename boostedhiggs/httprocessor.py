@@ -11,8 +11,6 @@ from coffea.analysis_tools import Weights, PackedSelection
 
 import multiprocessing
 
-import onnxruntime as rt
-
 from .corrections import (
     corrected_msoftdrop,
 #    n2ddt_shift,
@@ -48,6 +46,10 @@ from .utils import (
 )
 
 import logging
+
+import tritonclient.grpc as triton_grpc
+import tritonclient.http as triton_http
+import tritongrpcclient
 logger = logging.getLogger(__name__)
 
 # function to normalize arrays after a cut or selection
@@ -59,28 +61,14 @@ def normalize(val, cut=None):
         ar = ak.to_numpy(ak.fill_none(val[cut], np.nan))
         return ar
 
-_ort_options = rt.SessionOptions() 
-_ort_options.intra_op_num_threads = 1
-_ort_options.inter_op_num_threads = 1
 
-_ort_sessions = {}
-#_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
-_ort_sessions['model6_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1:1_5:0_75,multiclass,allData,metCut40,take_1,model.onnx', _ort_options)
-_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
-_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,metCut40,take_1,model.onnx', _ort_options)
-
-_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zee_oneEl_Zhe,ohe,allData,metCut20,take_3,model.onnx', _ort_options)
-#_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zmm_oneMu_Zhm,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
-_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
-
-_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
-_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
-_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
-
-
+URL = "0.0.0.0:8071"
+verbose = False
 
 class HttProcessor(processor.ProcessorABC):
     def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
+
+        self.triton_client = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
         self._year = year
         self._yearmod = yearmod
         self._plotopt = plotopt
@@ -989,8 +977,7 @@ class HttProcessor(processor.ProcessorABC):
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
 
-            #inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
-            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, self.triton_client, presel=presel)
     
             nn_disc_hadel = np.ones(len(events))*-1.
             nn_disc_hadmu = np.ones(len(events))*-1.

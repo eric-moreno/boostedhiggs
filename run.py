@@ -34,7 +34,7 @@ def main(args):
     if args.condor:
         uproot.open.defaults['xrootd_handler'] = uproot.source.xrootd.MultithreadedXRootDSource
 
-        executor = processor.FuturesExecutor(compression=1, status=True, workers=args.nworkers)
+        executor = processor.FuturesExecutor(compression=1, status=True, workers=args.nworkers) 
 
         run = processor.Runner(executor=executor,savemetrics=True,chunksize=args.chunksize,schema=NanoAODSchema)
 
