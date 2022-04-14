@@ -66,9 +66,17 @@ URL = "0.0.0.0:8071"
 verbose = False
 
 class HttProcessor(processor.ProcessorABC):
+    def triton_client(self):
+        if self.__triton_client__ is None:
+            self.__triton_client__ = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
+
+        return self.__triton_client__
+
     def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
 
-        self.triton_client = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
+        self.__triton_client__ = None
+        self.URL = URL
+        self.verbose = verbose
         self._year = year
         self._yearmod = yearmod
         self._plotopt = plotopt
@@ -977,7 +985,7 @@ class HttProcessor(processor.ProcessorABC):
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
 
-            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, self.triton_client, presel=presel)
+            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, self.triton_client(), presel=presel)
     
             nn_disc_hadel = np.ones(len(events))*-1.
             nn_disc_hadmu = np.ones(len(events))*-1.
