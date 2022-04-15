@@ -24,7 +24,7 @@ def main(args):
         p = HwwProcessor(year=args.year, jet_arbitration='met', el_wp="wp80")
     elif args.processor == 'htt':
         from boostedhiggs.httprocessor import HttProcessor
-        p = HttProcessor(year = args.year, plotopt = args.plotopt, yearmod=args.yearmod, skipJER=args.nojer)
+        p = HttProcessor(year = args.year, plotopt = args.plotopt, yearmod=args.yearmod, skipJER=args.nojer, onnx = args.onnx)
     else:
         warnings.warn('Warning: no processor declared')
         return
@@ -34,8 +34,8 @@ def main(args):
     if args.condor:
         uproot.open.defaults['xrootd_handler'] = uproot.source.xrootd.XRootDSource
 
-        executor = processor.IterativeExecutor(status=True, workers=args.nworkers)
-
+        executor = processor.IterativeExecutor(compression=1, status=True, workers=args.nworkers) 
+        #executor = processor.FuturesExecutor(compression=1, status=True, workers=args.nworkers) 
         run = processor.Runner(executor=executor,savemetrics=False,chunksize=args.chunksize,schema=NanoAODSchema)
         out = run(fileset,'Events',processor_instance=p)
 
@@ -75,6 +75,7 @@ if __name__ == "__main__":
     parser.add_argument('--chunksize',  dest='chunksize',  default=2000,         help='chunksize', type=int)
     parser.add_argument('--nworkers',   dest='nworkers',   default=1,            help='nworkers', type=int)
     parser.add_argument("--nojer",      dest="nojer",      action="store_true",  default=False, help="Run without JER")
+    parser.add_argument("--usetriton",  dest='onnx',       action='store_false', default=True, help="Run with triton")
     args = parser.parse_args()
 
     main(args)

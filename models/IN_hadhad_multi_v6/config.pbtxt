@@ -1,0 +1,31 @@
+name: "IN_hadhad_multi_v6"
+platform: "onnxruntime_onnx"
+max_batch_size: 0
+input[
+{
+    name: "inputParticle"
+    data_type: TYPE_FP32
+    dims: [-1, 30, 23]
+},
+{
+    name: "inputSV"
+    data_type: TYPE_FP32
+    dims: [-1, 5, 13]
+},
+{
+    name: "inputTau"
+    data_type: TYPE_FP32
+    dims: [-1, 3, 14]
+},
+{
+    name: "inputEvent"
+    data_type: TYPE_FP32
+    dims: [-1, 9]
+}]
+output[
+{
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [-1, 3]
+}
+]

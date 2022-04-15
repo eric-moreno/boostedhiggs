@@ -1,11 +1,13 @@
 import awkward as ak
+from time import time, sleep
 import numpy as np
 
 from coffea.nanoevents.methods import candidate, vector
 
 import tritonclient.grpc as triton_grpc
 import tritonclient.http as triton_http
-import onnxruntime as rt
+import tritongrpcclient
+
 
 def getParticles(genparticles,lowid=22,highid=25,flags=['fromHardProcess', 'isLastCopy']):
     """
@@ -127,9 +129,6 @@ def get_pfcands_evt_features(events, fatjet, jet_idx):
     ]
     ptsorting = ak.argsort(jet_pfcands.pt,axis=-1,ascending=False)
     jet_pfcands = jet_pfcands[ptsorting]
-
-    #print('jet_pfcands.pt',jet_pfcands.pt)
-    #print('fatjet.pt',fatjet.pt)
 
     feature_dict["pf_pt"] = jet_pfcands.pt[ptsorting] / fatjet.pt
     feature_dict["pf_pt_real"] = jet_pfcands.pt / fatjet.pt
@@ -465,9 +464,8 @@ def get_taus_features(events, fatjet, jet_idx):
 
     return feature_dict
 
-def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
-
-    # prepare inputs for both fat jets
+def make_inputs(events, fatjet, jet_idx, presel=None):
+    t0 = time()
     sel_events = events
     sel_fatjet = fatjet
     sel_jet_idx = jet_idx
@@ -561,16 +559,16 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         'Ztagger_Zmm_Zhm_v6':['pf','sv','muon','tau','evt_z'],
     }
     
-    #print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
-    #print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
-    #print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
-    #print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
-    #print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
+    print("making inputs took %0.3f seconds"%(time()-t0))
+    return tagger_inputs, inference_model_dict
+ 
+def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
+    tagger_inputs, inference_model_dict = make_inputs(events, fatjet, jet_idx, presel)
 
+    t0 = time()
     # run inference for selected fat jet
     tagger_outputs = {}
     for m in sessions:
-        #print('Running',m)
         tagger_outputs[m] = sessions[m].run(
             [sessions[m].get_outputs()[0].name],
             {sessions[m].get_inputs()[iin].name: tagger_inputs[nin] for iin,nin in enumerate(inference_model_dict[m])}
@@ -579,4 +577,78 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         del tagger_inputs[input_name]
     del tagger_inputs
 
+    print("running onnx took %0.3f seconds"%(time()-t0))
+
     return tagger_outputs
+
+def defineInputsTriton(nevt):
+    t0 = time()
+    triton_inputs = {
+        'elec' : tritongrpcclient.InferInput("inputEl", [nevt, 2, 20], 'FP32'),
+        'muon' : tritongrpcclient.InferInput("inputMu", [nevt, 2, 16], 'FP32'),
+        'tau' : tritongrpcclient.InferInput('inputTau', [nevt, 3, 14], 'FP32'),
+        'evt' : tritongrpcclient.InferInput('inputEvent', [nevt, 10], 'FP32'),
+        #'evt' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
+        'evt_z' : tritongrpcclient.InferInput('inputEvent', [nevt, 9], 'FP32'),
+        'evt_reg' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
+        'sv' : tritongrpcclient.InferInput('inputSV', [nevt, 5, 13], 'FP32'),
+        'pf_reg' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 10], 'FP32'),
+        'pf' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 23], 'FP32'),
+    }
+    print("defining triton inputs took %0.3f seconds"%(time()-t0))
+    return triton_inputs
+
+def callTriton(tagger_inputs, inference_model_dict, nevt, triton_client, sub=1):
+    t0 = time()
+    test = np.arange(nevt)
+    for div in range(sub):
+        istart = (div * nevt)//sub
+        iend = ((div + 1) * nevt)//sub 
+        nsub = iend - istart
+        triton_inputs = defineInputsTriton(nsub)
+
+        for key in tagger_inputs.keys():
+            triton_inputs[key].set_data_from_numpy(tagger_inputs[key][istart:iend])
+
+        outputs = []
+        outputs.append(tritongrpcclient.InferRequestedOutput("output"))
+
+        resultdict = {}
+        for key in inference_model_dict.keys():
+            results = triton_client.infer(
+                    model_name = key,
+                    inputs = [triton_inputs[name] for name in inference_model_dict[key]],
+                    outputs = outputs)
+            result_data = results.as_numpy('output')
+            resultdict[key] = result_data
+
+    print("calling triton took %0.3f seconds"%(time()-t0))
+    return resultdict
+
+def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
+    tagger_inputs, inference_model_dict = make_inputs(events, fatjet, jet_idx, presel)
+
+    t0 = time()
+
+    nevt = np.sum(presel)
+    
+    MAX_TRIES = 10
+
+    tries = 0
+    worked=False
+    result = None
+    while(not worked and tries<MAX_TRIES):
+        try:
+            result = callTriton(tagger_inputs, inference_model_dict, nevt, triton_client, 2**tries)
+            worked=True
+        except BaseException as err:
+            print("triton call errored out. Trying again with smaller batches")
+            print(err)
+            tries+=1
+            sleep(1)
+            
+    if not worked:
+        raise Exception("Error in runInferenceTriton")
+        
+    print("running triton took %0.3f seconds"%(time()-t0))
+    return result
