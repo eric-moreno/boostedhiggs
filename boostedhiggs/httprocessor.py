@@ -1,4 +1,5 @@
 from functools import partial
+from time import time
 import numpy as np
 import awkward as ak
 from numpy import isreal
@@ -75,19 +76,16 @@ _ort_options.enable_cpu_mem_arena = False
 _ort_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
 
 _ort_sessions = {}
-#_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
 _ort_sessions['IN_hadhad_multi_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1_0_75_0_5,multiclass,allData,UL,metCut40,sigShaped,norm,take_4,model.onnx', _ort_options)
 _ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
 _ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
-#print([i.name for i in _ort_sessions['IN_hadhad_multi_v6'].get_inputs()])
-#print([i.name for i in _ort_sessions['IN_hadel_v6'].get_inputs()])
-#print([i.name for i in _ort_sessions['IN_hadmu_v6'].get_inputs()])
 
 _ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zhe_Zee_oneEl,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
 _ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zhm_Zmm_oneMu,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
-#_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
-#print([i.name for i in _ort_sessions['Ztagger_Zee_Zhe_v6'].get_inputs()])
-#print([i.name for i in _ort_sessions['Ztagger_Zmm_Zhm_v6'].get_inputs()])
+
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
+_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
+_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
 
 class HttProcessor(processor.ProcessorABC):
     def triton_client(self):
@@ -95,8 +93,10 @@ class HttProcessor(processor.ProcessorABC):
             self.__triton_client__ = tritongrpcclient.InferenceServerClient(url = URL, verbose = verbose)
         return self.__triton_client__
 
-    def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
+    def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False, onnx=False):
 
+        self.onnx = onnx
+            
         self.__triton_client__ = None
         self.URL = URL
         self.verbose = verbose
@@ -386,7 +386,7 @@ class HttProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        print("TOP OF PROCESS", multiprocessing.current_process())
+        t0 = time()
         dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
         selection = PackedSelection(dtype="uint64")
@@ -413,17 +413,16 @@ class HttProcessor(processor.ProcessorABC):
                 raise ValueError("none of the following triggers found in dataset:", self._triggers[channel])
             #else:
                 #selection.add('trigger'+channel, np.ones(nevents, dtype='bool'))
-                #trigger = np.ones(nevents, dtype=np.bool)
+                #trigger = np.ones(nevents, dtype=bool)
 
             triggermasks[channel] = trigger
     
-        print("made triggermasks", multiprocessing.current_process())
         if isRealData:
             overlap_removal = isOverlap(events, dataset, self._triggers['e'] + self._triggers['mu'] + self._triggers['had'] + self._triggers['met'], self._year)
         else:
-            overlap_removal = np.ones(nevents, dtype=np.bool)
+            overlap_removal = np.ones(nevents, dtype=bool)
 
-        met_filters = np.ones(nevents, dtype=np.bool)
+        met_filters = np.ones(nevents, dtype=bool)
         for t in self._metFilters:
             if not isRealData and t in ['eeBadScFilter']:
                 continue
@@ -740,7 +739,6 @@ class HttProcessor(processor.ProcessorABC):
             behavior = vector.behavior,
             with_name='PtEtaPhiMLorentzVector'
         )
-        print("made particles", multiprocessing.current_process())
         
         etau_ak8_pair = ak.cartesian((etaus_p4, best_ak8_p4))
         etau_ak8_dr = etau_ak8_pair[:,:,'0'].delta_r(etau_ak8_pair[:,:,'1'])
@@ -1020,12 +1018,11 @@ class HttProcessor(processor.ProcessorABC):
 
         if not gotInf:
 
-            presel = np.zeros(nevents, dtype=np.bool)
+            presel = np.zeros(nevents, dtype=bool)
             for r in regions:
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
 
-            inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, self.triton_client(), presel=presel)
     
             nn_disc_hadel = np.ones(len(events))*-1.
             nn_disc_hadmu = np.ones(len(events))*-1.
@@ -1047,24 +1044,47 @@ class HttProcessor(processor.ProcessorABC):
             #ztagger_mu_mm = np.ones(len(events))*1.
 
             if ak.sum(best_ak8.pt,0)>0.:
-                inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+                if self.onnx:
+                    inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
+            
+                    nn_disc_hadel[presel] = np.nan_to_num(inf_results['IN_hadel_v6'][0][:,0])
+                    nn_disc_hadmu[presel] = np.nan_to_num(inf_results['IN_hadmu_v6'][0][:,0])
+                    nn_disc_hadhad[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,0])
+                    nn_disc_hadhad_qcd[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,1])
+                    nn_disc_hadhad_wjets[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,2])
         
-                nn_disc_hadel[presel] = np.nan_to_num(inf_results['IN_hadel_v6'][0][:,0])
-                nn_disc_hadmu[presel] = np.nan_to_num(inf_results['IN_hadmu_v6'][0][:,0])
-                nn_disc_hadhad[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,0])
-                nn_disc_hadhad_qcd[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,1])
-                nn_disc_hadhad_wjets[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][0][:,2])
-    
-                massreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,0])
-                massreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,0])
-                massreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,0])
+                    massreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,0])
+                    massreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,0])
+                    massreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,0])
+            
+                    ptreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,1])
+                    ptreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,1])
+                    ptreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,1])
+            
+                    ztagger_el[presel] = np.nan_to_num(inf_results['Ztagger_Zee_Zhe_v6'][0][:,0], nan=1.)
+                    ztagger_mu[presel] = np.nan_to_num(inf_results['Ztagger_Zmm_Zhm_v6'][0][:,0], nan=1.)
+
+                else:
+                    inf_results = runInferenceTriton(events, best_ak8, best_ak8_idx, self.triton_client(), presel=presel)
+
+                    nn_disc_hadel[presel] = np.nan_to_num(inf_results['IN_hadel_v6'][:,0])
+                    nn_disc_hadmu[presel] = np.nan_to_num(inf_results['IN_hadmu_v6'][:,0])
+                    nn_disc_hadhad[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][:,0])
+                    nn_disc_hadhad_qcd[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][:,1])
+                    nn_disc_hadhad_wjets[presel] = np.nan_to_num(inf_results['IN_hadhad_multi_v6'][:,2])
         
-                ptreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][0][:,1])
-                ptreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][0][:,1])
-                ptreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][0][:,1])
-        
-                ztagger_el[presel] = np.nan_to_num(inf_results['Ztagger_Zee_Zhe_v6'][0][:,0], nan=1.)
-                ztagger_mu[presel] = np.nan_to_num(inf_results['Ztagger_Zmm_Zhm_v6'][0][:,0], nan=1.)
+                    massreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][:,0])
+                    massreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][:,0])
+                    massreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][:,0])
+            
+                    ptreg_hadel[presel] = np.nan_to_num(inf_results['MassReg_hadel'][:,1])
+                    ptreg_hadmu[presel] = np.nan_to_num(inf_results['MassReg_hadmu'][:,1])
+                    ptreg_hadhad[presel] = np.nan_to_num(inf_results['MassReg_hadhad'][:,1])
+            
+                    ztagger_el[presel] = np.nan_to_num(inf_results['Ztagger_Zee_Zhe_v6'][:,0], nan=1.)
+                    ztagger_mu[presel] = np.nan_to_num(inf_results['Ztagger_Zmm_Zhm_v6'][:,0], nan=1.)
+
+
                 #ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
                 #ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
                 #del inf_results
@@ -1076,7 +1096,6 @@ class HttProcessor(processor.ProcessorABC):
         #print('hadmu  ',np.histogram(nn_disc_hadmu))
         #print('hadhad ',np.histogram(nn_disc_hadhad))
 
-        print("PASS", "selecting...", multiprocessing.current_process())
         selection.add('ptreg_hadel', ptreg_hadel>280.0)
         selection.add('ptreg_hadmu', ptreg_hadmu>280.0)
         selection.add('ptreg_hadhad', ptreg_hadhad>280.0)
@@ -1295,6 +1314,7 @@ class HttProcessor(processor.ProcessorABC):
 #        del ztagger_el
 #        del ztagger_mu
 
+        print("total event processing took %0.3f seconds"%(time()-t0))
         return output
 
     def postprocess(self, accumulator):

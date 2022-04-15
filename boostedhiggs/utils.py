@@ -1,4 +1,5 @@
 import awkward as ak
+from time import time, sleep
 import numpy as np
 
 from coffea.nanoevents.methods import candidate, vector
@@ -128,9 +129,6 @@ def get_pfcands_evt_features(events, fatjet, jet_idx):
     ]
     ptsorting = ak.argsort(jet_pfcands.pt,axis=-1,ascending=False)
     jet_pfcands = jet_pfcands[ptsorting]
-
-    #print('jet_pfcands.pt',jet_pfcands.pt)
-    #print('fatjet.pt',fatjet.pt)
 
     feature_dict["pf_pt"] = jet_pfcands.pt[ptsorting] / fatjet.pt
     feature_dict["pf_pt_real"] = jet_pfcands.pt / fatjet.pt
@@ -466,9 +464,8 @@ def get_taus_features(events, fatjet, jet_idx):
 
     return feature_dict
 
-def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
-
-    # prepare inputs for both fat jets
+def make_inputs(events, fatjet, jet_idx, presel=None):
+    t0 = time()
     sel_events = events
     sel_fatjet = fatjet
     sel_jet_idx = jet_idx
@@ -550,9 +547,6 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
     for input_name in tagger_inputs:
         if input_name.startswith('evt'):
             tagger_inputs[input_name] = np.reshape(tagger_inputs[input_name],(-1,len(inputs_lists[input_name])))
-        print(len(events))
-        print(np.sum(presel))
-        print(input_name, tagger_inputs[input_name].shape)
 
     inference_model_dict = {
         'IN_hadel_v6':['pf','sv','elec','tau','evt_z'],
@@ -565,16 +559,16 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         'Ztagger_Zmm_Zhm_v6':['pf','sv','muon','tau','evt_z'],
     }
     
-    #print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
-    #print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
-    #print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
-    #print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
-    #print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
+    print("making inputs took %0.3f seconds"%(time()-t0))
+    return tagger_inputs, inference_model_dict
+ 
+def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
+    tagger_inputs, inference_model_dict = make_inputs(events, fatjet, jet_idx, presel)
 
+    t0 = time()
     # run inference for selected fat jet
     tagger_outputs = {}
     for m in sessions:
-        #print('Running',m)
         tagger_outputs[m] = sessions[m].run(
             [sessions[m].get_outputs()[0].name],
             {sessions[m].get_inputs()[iin].name: tagger_inputs[nin] for iin,nin in enumerate(inference_model_dict[m])}
@@ -583,221 +577,78 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         del tagger_inputs[input_name]
     del tagger_inputs
 
+    print("running onnx took %0.3f seconds"%(time()-t0))
+
     return tagger_outputs
 
-import multiprocessing
-
-def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
-
-    # prepare inputs for both fat jets
-    sel_events = events
-    sel_fatjet = fatjet
-    sel_jet_idx = jet_idx
-    if presel is not None:
-        sel_events = sel_events[presel]
-        sel_fatjet = sel_fatjet[presel]
-        sel_jet_idx = sel_jet_idx[presel]
-
-    feature_dict = {
-        **get_pfcands_evt_features(sel_events, sel_fatjet, sel_jet_idx),
-        **get_svs_features(sel_events, sel_fatjet, sel_jet_idx),
-        **get_elecs_features(sel_events, sel_fatjet, sel_jet_idx),
-        **get_muons_features(sel_events, sel_fatjet, sel_jet_idx),
-        **get_taus_features(sel_events, sel_fatjet, sel_jet_idx),
-    }
-
-    ''' 
-    inputs_lists = {
-        'pf':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge', 'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight', 'pf_puppiWeightNoLep', 'pf_trkChi2', 'pf_vtxChi2'],
-        'pf_reg':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge', 'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight', 'pf_puppiWeightNoLep','pf_idreg'],
-        'sv':['sv_dlen', 'sv_dlenSig', 'sv_dxy', 'sv_dxySig', 'sv_chi2', 'sv_pAngle', 'sv_x', 'sv_y', 'sv_z', 'sv_pt', 'sv_mass', 'sv_eta', 'sv_phi'],
-        'muon':['muon_charge', 'muon_dxy', 'muon_dxyErr', 'muon_dz', 'muon_dzErr', 'muon_eta', 'muon_ip3d', 'muon_nStations', 'muon_nTrackerLayers', 'muon_pfRelIso03_all', 'muon_pfRelIso03_chg', 'muon_phi', 'muon_pt', 'muon_segmentComp', 'muon_sip3d', 'muon_tkRelIso'],
-        'elec':['elec_charge', 'elec_convVeto', 'elec_deltaEtaSC', 'elec_dr03EcalRecHitSumEt', 'elec_dr03HcalDepth1TowerSumEt', 'elec_dr03TkSumPt', 'elec_dxy', 'elec_dxyErr', 'elec_dz', 'elec_dzErr', 'elec_eInvMinusPInv', 'elec_eta', 'elec_hoe', 'elec_ip3d', 'elec_lostHits', 'elec_phi', 'elec_pt', 'elec_r9', 'elec_sieie', 'elec_sip3d'],
-        'tau':['tau_charge', 'tau_chargedIso', 'tau_dxy', 'tau_dz', 'tau_eta', 'tau_leadTkDeltaEta', 'tau_leadTkDeltaPhi', 'tau_leadTkPtOverTauPt', 'tau_mass', 'tau_neutralIso', 'tau_phi', 'tau_photonsOutsideSignalCone', 'tau_pt', 'tau_rawAntiEle', 'tau_rawIso', 'tau_rawIsodR03', 'tau_rawMVAoldDM2017v2', 'tau_rawMVAoldDMdR032017v2'],
-        #'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy','jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum','jet_chhadronnum','jet_nehadronnum','jet_unity','jet_unity'],
-        'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy','jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum','jet_chhadronnum','jet_nehadronnum','jet_unity'],
-        'evt_reg':['met_covXX','met_covXY','met_covYY','met_dphi','met_pt','met_significance','pupmet_pt','pupmet_dphi','jet_msd','jet_pt','jet_eta','jet_phi'],
-    }
-    inputs_lists['pf'][-3:-3] = ['pf_id%i'%iid for iid in range(11)]
-    #inputs_lists['pf_reg'][-1:-1] = ['pf_id%i'%iid for iid in range(11)]
-    '''
-    inputs_lists = {
-        'pf':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge',
-            'pf_dz', 'pf_dzErr', 'pf_d0', 'pf_d0Err',
-            'pf_puppiWeight', 'pf_puppiWeightNoLep', 'pf_trkChi2', 'pf_vtxChi2'],
-        'pf_reg':['pf_pt_real', 'pf_eta', 'pf_phi', 'pf_charge',
-            'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight',
-            'pf_puppiWeightNoLep','pf_idreg'],
-        'sv':['sv_dlen', 'sv_dlenSig', 'sv_dxy', 'sv_dxySig',
-            'sv_chi2', 'sv_pAngle', 'sv_x', 'sv_y',
-            'sv_z', 'sv_pt', 'sv_mass', 'sv_eta',
-            'sv_phi'],
-        'muon':['muon_charge', 'muon_dxy', 'muon_dxyErr', 'muon_dz',
-            'muon_dzErr', 'muon_eta', 'muon_ip3d', 'muon_nStations',
-            'muon_nTrackerLayers', 'muon_pfRelIso03_all', 'muon_pfRelIso03_chg', 'muon_phi',
-            'muon_pt', 'muon_segmentComp', 'muon_sip3d', 'muon_tkRelIso'],
-        'elec':['elec_charge', 'elec_convVeto', 'elec_deltaEtaSC', 'elec_dr03EcalRecHitSumEt',
-            'elec_dr03HcalDepth1TowerSumEt', 'elec_dr03TkSumPt', 'elec_dxy', 'elec_dxyErr',
-            'elec_dz', 'elec_dzErr', 'elec_eInvMinusPInv', 'elec_eta',
-            'elec_hoe', 'elec_ip3d', 'elec_lostHits', 'elec_phi',
-            'elec_pt', 'elec_r9', 'elec_sieie', 'elec_sip3d'],
-        #'tau':['tau_charge', 'tau_chargedIso', 'tau_dxy', 'tau_dz',
-        #     'tau_eta', 'tau_leadTkDeltaEta', 'tau_leadTkDeltaPhi', 'tau_leadTkPtOverTauPt',
-        #     'tau_mass', 'tau_neutralIso', 'tau_phi', 'tau_photonsOutsideSignalCone',
-        #     'tau_pt', 'tau_rawAntiEle', 'tau_rawIso', 'tau_rawIsodR03'], #preUL
-        'tau':['tau_charge', 'tau_chargedIso', 'tau_eta', 'tau_leadTkDeltaEta', 
-            'tau_leadTkDeltaPhi', 'tau_leadTkPtOverTauPt', 'tau_mass', 'tau_neutralIso', 
-            'tau_phi', 'tau_photonsOutsideSignalCone', 'tau_pt', 'tau_rawAntiEle2018', 
-            'tau_rawIso', 'tau_rawIsodR03'],
-        'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
-            'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
-            'jet_chhadronnum','jet_nehadronnum'],
-        'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
-            'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
-            'jet_chhadronnum'],#,'jet_nehadronnum'],
-        #'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
-        #     'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
-        #     'jet_chhadronnum','jet_nehadronnum','jet_unity','jet_unity'],
-        #'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
-        #     'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
-        #     'jet_chhadronnum','jet_nehadronnum','jet_unity'],
-        'evt_reg':['met_covXX','met_covXY','met_covYY','met_dphi',
-            'met_pt','met_significance','pupmet_pt','pupmet_dphi',
-            'jet_msd','jet_pt','jet_eta','jet_phi'],
-    }
-    inputs_lists['pf'][-2:-2] = ['pf_id%i'%iid for iid in range(11)]
-
-    
-    '''
-    tagger_inputs = {
-        input_name: np.concatenate(
-            [
-                np.expand_dims(feature_dict[key], 1)
-                for key in inputs_lists[input_name]
-            ],
-            axis=1,
-        ).transpose(0,2,1)
-        for input_name in inputs_lists
-    }
-    for input_name in tagger_inputs:
-        if input_name.startswith('evt'):
-            tagger_inputs[input_name] = np.reshape(tagger_inputs[input_name],(-1,len(inputs_lists[input_name])))
-        #print(len(events))
-        #print(np.sum(presel))
-        #print(input_name, tagger_inputs[input_name].shape)
-    '''
-    tagger_inputs = {
-        input_name: np.concatenate(
-            [
-                np.expand_dims(feature_dict[key], 1)
-                for key in inputs_lists[input_name]
-            ],
-            axis=1,
-        ).transpose((0,2,1) if 'evt' not in input_name or len(sel_events.MET.covXX)>1 else (0,1))
-        for input_name in inputs_lists
-    }
-    for feat in list(feature_dict):
-        del feature_dict[feat]
-    del feature_dict
-
-    for input_name in tagger_inputs:
-        if input_name.startswith('evt'):
-            tagger_inputs[input_name] = np.reshape(tagger_inputs[input_name],(-1,len(inputs_lists[input_name])))
-        print(len(events))
-        print(np.sum(presel))
-        print(input_name, tagger_inputs[input_name].shape)
-
-    '''
-    inference_model_dict = {
-        'hadel':['elec','evt_z','pf','sv','tau'],
-        'hadmu':['evt_z','muon','pf','sv','tau'],
-        'hadhad':['evt_z','pf','sv','tau'],
-        'MassReg_hadhad':['evt_reg','pf_reg','sv'],
-        'MassReg_hadel':['evt_reg','pf_reg','sv'],
-        'MassReg_hadmu':['evt_reg','pf_reg','sv'],
-        'Ztag_Zee_Zhe':['elec','evt_z','pf','sv','tau'],
-        'Ztag_Zmm_Zhm':['evt_z','muon','pf','sv','tau'],
-    }'''
-    inference_model_dict = {
-        'IN_hadel_v6':['pf','sv','elec','tau','evt_z'],
-        'IN_hadmu_v6':['pf','sv','muon','tau','evt_z'],
-        'IN_hadhad_multi_v6':['pf','sv','tau','evt_z'],
-        'MassReg_hadhad':['evt_reg','pf_reg','sv'],
-        'MassReg_hadel':['evt_reg','pf_reg','sv'],
-        'MassReg_hadmu':['evt_reg','pf_reg','sv'],
-        'Ztagger_Zee_Zhe_v6':['pf','sv','elec','tau','evt_z'],
-        'Ztagger_Zmm_Zhm_v6':['pf','sv','muon','tau','evt_z'],
-    }
-    # run inference for both fat jets
-
-    '''
-    nparticles = 200
-    pf (200, 30, 22)
-    pf_reg (200, 30, 10)
-    sv (200, 5, 13)
-    muon (200, 2, 16)
-    elec (200, 2, 20)
-    tau (200, 3, 18)
-    evt (200, 12)
-    evt_z (200, 11)
-    evt_reg (200, 12) 
-
-    hadel: 1
-    hadmu: 1
-    hadhad: 3
-
-    mass: 2
-
-    zee: 1
-    zmm: 3
-
-    '''
-
-    print("PASS","about to make tritoninputs dict", multiprocessing.current_process())
-    nevt = np.sum(presel)
-    tritoninputs = {
+def defineInputsTriton(nevt):
+    t0 = time()
+    triton_inputs = {
         'elec' : tritongrpcclient.InferInput("inputEl", [nevt, 2, 20], 'FP32'),
         'muon' : tritongrpcclient.InferInput("inputMu", [nevt, 2, 16], 'FP32'),
-        'tau' : tritongrpcclient.InferInput('inputTau', [nevt, 3, 18], 'FP32'),
+        'tau' : tritongrpcclient.InferInput('inputTau', [nevt, 3, 14], 'FP32'),
+        'evt' : tritongrpcclient.InferInput('inputEvent', [nevt, 10], 'FP32'),
         #'evt' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
-        'evt_z' : tritongrpcclient.InferInput('inputEvent', [nevt, 11], 'FP32'),
+        'evt_z' : tritongrpcclient.InferInput('inputEvent', [nevt, 9], 'FP32'),
         'evt_reg' : tritongrpcclient.InferInput('inputEvent', [nevt, 12], 'FP32'),
         'sv' : tritongrpcclient.InferInput('inputSV', [nevt, 5, 13], 'FP32'),
         'pf_reg' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 10], 'FP32'),
-        'pf' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 22], 'FP32'),
+        'pf' : tritongrpcclient.InferInput('inputParticle', [nevt, 30, 23], 'FP32'),
     }
+    print("defining triton inputs took %0.3f seconds"%(time()-t0))
+    return triton_inputs
 
-    print("PASS", 'filling tritoninputs', multiprocessing.current_process())
-    size = 0
-    for key in tagger_inputs.keys():
-        tritoninputs[key].set_data_from_numpy(tagger_inputs[key])
-        size += len(tritoninputs[key]._get_content())
+def callTriton(tagger_inputs, inference_model_dict, nevt, triton_client, sub=1):
+    t0 = time()
+    test = np.arange(nevt)
+    for div in range(sub):
+        istart = (div * nevt)//sub
+        iend = ((div + 1) * nevt)//sub 
+        nsub = iend - istart
+        triton_inputs = defineInputsTriton(nsub)
 
-    print("PASS", 'setting up output', multiprocessing.current_process())
-    outputs = []
-    #for key in inference_model_dict.keys():
-        #outputs.append(tritongrpcclient.InferRequestedOutput(key))
-    outputs.append(tritongrpcclient.InferRequestedOutput("output"))
+        for key in tagger_inputs.keys():
+            triton_inputs[key].set_data_from_numpy(tagger_inputs[key][istart:iend])
 
-    print("PASS", 'getting outputs', multiprocessing.current_process())
-    resultdict = {}
-    for key in inference_model_dict.keys():
-        print("PASS", "\t",key, multiprocessing.current_process())
-        results = triton_client.infer(
-                model_name = key,
-                inputs = [tritoninputs[name] for name in inference_model_dict[key]],
-                outputs = outputs)
-        result_data = results.as_numpy('output')
-        resultdict[key] = result_data
-    '''
-    results = triton_client.infer(
-            model_name = 'ensemble',
-            inputs = tritoninputs.values(),
-            outputs = outputs)
-    for key in inference_model_dict.keys():
-        resultdict[key] = results.as_numpy(key)
-        print(key, resultdict[key].shape)
-    '''
+        outputs = []
+        outputs.append(tritongrpcclient.InferRequestedOutput("output"))
 
-    print("PASS", "end of triton function", multiprocessing.current_process())
+        resultdict = {}
+        for key in inference_model_dict.keys():
+            results = triton_client.infer(
+                    model_name = key,
+                    inputs = [triton_inputs[name] for name in inference_model_dict[key]],
+                    outputs = outputs)
+            result_data = results.as_numpy('output')
+            resultdict[key] = result_data
+
+    print("calling triton took %0.3f seconds"%(time()-t0))
     return resultdict
+
+def runInferenceTriton(events, fatjet, jet_idx, triton_client, presel=None):
+    tagger_inputs, inference_model_dict = make_inputs(events, fatjet, jet_idx, presel)
+
+    t0 = time()
+
+    nevt = np.sum(presel)
+    
+    MAX_TRIES = 10
+
+    tries = 0
+    worked=False
+    result = None
+    while(not worked and tries<MAX_TRIES):
+        try:
+            result = callTriton(tagger_inputs, inference_model_dict, nevt, triton_client, 2**tries)
+            worked=True
+        except BaseException as err:
+            print("triton call errored out. Trying again with smaller batches")
+            print(err)
+            tries+=1
+            sleep(1)
+            
+    if not worked:
+        raise Exception("Error in runInferenceTriton")
+        
+    print("running triton took %0.3f seconds"%(time()-t0))
+    return result
