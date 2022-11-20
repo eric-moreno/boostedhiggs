@@ -184,14 +184,24 @@ process_map["st"] = [
     'ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8',
     'ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
     'ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
-    'ST_tW_top_5f_inclusiveDecays',
     'ST_s-channel_4f_leptonDecays',
+    'ST_s-channel_4f_hadronicDecays',
+    'ST_t-channel_antitop_4f_InclusiveDecays',
+    'ST_t-channel_antitop_5f_InclusiveDecays',
+    'ST_t-channel_top_4f_InclusiveDecays',
+    'ST_t-channel_top_5f_InclusiveDecays',
     'ST_tW_antitop_5f_inclusiveDecays',
+    'ST_tW_antitop_5f_NoFullyHadronicDecays',
+    'ST_tW_top_5f_inclusiveDecays',
+    'ST_tW_top_5f_NoFullyHadronicDecays',
 ]
 process_map["vv"] = [
     'WW_TuneCP5_13TeV-pythia8',
     'WZ_TuneCP5_13TeV-pythia8',
     'ZZ_TuneCP5_13TeV-pythia8',
+    'WW',
+    'WZ',
+    'ZZ',
 ]
 process_map["h125"] = [
     'GluGluHToWWToLNuQQ_M125_NNPDF31_TuneCP5_PSweights_13TeV_powheg_JHUGen710_pythia8',
@@ -206,44 +216,97 @@ process_map["h125"] = [
     'ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8',
     'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
     'boostedTau_GluGluHTauTau_boostedTaua_13TeV_user',
-    "GluGluHToTauTau",
+    'GluGluHToTauTau',
+    'VBFHToTauTau',
+    'WminusHToTauTau',
+    'WplusHToTauTau',
+    'ZHToTauTau',
+    'ttHToTauTau',
 ]
 process_map["phi10"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi20"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi30"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi40"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi50"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi75"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi100"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi125"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi150"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi200"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi250"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
 process_map["phi300"] = [
     'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
+    'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM_nomatch',
 ]
+#process_map["phi10_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi20_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi30_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi40_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi50_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi75_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi100_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi125_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi150_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi200_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi250_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
+#process_map["phi300_unmatch"] = [
+#    'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM_nomatch',
+#]
 #process_map["ggF-Htt"] = [
 #    'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
 #]
@@ -272,35 +335,30 @@ process_map["phi300"] = [
 #    'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
 #]
 process_map["data"] = [
-    'SingleMuon',
-    'SingleElectron',
-    'EGamma',
-    'MET',
-#2017
-    #'JetHT',
-    'JetHT_pancakes-02_Run2017B-09Aug2019_UL2017-v1',
-    'JetHT_pancakes-02_Run2017C-09Aug2019_UL2017-v1',
-    'JetHT_pancakes-02_Run2017D-09Aug2019_UL2017-v1',
-    'JetHT_pancakes-02_Run2017E-09Aug2019_UL2017-v1',
-    'JetHT_pancakes-02_Run2017F-09Aug2019_UL2017-v1',
-    #'SingleElectron',
-    'SingleElectron_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1',
-    'SingleElectron_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1',
-    'SingleElectron_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1',
-    'SingleElectron_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1',
-    'SingleElectron_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v2',
-    #'SingleMuon',
-    'SingleMuon_pancakes-02-withPF_Run2017B-09Aug2019_UL2017-v1',
-    'SingleMuon_pancakes-02-withPF_Run2017C-09Aug2019_UL2017-v1',
-    'SingleMuon_pancakes-02-withPF_Run2017D-09Aug2019_UL2017-v1',
-    'SingleMuon_pancakes-02-withPF_Run2017E-09Aug2019_UL2017-v1',
-    'SingleMuon_pancakes-02-withPF_Run2017F-09Aug2019_UL2017-v1',
-    'Tau',
-    #'MET_pancakes-02-withPF_Run2017B-09Aug2019_UL2017_rsb-v1',
-    'MET_pancakes-02-withPF_Run2017C-09Aug2019_UL2017_rsb-v1',
-    'MET_pancakes-02-withPF_Run2017D-09Aug2019_UL2017_rsb-v1',
-    'MET_pancakes-02-withPF_Run2017E-09Aug2019_UL2017_rsb-v1',
-    'MET_pancakes-02-withPF_Run2017F-09Aug2019_UL2017_rsb-v1',
+    'MET_Run2016B_ver2_HIPM',
+    'MET_Run2016C_HIPM',
+    'MET_Run2016D_HIPM',
+    'MET_Run2016E_HIPM',
+    'MET_Run2016F_HIPM',
+    'SingleElectron_Run2016B_ver2_HIPM',
+    'SingleElectron_Run2016C_HIPM',
+    'SingleElectron_Run2016D_HIPM',
+    'SingleElectron_Run2016E_HIPM',
+    'SingleElectron_Run2016F_HIPM',
+    'SingleMuon_Run2016B_ver2_HIPM',
+    'SingleMuon_Run2016C_HIPM',
+    'SingleMuon_Run2016D_HIPM',
+    'SingleMuon_Run2016E_HIPM',
+    'SingleMuon_Run2016F_HIPM',
+    'MET_Run2016F',
+    'MET_Run2016G',
+    'MET_Run2016H',
+    'SingleElectron_Run2016F',
+    'SingleElectron_Run2016G',
+    'SingleElectron_Run2016H',
+    'SingleMuon_Run2016F',
+    'SingleMuon_Run2016G',
+    'SingleMuon_Run2016H',
     'SingleElectron_Run2017B',
     'SingleElectron_Run2017C',
     'SingleElectron_Run2017D',
@@ -316,22 +374,18 @@ process_map["data"] = [
     'MET_Run2017D',
     'MET_Run2017E',
     'MET_Run2017F',
-#2018
-    #'SingleMuon',
-    'SingleMuon_pancakes-02_Run2018A-12Nov2019_UL2018_rsb-v1',
-    'SingleMuon_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
-    'SingleMuon_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
-    'SingleMuon_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
-    #'MET',
-    'MET_pancakes-02_Run2018A-12Nov2019_UL2018-v3',
-    'MET_pancakes-02_Run2018B-12Nov2019_UL2018_rsb-v1',
-    'MET_pancakes-02_Run2018C-12Nov2019_UL2018_rsb-v1',
-    'MET_pancakes-02_Run2018D-12Nov2019_UL2018_rsb-v2',
-    #'EGamma',
-    'EGamma_pancakes-02_Run2018A-12Nov2019_UL2018-v2',
-    'EGamma_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
-    'EGamma_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
-    'EGamma_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
+    'SingleMuon_Run2018A',
+    'SingleMuon_Run2018B',
+    'SingleMuon_Run2018C',
+    'SingleMuon_Run2018D',
+    'MET_Run2018A',
+    'MET_Run2018B',
+    'MET_Run2018C',
+    'MET_Run2018D',
+    'EGamma_Run2018A',
+    'EGamma_Run2018B',
+    'EGamma_Run2018C',
+    'EGamma_Run2018D',
 ]
 
 def apply(h):

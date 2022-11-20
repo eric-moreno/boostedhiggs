@@ -131,8 +131,7 @@ def get_pfcands_evt_features(events, fatjet, jet_idx):
     #print('jet_pfcands.pt',jet_pfcands.pt)
     #print('fatjet.pt',fatjet.pt)
 
-    feature_dict["pf_pt"] = jet_pfcands.pt[ptsorting] / fatjet.pt
-    feature_dict["pf_pt_real"] = jet_pfcands.pt / fatjet.pt
+    feature_dict["pf_pt"] = jet_pfcands.pt / fatjet.pt
     feature_dict["pf_eta"] = jet_pfcands.eta - fatjet.eta
     feature_dict["pf_phi"] = -fatjet.delta_phi(jet_pfcands)
     feature_dict["pf_charge"] = jet_pfcands.charge
@@ -154,16 +153,18 @@ def get_pfcands_evt_features(events, fatjet, jet_idx):
         feature_dict['pf_id%i'%iid] = np.abs(feature_dict['pf_pdgId'])==pid
     feature_dict['pf_idreg'] = feature_dict['pf_id0']*0.
     for iid in range(1,11):
-        feature_dict['pf_idreg'] = feature_dict['pf_idreg'] + feature_dict['pf_id0']*float(iid)
+        feature_dict['pf_idreg'] = feature_dict['pf_idreg'] + feature_dict['pf_id%i'%iid]*float(iid)
 
     feature_dict['met_covXX'] = events.MET.covXX
     feature_dict['met_covXY'] = events.MET.covXY
     feature_dict['met_covYY'] = events.MET.covYY
-    feature_dict['met_dphi'] = fatjet.delta_phi(events.MET)
+    #feature_dict['met_dphi'] = fatjet.delta_phi(events.MET)
+    feature_dict['met_dphi'] = events.MET.delta_phi(fatjet)
     feature_dict['met_pt'] = events.MET.pt
     feature_dict['met_significance'] = events.MET.significance
     feature_dict['pupmet_pt'] = events.PuppiMET.pt
-    feature_dict['pupmet_dphi'] = fatjet.delta_phi(events.PuppiMET)
+    #feature_dict['pupmet_dphi'] = fatjet.delta_phi(events.PuppiMET)
+    feature_dict['pupmet_dphi'] = events.PuppiMET.delta_phi(fatjet)
     feature_dict['jet_pt'] = fatjet.pt
     feature_dict['jet_eta'] = fatjet.eta
     feature_dict['jet_phi'] = fatjet.phi
@@ -233,7 +234,7 @@ def get_svs_features(events, fatjet, jet_idx):
 
     feature_dict["sv_pt"] = jet_svs.pt / fatjet.pt
     feature_dict["sv_eta"] = jet_svs.eta - fatjet.eta
-    feature_dict["sv_phi"] = jet_svs.delta_phi(fatjet)
+    feature_dict["sv_phi"] = jet_svs.p4.delta_phi(fatjet)
     feature_dict["sv_mass"] = jet_svs.mass
     feature_dict["sv_dlen"] = jet_svs.dlen
     feature_dict["sv_dlenSig"] = jet_svs.dlenSig
@@ -245,8 +246,8 @@ def get_svs_features(events, fatjet, jet_idx):
     feature_dict["sv_y"] = jet_svs.y
     feature_dict["sv_z"] = jet_svs.z
 
-    #del sv_ak8_pair
-    #del jet_svs
+   #del sv_ak8_pair
+    del jet_svs
 
     # convert to numpy arrays and normalize features
     for var in feature_dict:
@@ -312,8 +313,8 @@ def get_elecs_features(events, fatjet, jet_idx):
     feature_dict["elec_sieie"] = jet_elecs.sieie
     feature_dict["elec_sip3d"] = jet_elecs.sip3d
 
-    #del elec_ak8_pair
-    #del jet_elecs
+    del elec_ak8_pair
+    del jet_elecs
 
     # convert to numpy arrays and normalize features
     for var in feature_dict:
@@ -375,8 +376,8 @@ def get_muons_features(events, fatjet, jet_idx):
     feature_dict["muon_sip3d"] = jet_muons.sip3d
     feature_dict["muon_tkRelIso"] = jet_muons.tkRelIso
 
-    #del muon_ak8_pair
-    #del jet_muons
+    del muon_ak8_pair
+    del jet_muons
 
     # convert to numpy arrays and normalize features
     for var in feature_dict:
@@ -421,7 +422,9 @@ def get_taus_features(events, fatjet, jet_idx):
 
     # get features
 
-    feature_dict["tau_pt"] = jet_taus.pt / fatjet.pt
+    taupt_scale = 1.0
+
+    feature_dict["tau_pt"] = taupt_scale * jet_taus.pt / fatjet.pt
     feature_dict["tau_eta"] = jet_taus.eta - fatjet.eta
     feature_dict["tau_phi"] = fatjet.delta_phi(jet_taus)
     feature_dict["tau_mass"] = jet_taus.mass
@@ -444,8 +447,8 @@ def get_taus_features(events, fatjet, jet_idx):
     #feature_dict["tau_rawMVAoldDMdR032017v2"] = jet_taus.rawMVAoldDMdR032017v2
     feature_dict["tau_rawMVAoldDMdR032017v2"] = jet_taus.rawIso
 
-    #del tau_ak8_pair
-    #del jet_taus
+    del tau_ak8_pair
+    del jet_taus
 
     # convert to numpy arrays and normalize features
     for var in feature_dict:
@@ -488,9 +491,10 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         'pf':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge',
             'pf_dz', 'pf_dzErr', 'pf_d0', 'pf_d0Err',
             'pf_puppiWeight', 'pf_puppiWeightNoLep', 'pf_trkChi2', 'pf_vtxChi2'],
-        'pf_reg':['pf_pt_real', 'pf_eta', 'pf_phi', 'pf_charge',
-            'pf_dz', 'pf_d0', 'pf_d0Err', 'pf_puppiWeight',
-            'pf_puppiWeightNoLep','pf_idreg'],
+        'pf_reg':['pf_pt', 'pf_eta', 'pf_phi', 'pf_charge',
+            'pf_dz', 'pf_dzErr', 'pf_d0', 'pf_d0Err', 
+            'pf_puppiWeight','pf_puppiWeightNoLep','pf_idreg', 'pf_trkChi2',
+            'pf_vtxChi2'],
         'sv':['sv_dlen', 'sv_dlenSig', 'sv_dxy', 'sv_dxySig',
             'sv_chi2', 'sv_pAngle', 'sv_x', 'sv_y',
             'sv_z', 'sv_pt', 'sv_mass', 'sv_eta',
@@ -517,7 +521,7 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
             'jet_chhadronnum','jet_nehadronnum'],
         'evt_z':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
             'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
-            'jet_chhadronnum'],#,'jet_nehadronnum'],
+            'jet_chhadronnum','jet_nehadronnum'],
         #'evt':['jet_muonenergy','jet_elecenergy','jet_photonenergy','jet_chhadronenergy',
         #     'jet_nehadronenergy','jet_muonnum','jet_elecnum','jet_photonnum',
         #     'jet_chhadronnum','jet_nehadronnum','jet_unity','jet_unity'],
@@ -554,29 +558,183 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
         'IN_hadel_v6':['pf','sv','elec','tau','evt_z'],
         'IN_hadmu_v6':['pf','sv','muon','tau','evt_z'],
         'IN_hadhad_multi_v6':['pf','sv','tau','evt_z'],
-        'MassReg_hadhad':['evt_reg','pf_reg','sv'],
-        'MassReg_hadel':['evt_reg','pf_reg','sv'],
-        'MassReg_hadmu':['evt_reg','pf_reg','sv'],
+        'MassReg_hadhad':['sv','pf_reg','evt_reg'],
+        'MassReg_hadel':['sv','pf_reg','evt_reg'],
+        'MassReg_hadmu':['sv','pf_reg','evt_reg'],
         'Ztagger_Zee_Zhe_v6':['pf','sv','elec','tau','evt_z'],
         'Ztagger_Zmm_Zhm_v6':['pf','sv','muon','tau','evt_z'],
     }
     
+    particleTestData = [[[ 1.86279297e-01  , -7.81250000e-02  , -5.63964844e-02  ,  1.00000000e+00
+  ,  2.13623047e-03  ,  1.70326233e-03  ,  8.27789307e-04  ,  9.55581665e-04
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  2.00000000e+00  ,  2.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 6.35528564e-03  ,  1.18408203e-01  ,  1.26464844e-01  ,  1.00000000e+00
+  , -1.04751587e-02  ,  1.41716003e-03  ,  1.76525116e-03  ,  1.03092194e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 5.60379028e-03  ,  1.14746094e-01  ,  1.20117188e-01  , -1.00000000e+00
+  ,  7.11059570e-03  ,  1.58882141e-03  ,  6.83593750e-03  ,  1.50966644e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 2.88391113e-03  ,  1.12792969e-01  ,  1.24023438e-01  , -1.00000000e+00
+  ,  1.06353760e-02  ,  1.68228149e-03  ,  1.55687332e-04  ,  1.64604187e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 7.59124756e-03  , -1.25488281e-01  , -1.95312500e-02  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  5.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 2.23350525e-03  , -9.93652344e-02  ,  2.16308594e-01  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  5.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 2.65693665e-03  ,  9.17968750e-02  ,  7.20214844e-02  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  3.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 1.69944763e-03  ,  3.68652344e-01  , -3.37646484e-01  , -1.00000000e+00
+  ,  2.18750000e+00  ,  4.71115112e-03  , -2.67982483e-03  ,  7.06863403e-03
+  ,  6.98242188e-01  ,  7.13867188e-01  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 5.27954102e-02  , -1.32324219e-01  , -1.25000000e-01  ,  1.00000000e+00
+  , -7.43103027e-03  ,  4.16183472e-03  ,  4.03976440e-03  ,  4.07028198e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 2.17247009e-03  ,  7.50976562e-01  ,  2.30957031e-01  ,  1.00000000e+00
+  , -2.65502930e-02  ,  5.38635254e-03  , -2.25257874e-03  ,  5.45501709e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.91974640e-03  ,  5.65429688e-01  , -3.75000000e-01  ,  1.00000000e+00
+  , -3.68690491e-03  ,  6.96182251e-03  , -1.60827637e-02  ,  6.92367554e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.05762482e-03  ,  2.69775391e-01  , -3.95751953e-01  , -1.00000000e+00
+  ,  7.84375000e+00  ,  1.62597656e-01  , -9.46777344e-01  ,  1.25732422e-01
+  ,  4.70703125e-01  ,  4.94140625e-01  ,  1.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.68991089e-03  ,  2.47314453e-01  ,  4.77294922e-01  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  5.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 3.56750488e-02  , -1.00830078e-01  , -2.66845703e-01  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  9.52636719e-01  ,  5.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 1.27983093e-03  , -3.73046875e-01  , -7.37304688e-02  , -1.00000000e+00
+  ,  7.33566284e-03  ,  5.61904907e-03  , -4.44030762e-03  ,  5.43212891e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  2.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 7.75337219e-04  ,  1.19140625e-01  , -7.13867188e-01  , -1.00000000e+00
+  ,  2.14687500e+01  ,  5.58593750e-01  ,  8.07812500e+00  ,  5.25878906e-01
+  ,  5.29296875e-01  ,  5.53222656e-01  ,  1.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.24645233e-03  ,  2.17773438e-01  , -6.31835938e-01  , -1.00000000e+00
+  ,  4.39147949e-02  ,  1.04522705e-02  , -6.57272339e-03  ,  1.09939575e-02
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.15013123e-03  , -3.74023438e-01  , -5.99609375e-01  , -1.00000000e+00
+  ,  1.24588013e-02  ,  9.19342041e-03  , -2.65693665e-03  ,  9.18579102e-03
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 1.04522705e-03  , -4.39453125e-01  , -6.06445312e-01  ,  1.00000000e+00
+  , -5.27832031e-01  ,  8.94927979e-03  , -2.72460938e-01  ,  8.10241699e-03
+  ,  9.01855469e-01  ,  9.09667969e-01  ,  1.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 2.84385681e-03  ,  1.73339844e-01  ,  1.19140625e-01  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  3.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 5.60546875e-01  , -1.08398438e-01  , -2.80517578e-01  , -1.00000000e+00
+  , -9.16290283e-03  ,  1.47323608e-02  ,  2.47192383e-02  ,  1.72576904e-02
+  ,  1.00000000e+00  ,  9.37011719e-01  ,  1.00000000e+00  ,  1.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 6.51836395e-04  ,  3.33740234e-01  , -1.16455078e-01  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  5.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 6.51359558e-04  , -3.38623047e-01  , -6.35742188e-01  , -1.00000000e+00
+  , -1.00000000e+00  , -1.00000000e+00  , -1.00000000e+00  , -1.00000000e+00
+  ,  9.60937500e-01  ,  9.60937500e-01  ,  1.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 2.02775002e-04  ,  6.44531250e-01  , -1.72363281e-01  ,  1.00000000e+00
+  , -1.00000000e+00  , -1.00000000e+00  , -1.00000000e+00  , -1.00000000e+00
+  ,  1.00000000e+00  ,  1.00000000e+00  ,  1.00000000e+00  , -1.00000000e+00
+  , -1.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]
+  ,[ 0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00  ,  0.00000000e+00
+  ,  0.00000000e+00]]]
+    svTestData = [[[0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.]
+  ,[0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.]
+  ,[0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.]
+  ,[0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.]
+  ,[0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.]]]
+    eventTestData = [[ 7.14000000e+02  , -5.18000000e+02  ,  3.20800000e+03  ,  3.30322266e-01
+   ,1.16008018e+02  ,  5.56250000e+00  ,  1.47752029e+02  ,  2.81494141e-01
+   ,8.56875000e+01  ,  6.72500000e+02  ,  1.36254883e+00  ,  1.73071289e+00]]
+#    #evi = np.where((events.event[presel]).to_numpy()==3743783)
+#    evi = np.where((events.event[presel]).to_numpy()==2360724)
+#    print('EVI: ',evi, sum(evi))
+#    if sum(evi)>0:
+#        evi = evi[0]
+#        print('event ',((events.event[presel])[evi],', lumi ',(events.luminosityBlock[presel])[evi]))
+#        print('particleTestData',{v:tagger_inputs['pf'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['pf'])})
+#        print('svTestData',{v:tagger_inputs['sv'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['sv'])})
+#        #print('elecTestData',{v:tagger_inputs['elec'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['elec'])})
+#        print('muonTestData',{v:tagger_inputs['muon'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['muon'])})
+#        print('tauTestData',{v:tagger_inputs['tau'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['tau'])})
+#        print('eventTestData',{v:tagger_inputs['evt_z'][:,iv][evi] for iv,v in enumerate(inputs_lists['evt_z'])})
+#        print('eventRegTestData',{v:tagger_inputs['evt_reg'][:,iv][evi] for iv,v in enumerate(inputs_lists['evt_reg'])})
     #print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
     #print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
     #print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
+    #print('muonTestData',{v:np.histogram(tagger_inputs['muon'][:,:,iv]) for iv,v in enumerate(inputs_lists['muon'])})
     #print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
     #print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
+
+    #print(sessions["MassReg_hadmu"].run(
+    #        [sessions["MassReg_hadmu"].get_outputs()[0].name],
+    #        {
+    #            sessions["MassReg_hadmu"].get_inputs()[0].name:svTestData,
+    #            sessions["MassReg_hadmu"].get_inputs()[1].name:particleTestData,
+    #            sessions["MassReg_hadmu"].get_inputs()[2].name:eventTestData,
+    #        }
+    #    ))
 
     # run inference for selected fat jet
     tagger_outputs = {}
     for m in sessions:
-        #print('Running',m)
+        #print('Running',m,'(',[sessions[m].get_inputs()[iin].name for iin in range(len(inference_model_dict[m]))],')')
         tagger_outputs[m] = sessions[m].run(
             [sessions[m].get_outputs()[0].name],
             {sessions[m].get_inputs()[iin].name: tagger_inputs[nin] for iin,nin in enumerate(inference_model_dict[m])}
         )
+        print(m,type(tagger_outputs[m]))
     for input_name in list(tagger_inputs):
         del tagger_inputs[input_name]
     del tagger_inputs
+    #for m in sessions:
+    #    sessions[m]
 
     return tagger_outputs

@@ -109,6 +109,7 @@ xs = {
     "TTToHadronic": 303.8527975,
     "TTToSemiLeptonic": 306.137405,
     "ST_s-channel_4f_leptonDecays": 1.188915,
+    "ST_s-channel_4f_hadronicDecays": 7.104,
     "ST_t-channel_antitop_4f_InclusiveDecays": 67.93,
     "ST_t-channel_antitop_5f_InclusiveDecays": 71.74,
     "ST_t-channel_top_4f_InclusiveDecays": 113.4,
@@ -139,6 +140,9 @@ xs = {
     "DYJetsToLL_HT-800to1200": 0.5682,
     "DYJetsToLL_HT-1200to2500": 0.1332,
     "DYJetsToLL_HT-2500toInf": 0.002978,
+    "WW": 75.83,
+    "WZ": 27.56,
+    "ZZ": 12.14,
 }
 zkeys = []
 for d in xs.keys():
@@ -149,6 +153,13 @@ for z in zkeys:
     xs[z+"_Zmm"] = xs[z]
     xs[z+"_Zem"] = xs[z]
     xs[z+"_Ztt"] = xs[z]
+
+phikeys = []
+for d in xs.keys():
+    if "Spin0" in d:
+       phikeys.append(d)
+for z in phikeys:
+    xs[z+"_nomatch"] = xs[z]
 
 with open('fileset/xsecs.json', 'w') as outfile:
     json.dump(xs, outfile, indent=4)

@@ -55,36 +55,6 @@ def add_pileup_weight(weights, nPU, year='2017'):
         compiled[f'{year}_pileupweight_puDown'](nPU),
     )
 
-def add_pdf_weight(weights, pdf_weights):
-    nom = np.ones(len(weights.weight()))
-    up = np.ones(len(weights.weight()))
-    down = np.ones(len(weights.weight()))
-
-    # NNPDF31_nnlo_hessian_pdfas
-    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
-        # Hessian PDF weights
-        # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
-        arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
-        summed = ak.sum(np.square(arg), axis=1)
-        pdf_unc = np.sqrt((1. / 99.) * summed)
-        weights.add('PDF_weight', nom, pdf_unc + nom)
-
-        # alpha_S weights
-        # Eq. 27 of same ref
-        as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
-        weights.add('aS_weight', nom, as_unc + nom)
-
-        # PDF + alpha_S weights
-        # Eq. 28 of same ref
-        pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
-        weights.add('PDFaS_weight', nom, pdfas_unc + nom)
-
-    else:
-        weights.add('aS_weight', nom, up, down)
-        weights.add('PDF_weight', nom, up, down)
-        weights.add('PDFaS_weight', nom, up, down)
-
 def add_ps_weight(weights, ps_weights):
     nom = np.ones(len(weights.weight()))
     up_isr = np.ones(len(weights.weight()))
@@ -265,16 +235,18 @@ def add_METSFs(weights, met, year):
     weights.add('MET_TRIG', met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(), met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]-1.), met_trigger_sfs['binning'])-1])
 
 def add_pdf_weight(weights, pdf_weights):
-    nom = np.ones(len(weights.weight()))
-    up = np.ones(len(weights.weight()))
-    down = np.ones(len(weights.weight()))
+    nweights = len(weights.weight())
+    nom = np.ones(nweights)
+    up = np.ones(nweights)
+    down = np.ones(nweights)
+    docstring = pdf_weights.__doc__
 
     # NNPDF31_nnlo_hessian_pdfas
     # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
+    if "306000 - 306102" in docstring:
         # Hessian PDF weights
         # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
-        arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
+        arg = pdf_weights[:, 1:-2] - np.ones((nweights, 100))
         summed = ak.sum(np.square(arg), axis=1)
         pdf_unc = np.sqrt((1. / 99.) * summed)
         weights.add('PDF_weight', nom, pdf_unc + nom)
@@ -294,49 +266,45 @@ def add_pdf_weight(weights, pdf_weights):
         weights.add('PDF_weight', nom, up, down)
         weights.add('PDFaS_weight', nom, up, down)
 
-# Jennet adds 7 point scale variations
-def add_scalevar_7pt(weights, lhe_weights):
-    nom = np.ones(len(weights.weight()))
- 
-    if len(lhe_weights) > 0:
-        if len(lhe_weights[0]) == 9: 
-            up = np.maximum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
-                                    lhe_weights[:, 3], lhe_weights[:, 5],
-                                    lhe_weights[:, 7], lhe_weights[:, 8]])
-            down = np.minimum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
-                                      lhe_weights[:, 3], lhe_weights[:, 5],
-                                      lhe_weights[:, 7], lhe_weights[:, 8]])
-        elif len(lhe_weights[0]) == 8:
-            up = np.maximum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
-                                    lhe_weights[:, 3], lhe_weights[:, 4],
-                                    lhe_weights[:, 6], lhe_weights[:, 7]])
-            down = np.minimum.reduce([lhe_weights[:, 0], lhe_weights[:, 1],
-                                      lhe_weights[:, 3], lhe_weights[:, 4],
-                                      lhe_weights[:, 6], lhe_weights[:, 7]])
-        elif len(lhe_weights[0]) > 1:
-            print("Scale variation vector has length ", len(lhe_weights[0]))
-    else:
-        up = np.ones(len(weights.weight()))
-        down = np.ones(len(weights.weight()))
+# 7-point scale variations
+def add_scalevar_7pt(weights,var_weights):
+    docstring = var_weights.__doc__
+    nweights = len(weights.weight())
 
+    nom   = np.ones(nweights)
+    up    = np.ones(nweights)
+    down  = np.ones(nweights)
+ 
+    if len(var_weights) > 0:
+        if len(var_weights[0]) == 9: 
+            up = np.maximum.reduce([var_weights[:,0],var_weights[:,1],var_weights[:,3],var_weights[:,5],var_weights[:,7],var_weights[:,8]])
+            down = np.minimum.reduce([var_weights[:,0],var_weights[:,1],var_weights[:,3],var_weights[:,5],var_weights[:,7],var_weights[:,8]])
+        elif len(var_weights[0]) == 8:
+            up = np.maximum.reduce([var_weights[:,0],var_weights[:,1],var_weights[:,3],var_weights[:,4],var_weights[:,6],var_weights[:,7]])
+            down = np.minimum.reduce([var_weights[:,0],var_weights[:,1],var_weights[:,3],var_weights[:,4],var_weights[:,6],var_weights[:,7]])
+        elif len(var_weights[0]) > 1:
+            print("Scale variation vector has length ", len(var_weights[0]))
     weights.add('scalevar_7pt', nom, up, down)
 
-# Jennet adds 3 point scale variations
-def add_scalevar_3pt(weights, lhe_weights):
-    nom = np.ones(len(weights.weight()))
+# 3-point scale variations
+def add_scalevar_3pt(weights,var_weights):
+    docstring = var_weights.__doc__
+    
+    nweights = len(weights.weight())
 
-    if len(lhe_weights) > 0:
-        if len(lhe_weights[0]) == 9:
-            up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 8])
-            down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 8])
-        elif len(lhe_weights[0]) == 8:
-            up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 7])
-            down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 7])
-        elif len(lhe_weights[0]) > 1:
-            print("Scale variation vector has length ", len(lhe_weights[0]))
-    else:
-        up = np.ones(len(weights.weight()))
-        down = np.ones(len(weights.weight()))
+    nom   = np.ones(nweights)
+    up    = np.ones(nweights)
+    down  = np.ones(nweights)
+
+    if len(var_weights) > 0:
+        if len(var_weights[0]) == 9:
+            up = np.maximum(var_weights[:,0], var_weights[:,8])
+            down = np.minimum(var_weights[:,0], var_weights[:,8])
+        elif len(var_weights[0]) == 8:
+            up = np.maximum(var_weights[:,0], var_weights[:,7])
+            down = np.minimum(var_weights[:,0], var_weights[:,7])
+        elif len(var_weights[0]) > 1:
+            print("Scale variation vector has length ", len(var_weights[0]))
 
     weights.add('scalevar_3pt', nom, up, down)
 
@@ -385,10 +353,10 @@ def add_VJets_NLOkFactor(weights, genBosonPt, year, dataset):
         return
     weights.add('VJets_NLOkFactor', nlo_over_lo_qcd * nlo_over_lo_ewk)
 
-with importlib.resources.path("boostedhiggs.data", "vjets_corrections.json") as filename:
+with importlib.resources.path("boostedhiggs.data", "ULvjets_corrections.json") as filename:
     vjets_kfactors = correctionlib.CorrectionSet.from_file(str(filename))
 
-
+#taking from Jennet
 def add_VJets_kFactors(weights, genpart, dataset):
     """Revised version of add_VJets_NLOkFactor, for both NLO EW and ~NNLO QCD"""
     def get_vpt(check_offshell=False):
@@ -418,6 +386,11 @@ def add_VJets_kFactors(weights, genpart, dataset):
         "Z_d2kappa_EW",
         "Z_d3kappa_EW",
     ]
+    znlosysts = [
+        "d1kappa_EW",
+        "Z_d2kappa_EW",
+        "Z_d3kappa_EW",
+    ]
     wsysts = common_systs + [
         "W_d2kappa_EW",
         "W_d3kappa_EW",
@@ -430,35 +403,20 @@ def add_VJets_kFactors(weights, genpart, dataset):
         for syst in systlist:
             weights.add(syst, ones, ewkcorr.evaluate(syst + "_up", vpt) / ewknom, ewkcorr.evaluate(syst + "_down", vpt) / ewknom)
 
-    if "ZJetsToQQ_HT" in dataset and "TuneCUETP8M1" in dataset:
+    if "ZJetsToQQ_HT" in dataset or "DYJetsToLL_M-50" in dataset:
         vpt = get_vpt()
-        qcdcorr = vjets_kfactors["Z_MLM2016toFXFX"].evaluate(vpt)
+        qcdcorr = vjets_kfactors["ULZ_MLMtoFXFX"].evaluate(vpt)
         ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
         add_systs(zsysts, qcdcorr, ewkcorr, vpt)
-    elif "WJetsToQQ_HT" in dataset and "TuneCUETP8M1" in dataset:
+    elif "WJetsToQQ_HT" in dataset or "WJetsToLNu_HT" in dataset:
         vpt = get_vpt()
-        qcdcorr = vjets_kfactors["W_MLM2016toFXFX"].evaluate(vpt)
+        qcdcorr = vjets_kfactors["ULW_MLMtoFXFX"].evaluate(vpt)
         ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
         add_systs(wsysts, qcdcorr, ewkcorr, vpt)
-    elif "ZJetsToQQ_HT" in dataset and "TuneCP5" in dataset:
+    elif "DYJetsToLL_Pt" in dataset:
         vpt = get_vpt()
-        qcdcorr = vjets_kfactors["Z_MLM2017toFXFX"].evaluate(vpt)
         ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
-        add_systs(zsysts, qcdcorr, ewkcorr, vpt)
-    elif "WJetsToQQ_HT" in dataset and "TuneCP5" in dataset:
-        vpt = get_vpt()
-        qcdcorr = vjets_kfactors["W_MLM2017toFXFX"].evaluate(vpt)
-        ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
-        add_systs(wsysts, qcdcorr, ewkcorr, vpt)
-    elif ("DY1JetsToLL_M-50" in dataset or "DY2JetsToLL_M-50" in dataset or "DYJetsToLL_Pt" in dataset) and "amcnloFXFX" in dataset:
-        vpt = get_vpt(check_offshell=True)
-        ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
-        add_systs(zsysts, None, ewkcorr, vpt)
-    elif ("W1JetsToLNu" in dataset or "W2JetsToLNu" in dataset) and "amcnloFXFX" in dataset:
-        vpt = get_vpt(check_offshell=True)
-        ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
-        add_systs(wsysts, None, ewkcorr, vpt)
-
+        add_systs(znlosysts, None, ewkcorr, vpt)
 
 def add_TopPtReweighting(weights, topPt, year, dataset):
 #$SF(p_T)=e^{0.0615-0.0005\cdot p_T}$ for data/POWHEG+Pythia8

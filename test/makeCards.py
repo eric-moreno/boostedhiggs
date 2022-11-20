@@ -10,9 +10,6 @@ import mplhep as hep
 plt.style.use(hep.styles.ROOT)
 import numpy as np
 
-from coffea import hist
-from coffea.util import load
-
 import pickle
 import gzip
 import math
@@ -27,8 +24,7 @@ import rhalphalib as rl
 import scipy.stats
 from scipy.special import erfinv
 import pickle
-import ROOT
-rl.util.install_roofit_helpers()
+#rl.util.install_roofit_helpers()
 rl.ParametericSample.PreferRooParametricHist = True
 
 import plot_stack
@@ -48,7 +44,7 @@ def gaus_sample(norm, loc, scale, obs):
 singleBinCR = True
 includeLowMass = True
 
-def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mttbins, ptbins, leptype, tmpdir, label, usingData, nnCut, nnCut_loose, metCut, h_pt_min, antilepcut):
+def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faillep, top_cr_faillep, wlnu_cr_faillep, qcd_cr_faillep, sig_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, leptype, tmpdir, label, usingData, nnCut, nnCut_loose, metCut, h_pt_min):
 
     #could be made region-dependent
 
@@ -57,32 +53,32 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
         'top'        : ['tt-had', 'tt-semilep', 'tt-dilep','st'],
         'htt125'     : ['h125'],
         'multijet'   : ['qcd'],
-        'ztt'        : ['zll'],
+        'zll'        : ['zll','zem'],
         'wlnu'       : ['wjets'],
         'vvqq'       : ['vv','vqq'],
         'ignore'     : [],
     }
 
-    sig_faillep = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(None,antilepcut),'under').integrate('met_pt',slice(metCut,None),'over')
-    top_cr_faillep = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(None,antilepcut),'under').integrate('met_pt',slice(metCut,None),'over')
-    wlnu_cr_faillep = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(None,antilepcut),'under').integrate('met_pt',slice(metCut,None),'over')
-    qcd_cr_faillep = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(None,antilepcut),'under').integrate('met_pt',slice(metCut,None),'over')
+    sig_faillep = sig_faillep.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    top_cr_faillep = top_cr_faillep.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    wlnu_cr_faillep = wlnu_cr_faillep.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    qcd_cr_faillep = qcd_cr_faillep.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
 
-    sig_lowmet = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(None,metCut),'under')
-    top_cr_lowmet = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(None,metCut),'under')
-    wlnu_cr_lowmet = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(None,metCut),'under')
-    qcd_cr_lowmet = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(None,metCut),'under')
+    sig_lowmet = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(None,metCut),'under')
+    top_cr_lowmet = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(None,metCut),'under')
+    wlnu_cr_lowmet = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(None,metCut),'under')
+    qcd_cr_lowmet = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(None,metCut),'under')
 
-    sig_hist = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(metCut,None),'over')
-    top_cr_hist = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(metCut,None),'over')
-    wlnu_cr_hist = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(metCut,None),'over')
-    qcd_cr_hist = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('antilep',slice(antilepcut,None),'over').integrate('met_pt',slice(metCut,None),'over')
+    sig_hist = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    top_cr_hist = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    wlnu_cr_hist = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
+    qcd_cr_hist = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
 
     #jec = rl.NuisanceParameter('CMS_jec', 'lnN')
     top_norm = rl.NuisanceParameter('CMS_top_norm', 'lnN')
     wlnu_norm = rl.NuisanceParameter('CMS_wlnu_norm', 'lnN')
     qcd_norm = rl.NuisanceParameter('CMS_qcd_norm', 'lnN')
-    #ztt_norm = rl.NuisanceParameter('CMS_ztt_norm', 'lnN')
+    #zll_norm = rl.NuisanceParameter('CMS_zll_norm', 'lnN')
     vqq_norm = rl.NuisanceParameter('CMS_vqq_norm', 'lnN')
     trig = rl.NuisanceParameter('CMS_trig_had%s'%leptype, 'lnN')
     lumi = rl.NuisanceParameter('CMS_lumi', 'lnN')
@@ -113,9 +109,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
     topLeffSF = rl.IndependentParameter('topLeffSF_had%s'%leptype, 1., 0, 10)
     wlnuLeffSF = rl.IndependentParameter('wlnuLeffSF_had%s'%leptype, 1., 0, 10)
 
-    rztt = rl.IndependentParameter('r_ztt_had%s'%leptype, 1., 0, 10)
-    #rztt = rl.NuisanceParameter('r_ztt_had%s'%leptype, 'lnN')
-    ztt_eff = rl.IndependentParameter('ztt_eff_had%s'%leptype, 1., 0, 10)
+    rzll = rl.IndependentParameter('r_zll_had%s'%leptype, 1., 0, 10)
+    #rzll = rl.NuisanceParameter('r_zll_had%s'%leptype, 'lnN')
+    zll_eff = rl.IndependentParameter('zll_eff_had%s'%leptype, 1., 0, 10)
 
     toppt = rl.NuisanceParameter('toppt', 'shape')
     syst_dict = {
@@ -184,7 +180,11 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
         if samplelist is not None:
             the_int = the_int.integrate('sample',samplelist).values()[()]
         else:
-            the_int = the_int.sum('sample').values()[()]
+            the_int = the_int.sum('sample').values()
+            if () in the_int:
+                the_int = the_int[()]
+            else:
+                the_int = np.zeros(len(mttbins)-1,dtype=np.float32)
 
         if debug:
             print('\tdebug',the_int)
@@ -348,9 +348,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
                         sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                     if sName.name=='vvqq':
                         sample.setParamEffect(vqq_norm, 1.10)
-                    #if sName.name=='ztt':
-                    #    sample.setParamEffect(ztt_norm, 1.05)
-                    if sName.name=='htt125' or sName.name=='ztt':
+                    #if sName.name=='zll':
+                    #    sample.setParamEffect(zll_norm, 1.05)
+                    if sName.name=='htt125' or sName.name=='zll':
                         nom_full = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])
                         shift_dn = nom_full[2:]
                         shift_up = nom_full[:-2]
@@ -364,9 +364,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
                 ch.setObservation((np.zeros(len(mtt.binning)-1),mtt.binning, mtt.name))
 
     h125vals = [intRegion(thehist['htt125'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
-    zttvals = [intRegion(thehist['ztt'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
+    zllvals = [intRegion(thehist['zll'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
     wlnuvals = [intRegion(thehist['wlnu'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
-    probs = [np.prod([math.erfc(h125vals[ipt][ib]/(math.sqrt(abs(zttvals[ipt][ib]+wlnuvals[ipt][ib])) if zttvals[ipt][ib]+wlnuvals[ipt][ib]>2. else 2.)) for ib in range(len(h125vals[ipt]))]) for ipt in range(npt)]
+    probs = [np.prod([math.erfc(h125vals[ipt][ib]/(math.sqrt(abs(zllvals[ipt][ib]+wlnuvals[ipt][ib])) if zllvals[ipt][ib]+wlnuvals[ipt][ib]>2. else 2.)) for ib in range(len(h125vals[ipt]))]) for ipt in range(npt)]
     print(leptype,'PROB',np.prod(probs),'->',erfinv(1.-np.prod(probs)),'\t\t',probs)
 
     for ptbin in range(npt):
@@ -412,21 +412,21 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
         wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
         wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-        zttpass = passCh['ztt']
-        zttloosepass = loosePassCh['ztt']
-        zttfail = failCh['ztt']
-        zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+        zllpass = passCh['zll']
+        zllloosepass = loosePassCh['zll']
+        zllfail = failCh['zll']
+        zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
         httLP = passCh['htt125'].getExpectation(nominal=True).sum() / loosePassCh['htt125'].getExpectation(nominal=True).sum()
-        zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-        zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff) * zttLP + 1)
-        passCh['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-        loosePassCh['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-        zttpass.setParamEffect(rztt, 1*rztt)
-        zttloosepass.setParamEffect(rztt, 1*rztt)
-        zttfail.setParamEffect(rztt, 1*rztt)
-        #zttpass.setParamEffect(rztt, 1.05)
-        #zttloosepass.setParamEffect(rztt, 1.05)
-        #zttfail.setParamEffect(rztt, 1.05)
+        zllpass.setParamEffect(zll_eff, 1*zll_eff)
+        zllloosepass.setParamEffect(zll_eff, (1 - zll_eff) * zllLP + 1)
+        passCh['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+        loosePassCh['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+        zllpass.setParamEffect(rzll, 1*rzll)
+        zllloosepass.setParamEffect(rzll, 1*rzll)
+        zllfail.setParamEffect(rzll, 1*rzll)
+        #zllpass.setParamEffect(rzll, 1.05)
+        #zllloosepass.setParamEffect(rzll, 1.05)
+        #zllfail.setParamEffect(rzll, 1.05)
 
 
     # Fill in top CR
@@ -491,9 +491,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
                     sample.setParamEffect(qcdtop_pass if isPass else qcdtop_loosepass if isLoosePass else qcdtop_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vqq_norm, 1.10)
-                #if sName.name=='ztt':
-                #    sample.setParamEffect(ztt_norm, 1.10)
-                if sName.name=='htt125' or sName.name=='ztt':
+                #if sName.name=='zll':
+                #    sample.setParamEffect(zll_norm, 1.10)
+                if sName.name=='htt125' or sName.name=='zll':
                     nom_full = intRegion(thehist[sName],region)
                     shift_dn = nom_full[2:]
                     shift_up = nom_full[:-2]
@@ -541,21 +541,21 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
     wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
     wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-    zttpass = model['topCRpass']['ztt']
-    zttloosepass = model['topCRloosepass']['ztt']
-    zttfail = model['topCRfail']['ztt']
-    zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+    zllpass = model['topCRpass']['zll']
+    zllloosepass = model['topCRloosepass']['zll']
+    zllfail = model['topCRfail']['zll']
+    zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
     httLP = model['topCRpass']['htt125'].getExpectation(nominal=True).sum() / model['topCRloosepass']['htt125'].getExpectation(nominal=True).sum()
-    zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-    zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff)* zttLP + 1)
-    model['topCRpass']['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-    model['topCRloosepass']['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-    zttpass.setParamEffect(rztt, 1*rztt)
-    zttloosepass.setParamEffect(rztt, 1*rztt)
-    zttfail.setParamEffect(rztt, 1*rztt)
-    #zttpass.setParamEffect(rztt, 1.05)
-    #zttloosepass.setParamEffect(rztt, 1.05)
-    #zttfail.setParamEffect(rztt, 1.05)
+    zllpass.setParamEffect(zll_eff, 1*zll_eff)
+    zllloosepass.setParamEffect(zll_eff, (1 - zll_eff)* zllLP + 1)
+    model['topCRpass']['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+    model['topCRloosepass']['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+    zllpass.setParamEffect(rzll, 1*rzll)
+    zllloosepass.setParamEffect(rzll, 1*rzll)
+    zllfail.setParamEffect(rzll, 1*rzll)
+    #zllpass.setParamEffect(rzll, 1.05)
+    #zllloosepass.setParamEffect(rzll, 1.05)
+    #zllfail.setParamEffect(rzll, 1.05)
 
     # Fill in wlnu CR
     for region in ['pass', 'fail', 'loosepass']:
@@ -619,9 +619,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
                     sample.setParamEffect(qcdwlnu_pass if isPass else qcdwlnu_loosepass if isLoosePass else qcdwlnu_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vqq_norm, 1.10)
-                #if sName.name=='ztt':
-                #    sample.setParamEffect(ztt_norm, 1.10)
-                if sName.name=='htt125' or sName.name=='ztt':
+                #if sName.name=='zll':
+                #    sample.setParamEffect(zll_norm, 1.10)
+                if sName.name=='htt125' or sName.name=='zll':
                     nom_full = intRegion(thehist[sName],region)
                     shift_dn = nom_full[2:]
                     shift_up = nom_full[:-2]
@@ -669,28 +669,28 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mtt
     wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
     wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-    zttpass = model['wlnuCRpass']['ztt']
-    zttloosepass = model['wlnuCRloosepass']['ztt']
-    zttfail = model['wlnuCRfail']['ztt']
-    zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+    zllpass = model['wlnuCRpass']['zll']
+    zllloosepass = model['wlnuCRloosepass']['zll']
+    zllfail = model['wlnuCRfail']['zll']
+    zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
     httLP = model['wlnuCRpass']['htt125'].getExpectation(nominal=True).sum() / model['wlnuCRloosepass']['htt125'].getExpectation(nominal=True).sum()
-    zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-    zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff) * zttLP + 1)
-    model['wlnuCRpass']['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-    model['wlnuCRloosepass']['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-    zttpass.setParamEffect(rztt, 1*rztt)
-    zttloosepass.setParamEffect(rztt, 1*rztt)
-    zttfail.setParamEffect(rztt, 1*rztt)
-    #zttpass.setParamEffect(rztt, 1.05)
-    #zttloosepass.setParamEffect(rztt, 1.05)
-    #zttfail.setParamEffect(rztt, 1.05)
+    zllpass.setParamEffect(zll_eff, 1*zll_eff)
+    zllloosepass.setParamEffect(zll_eff, (1 - zll_eff) * zllLP + 1)
+    model['wlnuCRpass']['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+    model['wlnuCRloosepass']['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+    zllpass.setParamEffect(rzll, 1*rzll)
+    zllloosepass.setParamEffect(rzll, 1*rzll)
+    zllfail.setParamEffect(rzll, 1*rzll)
+    #zllpass.setParamEffect(rzll, 1.05)
+    #zllloosepass.setParamEffect(rzll, 1.05)
+    #zllfail.setParamEffect(rzll, 1.05)
 
     with open(os.path.join("%s/%s"%(str(tmpdir),label), 'had%sModel.pkl'%leptype), "wb") as fout:
         pickle.dump(model, fout, protocol=2)
 
-    model.renderCombine(os.path.join("%s/%s"%(str(tmpdir),label), 'had%sModel'%leptype))
+    #model.renderCombine(os.path.join("%s/%s"%(str(tmpdir),label), 'had%sModel'%leptype))
 
-def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, var_name, mttbins, ptbins, tmpdir, label, usingData, nnCut_jet, nnCut_jet_loose, nnCut_met, nnCut_met_loose, metCut, h_pt_min):
+def createHadHad(sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_met_failanti, top_cr_failanti, wlnu_cr_failanti, qcd_cr_failanti, sig_met_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, tmpdir, label, usingData, nnCut_met, nnCut_met_loose, metCut, h_pt_min):
 
     #could be made region-dependent
     samp_combinations = {
@@ -698,23 +698,21 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
         'top'        : ['tt-had', 'tt-semilep', 'tt-dilep', 'st'],
         'htt125'     : ['h125'],
         'multijet'   : ['qcd'],
-        'ztt'        : ['zll'],
+        'zll'        : ['ztt','zem'],
         'wlnu'       : ['wjets'],
-        'vqq'        : ['vv'],
-        'ignore'     : ['vqq'],
+        'vqq'        : ['vv','vqq'],
+        'ignore'     : [],
     }
 
-    sig_jet_invdphi = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(1.6,None),'over')
-    sig_met_invdphi = sig_met_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(1.6,None),'over')
-    top_cr_invdphi = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(1.6,None),'over')
-    wlnu_cr_invdphi = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(1.6,None),'over')
-    qcd_cr_invdphi = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(1.6,None),'over')
+    sig_met_invdphi = sig_met_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    top_cr_invdphi = top_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    wlnu_cr_invdphi = wlnu_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    qcd_cr_invdphi = qcd_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations)
 
-    sig_jet_hist = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(None,1.6),'under')
-    sig_met_hist = sig_met_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(None,1.6),'under')
-    top_cr_hist = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(None,1.6),'under')
-    wlnu_cr_hist = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(None,1.6),'under')
-    qcd_cr_hist = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('jetmet_dphi',slice(None,1.6),'under')
+    sig_met_hist = sig_met_hist.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    top_cr_hist = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    wlnu_cr_hist = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations)
+    qcd_cr_hist = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations)
 
     #jec = rl.NuisanceParameter('CMS_jec', 'lnN')
     top_norm = rl.NuisanceParameter('CMS_top_norm', 'lnN')
@@ -722,7 +720,7 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
     qcd_norm = rl.NuisanceParameter('CMS_qcd_norm', 'lnN')
     qcd_norm_top = rl.NuisanceParameter('CMS_qcd_norm_top', 'lnN')
     qcd_norm_wlnu = rl.NuisanceParameter('CMS_qcd_norm_wlnu', 'lnN')
-    #ztt_norm = rl.NuisanceParameter('CMS_ztt_norm', 'lnN')
+    #zll_norm = rl.NuisanceParameter('CMS_zll_norm', 'lnN')
     vqq_norm = rl.NuisanceParameter('CMS_vqq_norm', 'lnN')
     trig = rl.NuisanceParameter('CMS_trig_hadhad', 'lnN')
     lumi = rl.NuisanceParameter('CMS_lumi', 'lnN')
@@ -753,9 +751,9 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
     topLeffSF = rl.IndependentParameter('topLeffSF_hadhad', 1., 0, 10)
     wlnuLeffSF = rl.IndependentParameter('wlnuLeffSF_hadhad', 1., 0, 10)
 
-    rztt = rl.IndependentParameter('r_ztt_hadhad', 1., 0, 10)
-    #rztt = rl.NuisanceParameter('r_ztt_hadhad', 'lnN')
-    ztt_eff = rl.IndependentParameter('ztt_eff_hadhad', 1., 0, 10)
+    rzll = rl.IndependentParameter('r_zll_hadhad', 1., 0, 10)
+    #rzll = rl.NuisanceParameter('r_zll_hadhad', 'lnN')
+    zll_eff = rl.IndependentParameter('zll_eff_hadhad', 1., 0, 10)
 
     toppt = rl.NuisanceParameter('toppt', 'shape')
     syst_dict = {
@@ -821,7 +819,11 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
         if samplelist is not None:
             the_int = the_int.integrate('sample',samplelist).values()[()]
         else:
-            the_int = the_int.sum('sample').values()[()]
+            the_int = the_int.sum('sample').values()
+            if () in the_int:
+                the_int = the_int[()]
+            else:
+                the_int = np.zeros(len(mttbins)-1,dtype=np.float32)
 
         if debug:
             print('\tdebug',the_int)
@@ -1012,9 +1014,9 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
                         sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                     if sName.name=='vqq':
                         sample.setParamEffect(vqq_norm, 1.10)
-                    #if sName.name=='ztt':
-                    #    sample.setParamEffect(ztt_norm, 1.10)
-                    if sName.name=='htt125' or sName.name=='ztt':
+                    #if sName.name=='zll':
+                    #    sample.setParamEffect(zll_norm, 1.10)
+                    if sName.name=='htt125' or sName.name=='zll':
                         nom_full = intRegion(thehist[sName],region)
                         shift_dn = nom_full[2:]
                         shift_up = nom_full[:-2]
@@ -1028,9 +1030,9 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
                 ch.setObservation((np.zeros(len(mtt.binning)-1),mtt.binning, mtt.name))
     
     h125vals = [intRegion(thehist['htt125'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
-    zttvals = [intRegion(thehist['ztt'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
+    zllvals = [intRegion(thehist['zll'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
     wlnuvals = [intRegion(thehist['wlnu'],'pass',hptslice=ptslices[ptbin])[1:-1] for ptbin in range(npt)]
-    probs = [np.prod([math.erfc(h125vals[ipt][ib]/(math.sqrt(abs(zttvals[ipt][ib]+wlnuvals[ipt][ib])) if zttvals[ipt][ib]+wlnuvals[ipt][ib]>2. else 2.)) for ib in range(len(h125vals[ipt]))]) for ipt in range(npt)]
+    probs = [np.prod([math.erfc(h125vals[ipt][ib]/(math.sqrt(abs(zllvals[ipt][ib]+wlnuvals[ipt][ib])) if zllvals[ipt][ib]+wlnuvals[ipt][ib]>2. else 2.)) for ib in range(len(h125vals[ipt]))]) for ipt in range(npt)]
     print('had','PROB',np.prod(probs),'->',erfinv(1.-np.prod(probs)),'\t\t',probs)
     
 
@@ -1077,21 +1079,21 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
         wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
         wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-        zttpass = passCh['ztt']
-        zttloosepass = loosePassCh['ztt']
-        zttfail = failCh['ztt']
-        zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+        zllpass = passCh['zll']
+        zllloosepass = loosePassCh['zll']
+        zllfail = failCh['zll']
+        zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
         httLP = passCh['htt125'].getExpectation(nominal=True).sum() / loosePassCh['htt125'].getExpectation(nominal=True).sum()
-        zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-        zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff) * zttLP + 1)
-        passCh['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-        loosePassCh['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-        zttpass.setParamEffect(rztt, 1*rztt)
-        zttloosepass.setParamEffect(rztt, 1*rztt)
-        zttfail.setParamEffect(rztt, 1*rztt)
-        #zttpass.setParamEffect(rztt, 1.05)
-        #zttloosepass.setParamEffect(rztt, 1.05)
-        #zttfail.setParamEffect(rztt, 1.05)
+        zllpass.setParamEffect(zll_eff, 1*zll_eff)
+        zllloosepass.setParamEffect(zll_eff, (1 - zll_eff) * zllLP + 1)
+        passCh['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+        loosePassCh['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+        zllpass.setParamEffect(rzll, 1*rzll)
+        zllloosepass.setParamEffect(rzll, 1*rzll)
+        zllfail.setParamEffect(rzll, 1*rzll)
+        #zllpass.setParamEffect(rzll, 1.05)
+        #zllloosepass.setParamEffect(rzll, 1.05)
+        #zllfail.setParamEffect(rzll, 1.05)
 
 
     # Fill in top CR
@@ -1168,9 +1170,9 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
                     sample.setParamEffect(qcdtop_pass if isPass else qcdtop_loosepass if isLoosePass else qcdtop_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                 if sName.name=='vqq':
                     sample.setParamEffect(vqq_norm, 1.10)
-                #if sName.name=='ztt':
-                #    sample.setParamEffect(ztt_norm, 1.10)
-                if sName.name=='htt125' or sName.name=='ztt':
+                #if sName.name=='zll':
+                #    sample.setParamEffect(zll_norm, 1.10)
+                if sName.name=='htt125' or sName.name=='zll':
                     nom_full = intRegion(thehist[sName],region)
                     shift_dn = nom_full[2:]
                     shift_up = nom_full[:-2]
@@ -1218,21 +1220,21 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
     wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
     wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-    zttpass = model['topCRpass']['ztt']
-    zttloosepass = model['topCRloosepass']['ztt']
-    zttfail = model['topCRfail']['ztt']
-    zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+    zllpass = model['topCRpass']['zll']
+    zllloosepass = model['topCRloosepass']['zll']
+    zllfail = model['topCRfail']['zll']
+    zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
     httLP = model['topCRpass']['htt125'].getExpectation(nominal=True).sum() / model['topCRloosepass']['htt125'].getExpectation(nominal=True).sum()
-    zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-    zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff)* zttLP + 1)
-    model['topCRpass']['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-    model['topCRloosepass']['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-    zttpass.setParamEffect(rztt, 1*rztt)
-    zttloosepass.setParamEffect(rztt, 1*rztt)
-    zttfail.setParamEffect(rztt, 1*rztt)
-    #zttpass.setParamEffect(rztt, 1.05)
-    #zttloosepass.setParamEffect(rztt, 1.05)
-    #zttfail.setParamEffect(rztt, 1.05)
+    zllpass.setParamEffect(zll_eff, 1*zll_eff)
+    zllloosepass.setParamEffect(zll_eff, (1 - zll_eff)* zllLP + 1)
+    model['topCRpass']['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+    model['topCRloosepass']['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+    zllpass.setParamEffect(rzll, 1*rzll)
+    zllloosepass.setParamEffect(rzll, 1*rzll)
+    zllfail.setParamEffect(rzll, 1*rzll)
+    #zllpass.setParamEffect(rzll, 1.05)
+    #zllloosepass.setParamEffect(rzll, 1.05)
+    #zllfail.setParamEffect(rzll, 1.05)
 
     # Fill in wlnu CR
     for region in ['pass', 'fail', 'loosepass']:
@@ -1308,9 +1310,9 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
                     sample.setParamEffect(qcdwlnu_pass if isPass else qcdwlnu_loosepass if isLoosePass else qcdwlnu_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                 if sName.name=='vqq':
                     sample.setParamEffect(vqq_norm, 1.10)
-                #if sName.name=='ztt':
-                #    sample.setParamEffect(ztt_norm, 1.10)
-                if sName.name=='htt125' or sName.name=='ztt':
+                #if sName.name=='zll':
+                #    sample.setParamEffect(zll_norm, 1.10)
+                if sName.name=='htt125' or sName.name=='zll':
                     nom_full = intRegion(thehist[sName],region)
                     shift_dn = nom_full[2:]
                     shift_up = nom_full[:-2]
@@ -1358,33 +1360,33 @@ def createHadHad(sig_hist, sig_met_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist,
     wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
     wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
-    zttpass = model['wlnuCRpass']['ztt']
-    zttloosepass = model['wlnuCRloosepass']['ztt']
-    zttfail = model['wlnuCRfail']['ztt']
-    zttLP = zttpass.getExpectation(nominal=True).sum() / zttloosepass.getExpectation(nominal=True).sum()
+    zllpass = model['wlnuCRpass']['zll']
+    zllloosepass = model['wlnuCRloosepass']['zll']
+    zllfail = model['wlnuCRfail']['zll']
+    zllLP = zllpass.getExpectation(nominal=True).sum() / zllloosepass.getExpectation(nominal=True).sum()
     httLP = model['wlnuCRpass']['htt125'].getExpectation(nominal=True).sum() / model['wlnuCRloosepass']['htt125'].getExpectation(nominal=True).sum()
-    zttpass.setParamEffect(ztt_eff, 1*ztt_eff)
-    zttloosepass.setParamEffect(ztt_eff, (1 - ztt_eff) * zttLP + 1)
-    model['wlnuCRpass']['htt125'].setParamEffect(ztt_eff, 1*ztt_eff)
-    model['wlnuCRloosepass']['htt125'].setParamEffect(ztt_eff, (1 - ztt_eff) * httLP + 1)
-    zttpass.setParamEffect(rztt, 1*rztt)
-    zttloosepass.setParamEffect(rztt, 1*rztt)
-    zttfail.setParamEffect(rztt, 1*rztt)
-    #zttpass.setParamEffect(rztt, 1.05)
-    #zttloosepass.setParamEffect(rztt, 1.05)
-    #zttfail.setParamEffect(rztt, 1.05)
+    zllpass.setParamEffect(zll_eff, 1*zll_eff)
+    zllloosepass.setParamEffect(zll_eff, (1 - zll_eff) * zllLP + 1)
+    model['wlnuCRpass']['htt125'].setParamEffect(zll_eff, 1*zll_eff)
+    model['wlnuCRloosepass']['htt125'].setParamEffect(zll_eff, (1 - zll_eff) * httLP + 1)
+    zllpass.setParamEffect(rzll, 1*rzll)
+    zllloosepass.setParamEffect(rzll, 1*rzll)
+    zllfail.setParamEffect(rzll, 1*rzll)
+    #zllpass.setParamEffect(rzll, 1.05)
+    #zllloosepass.setParamEffect(rzll, 1.05)
+    #zllfail.setParamEffect(rzll, 1.05)
 
     with open(os.path.join("%s/%s"%(str(tmpdir),label), 'hadhadModel.pkl'), "wb") as fout:
         pickle.dump(model, fout, protocol=2)
 
-    model.renderCombine(os.path.join("%s/%s"%(str(tmpdir),label), 'hadhadModel'))
+    #model.renderCombine(os.path.join("%s/%s"%(str(tmpdir),label), 'hadhadModel'))
 
 def getHist(h,var_name,lumifb,vars_cut,regionsel,blind,sigscale,rebin,debug=False):
     if debug: print(h)
     exceptions = ['process', var_name]
     for var in vars_cut:
         exceptions.append(var)
-    if (regionsel is not ''):
+    if (regionsel!=''):
         exceptions.append('region')
     if debug: print([ax.name for ax in h.axes()])
     x = h.sum(*[ax for ax in h.axes() if ax.name not in exceptions],overflow=overflow_sum)
@@ -1448,7 +1450,8 @@ def makeCards(args):
     for h in mcSamples + dataSamples:
         #print(h)
         # open hists
-        hists_unmapped = load('%s%s.coffea'%(args.hist,h))
+        with open("%s%s.hist"%(args.hist,h), 'rb') as f:
+            hists_unmapped = pickle.load(f)
         # map to hists
         for key, val in hists_unmapped.items():
             if isinstance(val, hist.Hist):
@@ -1467,11 +1470,9 @@ def makeCards(args):
     nnCut_hadmu_loose = args.nnCutMHL
     metCut = args.metCut
     h_pt_min = args.hPtCut
-    antimucut = args.antiMuCut
-    antielcut = args.antiElCut
     
     includeData = False
-    mttbins = np.linspace(40, 210, 18)
+    mttbins = np.array([0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.,450.,500.])
     # properties
     region_dict = {
 #        'hadhad_signal':['met_nn_kin', 'massreg', {'h_pt':[],'massreg':[mttbins[0], mttbins[-1]],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None], 'met_pt':[100.,150.],'systematic':[]}, includeData, [1], 'hadhad_signal'],
@@ -1487,19 +1488,43 @@ def makeCards(args):
 #        'hadmu_cr_w':['met_nn_kin', 'massreg', {'h_pt':[],'massreg':[mttbins[0], mttbins[-1]],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_w'],
 #        'hadel_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'massreg':[mttbins[0], mttbins[-1]],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_qcd'],
 #        'hadmu_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'massreg':[mttbins[0], mttbins[-1]],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_qcd'],
-        'hadhad_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None], 'met_pt':[100.,150.],'systematic':[]}, includeData, [1], 'hadhad_signal'],
-        'hadhad_signal_met':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None], 'met_pt':[150.,None],'systematic':[]}, includeData, [1], 'hadhad_signal_met'],
-        'hadhad_cr_mu':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu'],
-        'hadhad_cr_b_mu_iso':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_b_mu_iso'],
-        'hadhad_cr_mu_iso':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'jetmet_dphi':[], 'antilep':[0.5,None],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_iso'],
-        'hadel_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_signal'],
-        'hadmu_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_signal'],
-        'hadel_cr_b':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_b'],
-        'hadmu_cr_b':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_b'],
-        'hadel_cr_w':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_w'],
-        'hadmu_cr_w':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_w'],
-        'hadel_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_qcd'],
-        'hadmu_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'antilep':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_qcd'],
+        'hadhad_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[100.,150.],'systematic':[]}, includeData, [1], 'hadhad_signal'],
+        'hadhad_signal_met':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[150.,None],'systematic':[]}, includeData, [1], 'hadhad_signal_met'],
+        'hadhad_cr_anti_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[150.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_anti_inv'],
+        'hadhad_cr_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[150.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_dphi_inv'],
+        'hadhad_cr_mu':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu'],
+        'hadhad_cr_b_mu_iso':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_b_mu_iso'],
+        'hadhad_cr_mu_iso':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_iso'],
+        'hadhad_cr_mu_anti_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_anti_inv'],
+        'hadhad_cr_b_mu_iso_anti_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_b_mu_iso_anti_inv'],
+        'hadhad_cr_mu_iso_anti_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_iso_anti_inv'],
+        'hadhad_cr_mu_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_dphi_inv'],
+        'hadhad_cr_b_mu_iso_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_b_mu_iso_dphi_inv'],
+        'hadhad_cr_mu_iso_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[],'met_pt':[20.,None],'systematic':[]}, includeData, [1], 'hadhad_cr_mu_iso_dphi_inv'],
+        'hadel_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_signal'],
+        'hadmu_signal':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_signal'],
+        'hadel_cr_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_ztag_inv'],
+        'hadmu_cr_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_ztag_inv'],
+        'hadel_cr_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_dphi_inv'],
+        'hadmu_cr_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_dphi_inv'],
+        'hadel_cr_b':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_b'],
+        'hadmu_cr_b':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_b'],
+        'hadel_cr_w':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_w'],
+        'hadmu_cr_w':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_w'],
+        'hadel_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_qcd'],
+        'hadmu_cr_qcd':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_qcd'],
+        'hadel_cr_b_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_b_ztag_inv'],
+        'hadmu_cr_b_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_b_ztag_inv'],
+        'hadel_cr_w_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_w_ztag_inv'],
+        'hadmu_cr_w_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_w_ztag_inv'],
+        'hadel_cr_qcd_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_qcd_ztag_inv'],
+        'hadmu_cr_qcd_ztag_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_qcd_ztag_inv'],
+        'hadel_cr_b_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_b_dphi_inv'],
+        'hadmu_cr_b_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_b_dphi_inv'],
+        'hadel_cr_w_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_w_dphi_inv'],
+        'hadmu_cr_w_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_w_dphi_inv'],
+        'hadel_cr_qcd_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadel_cr_qcd_dphi_inv'],
+        'hadmu_cr_qcd_dphi_inv':['met_nn_kin', 'massreg', {'h_pt':[],'nn_disc':[], 'met_pt':[],'systematic':[]}, includeData, [1], 'hadmu_cr_qcd_dphi_inv'],
     }
 
     full_dict = {}
@@ -1514,9 +1539,9 @@ def makeCards(args):
     hadptbins = np.array([h_pt_min]+[float(b) if b!="None" else None for b in args.hPtBinsHad])
     lepptbins = np.array([h_pt_min]+[float(b) if b!="None" else None for b in args.hPtBinsLep])
 
-    createHadHad(full_dict['hadhad_signal'], full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_mu_iso'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad, nnCut_hadhad_loose, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCut, h_pt_min)
-    createLepHad(full_dict['hadel_signal'], full_dict['hadel_cr_b'], full_dict['hadel_cr_w'], full_dict['hadel_cr_qcd'], 'massreg', mttbins, lepptbins, "el", odir, args.label, args.unblind, nnCut_hadel, nnCut_hadel_loose, metCut, h_pt_min, antielcut)
-    createLepHad(full_dict['hadmu_signal'], full_dict['hadmu_cr_b'], full_dict['hadmu_cr_w'], full_dict['hadmu_cr_qcd'], 'massreg', mttbins, lepptbins, "mu", odir, args.label, args.unblind, nnCut_hadmu, nnCut_hadmu_loose, metCut, h_pt_min, antimucut)
+    createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_mu_iso'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], full_dict['hadhad_cr_anti_inv'], full_dict['hadhad_cr_b_mu_iso_anti_inv'], full_dict['hadhad_cr_mu_iso_anti_inv'], full_dict['hadhad_cr_mu_anti_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCut, h_pt_min)
+    createLepHad(full_dict['hadel_signal'], full_dict['hadel_cr_b'], full_dict['hadel_cr_w'], full_dict['hadel_cr_qcd'], full_dict['hadel_cr_ztag_inv'], full_dict['hadel_cr_b_ztag_inv'], full_dict['hadel_cr_w_ztag_inv'], full_dict['hadel_cr_qcd_ztag_inv'], full_dict['hadel_cr_dphi_inv'], full_dict['hadel_cr_b_dphi_inv'], full_dict['hadel_cr_w_dphi_inv'], full_dict['hadel_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "el", odir, args.label, args.unblind, nnCut_hadel, nnCut_hadel_loose, metCut, h_pt_min)
+    createLepHad(full_dict['hadmu_signal'], full_dict['hadmu_cr_b'], full_dict['hadmu_cr_w'], full_dict['hadmu_cr_qcd'], full_dict['hadmu_cr_ztag_inv'], full_dict['hadmu_cr_b_ztag_inv'], full_dict['hadmu_cr_w_ztag_inv'], full_dict['hadmu_cr_qcd_ztag_inv'], full_dict['hadmu_cr_dphi_inv'], full_dict['hadmu_cr_b_dphi_inv'], full_dict['hadmu_cr_w_dphi_inv'], full_dict['hadmu_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "mu", odir, args.label, args.unblind, nnCut_hadmu, nnCut_hadmu_loose, metCut, h_pt_min)
 
     import datetime
 
@@ -1537,8 +1562,6 @@ def makeCards(args):
     f.write("\nhPt cut: " + str(args.hPtCut))
     f.write("\nLepBins: " + ", ".join(args.hPtBinsLep))
     f.write("\nHadBins: " + ", ".join(args.hPtBinsHad))
-    f.write("\nAntiEl cut: " + str(args.antiElCut))
-    f.write("\nAntiMu cut: " + str(args.antiMuCut))
     f.close()
 
     if args.plots:
@@ -1567,9 +1590,9 @@ def makeCards(args):
             nncutl = nnCut_hadmu_loose
             nncutt = nnCut_hadmu
           for rn in ['had%s_signal'%lep,'had%s_cr_b'%lep,'had%s_cr_w'%lep,'had%s_cr_qcd'%lep]:
-            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s fail'%rn,'all',1.,{'nn_disc':[None,nncutl],'met_pt':[metCut,None],'antilep':[0.5,None]},{},[],rn+'_fail')
-            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s loosepass'%rn,'all',1.,{'nn_disc':[nncutl,nncutt],'met_pt':[metCut,None],'antilep':[0.5,None]},{},[],rn+'_loosepass')
-            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s pass'%rn,'all',1.,{'nn_disc':[nncutt,None],'met_pt':[metCut,None],'antilep':[0.5,None]},{},[],rn+'_pass', blind='' if args.unblind or 'signal' not in rn else ['None',110.])
+            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s fail'%rn,'all',1.,{'nn_disc':[None,nncutl],'met_pt':[metCut,None]},{},[],rn+'_fail')
+            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s loosepass'%rn,'all',1.,{'nn_disc':[nncutl,nncutt],'met_pt':[metCut,None]},{},[],rn+'_loosepass')
+            plot_stack.drawStack(full_dict[rn],'Had%sModel'%lep,'massreg',r"$m_{NN}$",'%s pass'%rn,'all',1.,{'nn_disc':[nncutt,None],'met_pt':[metCut,None]},{},[],rn+'_pass', blind='' if args.unblind or 'signal' not in rn else ['None',110.])
     
         os.chdir(pwd)
 
@@ -1602,8 +1625,6 @@ if __name__ == "__main__":
     parser.add_argument('--hPtBinsHad',  dest='hPtBinsHad',  default=['400','None'], help="h pt bins (had)",   type=str,  nargs='+')
     parser.add_argument('--hPtBinsLep',  dest='hPtBinsLep',  default=['400','None'], help="h pt bins (lep)",   type=str,  nargs='+')
     parser.add_argument('--hPtCut',      dest='hPtCut',      default=None,           help="h pt cut",   type=float)
-    parser.add_argument('--antiElCut',   dest='antiElCut',   default=0.5,            help="anti el cut",   type=float)
-    parser.add_argument('--antiMuCut',   dest='antiMuCut',   default=0.5,            help="anti mu cut",   type=float)
 
     args = parser.parse_args()
 

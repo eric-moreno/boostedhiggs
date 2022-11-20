@@ -13,6 +13,15 @@ from coffea.analysis_tools import Weights, PackedSelection
 
 import onnxruntime as rt
 
+import warnings
+
+warnings.filterwarnings("ignore", message="Found duplicate branch ")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message="Missing cross-reference index ")
+warnings.filterwarnings("ignore", message="divide by zero encountered in log")
+np.seterr(invalid="ignore")
+rt.set_default_logger_severity(3)
+
 from .corrections import (
     corrected_msoftdrop,
 #    n2ddt_shift,
@@ -38,9 +47,11 @@ from .common import (
     getParticles,
     matchedBosonFlavor,
     matchedBosonFlavorLep,
-    getHTauTauDecayInfo,
+    getTauTauDecayInfo,
     isOverlap,
 )
+
+from boostedhiggs.btag import btagWPs, BTagCorrector
 
 from .utils import (
     runInferenceOnnx
@@ -58,30 +69,40 @@ def normalize(val, cut=None):
         ar = ak.to_numpy(ak.fill_none(val[cut], np.nan))
         return ar
 
+def update(events, collections):
+    """Return a shallow copy of events array with some collections swapped out"""
+    out = events
+    for name, value in collections.items():
+        out = ak.with_field(out, value, name)
+    return out
+
 _ort_options = rt.SessionOptions() 
 _ort_options.intra_op_num_threads = 1
 _ort_options.inter_op_num_threads = 1
 _ort_options.enable_cpu_mem_arena = False
-_ort_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+#_ort_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
 
 _ort_sessions = {}
 #_ort_sessions['model5p1_hadhad_multi'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v5p1_multiclass,on_QCD_WJets_noLep,fillFactor=1:1_5:0_75,taus,take_1,model.onnx', _ort_options)
-_ort_sessions['IN_hadhad_multi_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1_0_75_0_5,multiclass,allData,UL,metCut40,sigShaped,norm,take_4,model.onnx', _ort_options)
-_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
-_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,sigShaped,norm,take_5,model.onnx', _ort_options)
+_ort_sessions['IN_hadhad_multi_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadhad_v6,on_QCD_WJets_noLep,1_0_75_0_5,multiclass,allData,UL,metCut40,bkgShaped,norm,take_5,model.onnx', _ort_options)
+_ort_sessions['IN_hadel_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadel_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,bkgShaped,norm,take_6,model.onnx', _ort_options)
+_ort_sessions['IN_hadmu_v6'] = rt.InferenceSession('boostedhiggs/data/IN_hadmu_v6,on_TTbar_WJets,ohe,allData,UL,metCut40,bkgShaped,norm,take_6,model.onnx', _ort_options)
 #print([i.name for i in _ort_sessions['IN_hadhad_multi_v6'].get_inputs()])
 #print([i.name for i in _ort_sessions['IN_hadel_v6'].get_inputs()])
 #print([i.name for i in _ort_sessions['IN_hadmu_v6'].get_inputs()])
 
-_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zhe_Zee_oneEl,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
-_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zhm_Zmm_oneMu,ohe,allData,UL,metCut20,norm,take_3,model.onnx', _ort_options)
+_ort_sessions['Ztagger_Zee_Zhe_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhe_v6,on_Zhe_Zee_oneEl,ohe,allData,UL,metCut20,norm,take_8,model.onnx', _ort_options)
+_ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,on_Zhm_Zmm_oneMu,ohe,allData,UL,metCut20,norm,take_8,model.onnx', _ort_options)
 #_ort_sessions['Ztagger_Zmm_Zhm_v6_multi'] = rt.InferenceSession('boostedhiggs/data/IN_Zhm_v6,multiclass,on_Zhm,QCD_oneMu,Zmm_oneMu,ohe,allData,metCut20,take_1,model.onnx', _ort_options)
 #print([i.name for i in _ort_sessions['Ztagger_Zee_Zhe_v6'].get_inputs()])
 #print([i.name for i in _ort_sessions['Ztagger_Zmm_Zhm_v6'].get_inputs()])
 
-_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
-_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
-_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
+#_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
+#_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
+#_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadhad_v1.onnx', _ort_options)
+_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadel_v1.onnx', _ort_options)
+_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadmu_v1.onnx', _ort_options)
 
 class HttProcessor(processor.ProcessorABC):
     def __init__(self, year="2017", jet_arbitration='met', plotopt=0, yearmod="", skipJER=False):
@@ -179,6 +200,8 @@ class HttProcessor(processor.ProcessorABC):
                 "HBHENoiseIsoFilter",
                 "EcalDeadCellTriggerPrimitiveFilter",
                 "BadPFMuonFilter",
+                "BadPFMuonDzFilter",
+                "eeBadScFilter",
             ],
             '2017': [
                 "goodVertices",
@@ -187,6 +210,7 @@ class HttProcessor(processor.ProcessorABC):
                 "HBHENoiseIsoFilter",
                 "EcalDeadCellTriggerPrimitiveFilter",
                 "BadPFMuonFilter",
+                "BadPFMuonDzFilter",
                 "BadChargedCandidateFilter",
                 "eeBadScFilter",
                 "ecalBadCalibFilter",
@@ -198,6 +222,7 @@ class HttProcessor(processor.ProcessorABC):
                 "HBHENoiseIsoFilter",
                 "EcalDeadCellTriggerPrimitiveFilter",
                 "BadPFMuonFilter",
+                "BadPFMuonDzFilter",
                 "BadChargedCandidateFilter",
                 "eeBadScFilter",
                 "ecalBadCalibFilter",
@@ -206,20 +231,8 @@ class HttProcessor(processor.ProcessorABC):
 
         # WPs for btagDeepFlavB (UL)
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
-        self._btagWPs = {
-            '2016preVFP': {
-                'medium': 0.6001,
-            },
-            '2016postVFP': {
-                'medium': 0.5847,
-            },
-            '2017': {
-                'medium': 0.4506,
-            },
-            '2018': {
-                'medium': 0.4168,
-            },
-        }[year+yearmod]
+        self._btagWPs = btagWPs["deepJet"][year + yearmod]
+        #self._btagSF = BTagCorrector('M', "deepJet", year)
 
         jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 40, 200., 1200.)
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
@@ -235,8 +248,8 @@ class HttProcessor(processor.ProcessorABC):
         #ztagger_el_bin = hist.Bin('ztagger_el',r'$Z^{e\tau}_{NN}[Ze\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
         ztagger_mu_bin = hist.Bin('ztagger_mu', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         ztagger_el_bin = hist.Bin('ztagger_el', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.1,0.5,0.8,0.85,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,0.999999,0.9999999,1.000001])
-        massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.,450.,500.])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.8,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,1.000001])
+        massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.])
         massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
         ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 101, 0., 1.01)
         mt_lepmet_bin = hist.Bin('mt_lepmet', r'$m_{T}(\ell, MET)$', 50, 0., 500.)
@@ -257,7 +270,7 @@ class HttProcessor(processor.ProcessorABC):
         met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 100, 0, 1000)
         met_pup_pt_bin = hist.Bin('met_pup_pt', r'PUPPI MET [GeV]', 100, 0, 1000)
         n2b1_bin = hist.Bin('n2b1', r'N_{2}', 2, -1.,1.)
-        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [250,280,300,350,400,500,600,1200])
+        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,300,350,400,1200])
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',4,-0.5,3.5)
@@ -371,21 +384,53 @@ class HttProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
+
+        if isRealData or self._plotopt>0:
+            return self.process_shift(events, None)
+
+        jec_cache = cachetools.Cache(np.inf)
+        nojer = "NOJER" if self._skipJER else ""
+        modlabel = "" if self._year!="2016" else "preVFP" if self._yearmod=="APV" else "postVFP"
+        fatjets = fatjet_factory[f"{self._year}{modlabel}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
+        jets = jet_factory[f"{self._year}{modlabel}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
+        met = met_factory.build(events.MET, jets, {})
+
+        shifts = [
+            ({"Jet": jets, "FatJet": fatjets, "MET": met}, None),
+        ]
+        shifts.extend([
+            ({"Jet": jets.JES_jes.up, "FatJet": fatjets.JES_jes.up, "MET": met.JES_jes.up}, "JESUp"),
+            ({"Jet": jets.JES_jes.down, "FatJet": fatjets.JES_jes.down, "MET": met.JES_jes.down}, "JESDown"),
+            ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.up}, "UESUp"),
+            ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.down}, "UESDown"),
+        ])
+        if not self._skipJER:
+            shifts.extend([
+                ({"Jet": jets.JER.up, "FatJet": fatjets.JER.up, "MET": met.JER.up}, "JERUp"),
+                ({"Jet": jets.JER.down, "FatJet": fatjets.JER.down, "MET": met.JER.down}, "JERDown"),
+            ])
+
+        #for collections, name in shifts:
+        #    self.process_shift(update(events, collections), name)
+
+        return processor.accumulate(self.process_shift(update(events, collections), name) for collections, name in shifts)
+    
+    def process_shift(self, events, shift_name): 
+        isRealData = not hasattr(events, "genWeight")
+        dataset = events.metadata['dataset']
         selection = PackedSelection(dtype="uint64")
         nevents = len(events)
         weights = Weights(nevents, storeIndividual=True)
         output = self.accumulator.identity()
         
-        if not isRealData:
+        if shift_name is None and not isRealData:
             output['sumw'][dataset] = ak.sum(events.genWeight)
             
         # trigger
         triggermasks = {}
         for channel in ["e","mu",'had','met']:
             good_trigs = 0
-            #if isRealData:
             trigger = np.zeros(nevents, dtype='bool')
             for t in self._triggers[channel]:
                 if t in events.HLT.fields:
@@ -408,7 +453,7 @@ class HttProcessor(processor.ProcessorABC):
 
         met_filters = np.ones(nevents, dtype=np.bool)
         for t in self._metFilters:
-            if not isRealData and t in ['eeBadScFilter']:
+            if self._year+self._yearmod in ["2016APV", "2018"] and t in ["BadPFMuonDzFilter"]:
                 continue
             met_filters = met_filters & events.Flag[t]
 
@@ -419,31 +464,7 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('hadmu_trigger',  triggermasks['mu']  & overlap_removal & met_filters)
         selection.add('hadhad_trigger', triggermasks['had'] & overlap_removal & met_filters)
 
-        #jets
-        if hasattr(events, 'FatJet'):
-            fatjets = events.FatJet
-        else:
-            fatjets = events.CustomAK8Puppi
-
-        if not isRealData:
-            jec_cache = cachetools.Cache(np.inf)
-            nojer = "NOJER" if self._skipJER else ""
-            fatjets = fatjet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.FatJet, events.fixedGridRhoFastjetAll), jec_cache)
-            jets = jet_factory[f"{self._year}{self._yearmod}mc{nojer}"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
-            met = met_factory.build(events.MET, jets, {})
-
-            shifts = [
-                ({"Jet": jets, "FatJet": fatjets, "MET": met}, None),
-                ({"Jet": jets.JES_jes.up, "FatJet": fatjets.JES_jes.up, "MET": met.JES_jes.up}, "JESUp"),
-                ({"Jet": jets.JES_jes.down, "FatJet": fatjets.JES_jes.down, "MET": met.JES_jes.down}, "JESDown"),
-                ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.up}, "UESUp"),
-                ({"Jet": jets, "FatJet": fatjets, "MET": met.MET_UnclusteredEnergy.down}, "UESDown"),
-            ]
-            if not self._skipJER:
-                shifts.extend([
-                    ({"Jet": jets.JER.up, "FatJet": fatjets.JER.up, "MET": met.JER.up}, "JERUp"),
-                    ({"Jet": jets.JER.down, "FatJet": fatjets.JER.down, "MET": met.JER.down}, "JERDown"),
-                ])
+        fatjets = events.FatJet 
 
         #fatjets['msdcorr'] = corrected_msoftdrop(fatjets)
         fatjets['rho'] = 2*np.log(fatjets.msoftdrop/fatjets.pt) #for some reason this doesnt set the attribute properly, so you need to refer to it by the string
@@ -582,6 +603,7 @@ class HttProcessor(processor.ProcessorABC):
             (events.Jet.pt > 30.)
             & np.abs((events.Jet.eta) < 2.4)
             & (events.Jet.isTight) 
+            #& (events.Jet.puId > 0)
         ]
 
         #only first 5 jets for some reason
@@ -607,9 +629,9 @@ class HttProcessor(processor.ProcessorABC):
         ak4_away = ak4jets[ak4_ak8_dr > 0.8]
 
         selection.add('antiak4btagMediumOppHem', 
-                ak.max(ak4_away.btagDeepB, 1) <= self._btagWPs['medium'])
+                ak.max(ak4_away.btagDeepB, 1) <= self._btagWPs['M'])
         selection.add('ak4btagMedium08', 
-                ak.max(ak4_away.btagDeepB, 1) > self._btagWPs['medium'])
+                ak.max(ak4_away.btagDeepB, 1) > self._btagWPs['M'])
         #del ak8s
         #del ak4s
         #del ak4_ak8_pair
@@ -657,7 +679,8 @@ class HttProcessor(processor.ProcessorABC):
         goodelectrons = (
             (events.Electron.pt > 25)
             & (np.abs(events.Electron.eta) < 2.4)
-            & ((1.44 < np.abs(events.Electron.eta)) | (np.abs(events.Electron.eta) > 1.57))
+            & (((1.44 > np.abs(events.Electron.eta)) & (np.abs(events.Electron.dz) < 0.1) & (np.abs(events.Electron.dxy) < 0.05)) 
+                | ((np.abs(events.Electron.eta) > 1.57) & (np.abs(events.Electron.dz) < 0.2) & (np.abs(events.Electron.dxy) < 0.1)))
             & (events.Electron.mvaFall17V2noIso_WP90)
         )
         ngoodelectrons = ak.sum(goodelectrons, 1)
@@ -665,8 +688,9 @@ class HttProcessor(processor.ProcessorABC):
 
         electrons = (
             (events.Electron.pt > 10)
-            & ((1.44 < np.abs(events.Electron.eta)) | (np.abs(events.Electron.eta) > 1.57))
             & (np.abs(events.Electron.eta) < 2.4)
+            & (((1.44 > np.abs(events.Electron.eta)) & (np.abs(events.Electron.dz) < 0.1) & (np.abs(events.Electron.dxy) < 0.05)) 
+                | ((np.abs(events.Electron.eta) > 1.57) & (np.abs(events.Electron.dz) < 0.2) & (np.abs(events.Electron.dxy) < 0.1)))
             & (events.Electron.cutBased >= events.Electron.LOOSE)
         )
         nelectrons = ak.sum(electrons, 1)
@@ -850,7 +874,8 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('elecIso', (
             ((leadingelectron.pt > 30 )
             & (leadingelectron.pt < 120)
-            & (leadingelectron.pfRelIso03_all < 0.1))
+            & (leadingelectron.pfRelIso03_all < 0.1)
+            )
             | ((leadingelectron.pt >= 120)
             & (leadingelectron.miniPFRelIso_all < 0.05))
         ))
@@ -858,7 +883,8 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('elecIsoInv', (
             ((leadingelectron.pt > 30 )
             & (leadingelectron.pt < 120)
-            & (leadingelectron.pfRelIso03_all >= 0.1))
+            & (leadingelectron.pfRelIso03_all >= 0.1)
+            )
             | ((leadingelectron.pt >= 120)
             & (leadingelectron.miniPFRelIso_all >= 0.05))
         ))
@@ -879,19 +905,24 @@ class HttProcessor(processor.ProcessorABC):
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
             #del weights
-            #genHTauTauDecay = ak.zeros_like(best_ak8.pt)
+            #genTauTauDecay = ak.zeros_like(best_ak8.pt)
             #genHadTau1Decay = ak.zeros_like(best_ak8.pt)
             #genHadTau2Decay = ak.zeros_like(best_ak8.pt)
             #genTauTaudecay = ak.zeros_like(best_ak8.pt)
         else:
             weights.add('genweight', events.genWeight)
-            #weights.add('L1PreFiring', events.L1PreFiringWeight.Nom, events.L1PreFiringWeight.Up, events.L1PreFiringWeight.Dn)
-            add_pileup_weight(weights, events.Pileup.nPU, self._year+self._yearmod)
-            if "LHEPdfWeight" in events.fields:
+            if self._year in ['2016','2017']:
+                weights.add('L1PreFiring', events.L1PreFiringWeight.Nom, events.L1PreFiringWeight.Up, events.L1PreFiringWeight.Dn)
+            else:
+                weights.add('L1PreFiring', np.ones(len(events)), np.ones(len(events)), np.ones(len(events)))
+            modlabel = "" if self._year!="2016" else "preVFP" if self._yearmod=="APV" else "postVFP"
+            add_pileup_weight(weights, events.Pileup.nPU, self._year+modlabel)
+            #disabling this for now... the scale weights seem extremely large #and PDF weights are all the same 
+            if "LHEPdfWeight" in events.fields and False:
                 add_pdf_weight(weights, events.LHEPdfWeight)
             else:
-                add_pdf_weight(weights, None)
-            if "LHEScaleWeight" in events.fields:
+                add_pdf_weight(weights, [])
+            if "LHEScaleWeight" in events.fields and False:
                 add_scalevar_7pt(weights, events.LHEScaleWeight)
                 add_scalevar_3pt(weights, events.LHEScaleWeight)
             else:
@@ -899,12 +930,15 @@ class HttProcessor(processor.ProcessorABC):
                 add_scalevar_3pt(weights,[])
             add_TopPtReweighting(weights, ak.pad_none(getParticles(events,6,6,['isLastCopy']).pt, 2, clip=True), self._year, dataset) #123 gives a weight of 1
             bosons = getBosons(events)
-            genBosonPt = ak.fill_none(ak.pad_none(bosons.pt, 1, clip=True), 0)
-            add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
+            #genBosonPt = ak.fill_none(ak.pad_none(bosons.pt, 1, clip=True), 0)
+            #add_VJets_NLOkFactor(weights, genBosonPt, self._year, dataset)
+            add_VJets_kFactors(weights, events.GenPart, dataset)
             #genflavor = matchedBosonFlavor(best_ak8, bosons)
-            genlepflavor = matchedBosonFlavorLep(best_ak8, bosons)
+            #genlepflavor = matchedBosonFlavorLep(best_ak8, bosons)
+            genlepflavor = matchedBosonFlavorLep(best_ak8, bosons, maxdR=99.) #dont want to mix wrong jet selection with gen Z flavor
 
-            #genHTauTauDecay, genHadTau1Decay, genHadTau2Decay = getHTauTauDecayInfo(events,True)
+            genTauTauDecay, genHadTau1Decay, genHadTau2Decay = getTauTauDecayInfo(events,True)
+
             w_hadhad = deepcopy(weights)
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
@@ -913,28 +947,39 @@ class HttProcessor(processor.ProcessorABC):
             #also need implementation here
             add_LeptonSFs(w_hadel, leadinglep, self._year+self._yearmod, "elec")
             add_LeptonSFs(w_hadmu, leadinglep, self._year+self._yearmod, "muon")
-            add_METSFs(w_hadhadmet, met.pt, self._year+self._yearmod)
+            add_METSFs(w_hadhadmet, met.pt, self._year+modlabel)
             #add_TriggerWeight(w_hadhad, best_ak8.msoftdrop, best_ak8.pt, leadinglep.pt, self._year, "hadhad")
 
         regions = {
-            'hadhad_signal':               ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met','antiId','jetmet_dphi'],
-            'hadhad_signal_met':           ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphi'],
+            #'hadhad_signal':               ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met','antiId','jetmet_dphi'],
+            #'hadhad_signal_met':           ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphi'],
+            #'hadhad_cr_dphi_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphiInv'],
+            'hadhad_signal':               ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met','jetmet_dphi'],
+            'hadhad_signal_met':           ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','jetmet_dphi'],
+            'hadhad_cr_dphi_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','jetmet_dphiInv'],
             'hadhad_cr_anti_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiIdInv','jetmet_dphi'],
-            'hadhad_cr_dphi_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiId','jetmet_dphiInv'],
             #'hadhad_cr_b':                 ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met'],
-            'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphi'],
+            #'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphi'],
+            #'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphiInv'],
+            'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','jetmet_dphi'],
+            'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','jetmet_dphiInv'],
             'hadhad_cr_b_met_anti_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiIdInv','jetmet_dphi'],
-            'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphiInv'],
             #'hadhad_cr_b_mu':              ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIsoInv'],
-            'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
-            'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphi'],
-            'hadhad_cr_mu_iso':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
+            #'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
+            #'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphi'],
+            #'hadhad_cr_mu_iso':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
+            'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphi'],
+            'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','jetmet_dphi'],
+            'hadhad_cr_mu_iso':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphi'],
             'hadhad_cr_b_mu_iso_anti_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
             'hadhad_cr_mu_anti_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiIdInv','jetmet_dphi'],
             'hadhad_cr_mu_iso_anti_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
-            'hadhad_cr_b_mu_iso_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
-            'hadhad_cr_mu_dphi_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphiInv'],
-            'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
+            #'hadhad_cr_b_mu_iso_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
+            #'hadhad_cr_mu_dphi_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphiInv'],
+            #'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
+            'hadhad_cr_b_mu_iso_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphiInv'],
+            'hadhad_cr_mu_dphi_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','jetmet_dphiInv'],
+            'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphiInv'],
             'hadmu_signal':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_mu'],
             'hadel_signal':          ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_el'],
             'hadmu_cr_ztag_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
@@ -1025,6 +1070,22 @@ class HttProcessor(processor.ProcessorABC):
             ztagger_mu = np.ones(len(events))*1.
             #ztagger_mu_qcd = np.ones(len(events))*1.
             #ztagger_mu_mm = np.ones(len(events))*1.
+#            nn_disc_hadel = np.random.rand(len(events))
+#            nn_disc_hadmu = np.random.rand(len(events))
+#            nn_disc_hadhad = np.random.rand(len(events))
+#            nn_disc_hadhad_qcd = np.random.rand(len(events))
+#            nn_disc_hadhad_wjets = np.random.rand(len(events))
+#    
+#            massreg_hadel = np.random.rand(len(events))
+#            massreg_hadmu = np.random.rand(len(events))
+#            massreg_hadhad = np.random.rand(len(events))
+#    
+#            ptreg_hadel = np.random.rand(len(events))
+#            ptreg_hadmu = np.random.rand(len(events))
+#            ptreg_hadhad = np.random.rand(len(events))
+#    
+#            ztagger_el = np.random.rand(len(events))
+#            ztagger_mu = np.random.rand(len(events))
 
             if ak.sum(best_ak8.pt,0)>0.:
                 inf_results = runInferenceOnnx(events, best_ak8, best_ak8_idx, _ort_sessions, presel=presel)
@@ -1047,7 +1108,9 @@ class HttProcessor(processor.ProcessorABC):
                 ztagger_mu[presel] = np.nan_to_num(inf_results['Ztagger_Zmm_Zhm_v6'][0][:,0], nan=1.)
                 #ztagger_mu_qcd[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,1]
                 #ztagger_mu_mm[presel] = inf_results['Ztagger_Zmm_Zhm_v6_multi'][0][:,2]
-                #del inf_results
+                del inf_results
+                #print([(events.event[presel][ien],events.luminosityBlock[presel][ien],ztagger_mu[presel][ien]) for ien in range(sum(presel))])
+
 
         #print('hadel  ',np.histogram(nn_disc_hadel,bins=np.linspace(-0.1,1.1,13)))
         #print('hadmu  ',np.histogram(nn_disc_hadmu,bins=np.linspace(-0.1,1.1,13)))
@@ -1064,35 +1127,77 @@ class HttProcessor(processor.ProcessorABC):
         selection.add('nn_disc_hadmu', nn_disc_hadmu>0.95)
         selection.add('nn_disc_hadhad', nn_disc_hadhad>0.9999)
 
-        selection.add('ztagger_el', ztagger_el < 0.99)
-        selection.add('ztagger_mu', ztagger_mu < 0.95)
+        selection.add('ztagger_el', ztagger_el < 0.1)
+        selection.add('ztagger_mu', ztagger_mu < 0.5)
         #selection.add('ztagger_mu', ztagger_mu > 0.95) #preUL
-        selection.add('ztagger_elInv', ztagger_el >= 0.99)
-        selection.add('ztagger_muInv', ztagger_mu >= 0.95)
+        selection.add('ztagger_elInv', ztagger_el >= 0.1)
+        selection.add('ztagger_muInv', ztagger_mu >= 0.5)
         #selection.add('ztagger_muInv', ztagger_mu <= 0.95) #preUL
 
-        for r in regions:
-            allcuts_reg = set()
-            output['cutflow_%s'%r][dataset]['none'] += float(w_dict[r].weight().sum())
-            if self._plotopt==0:
-                if 'hadhad' in r:
-                    addcuts = ['methard' if 'met' in r else 'met50','ptreg_hadel','nn_disc_hadhad'] 
-                elif 'hadel' in r:
-                    addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
-                elif 'hadmu' in r:
-                    addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
-            elif self._plotopt==3:
-                addcuts = []
-            else:
-                if 'hadhad' in r:
-                    addcuts = ['nn_disc_hadhad'] 
-                elif 'hadel' in r:
-                    addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
-                elif 'hadmu' in r:
-                    addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
-            for cut in regions[r]+addcuts:
-                allcuts_reg.add(cut)
-                output['cutflow_%s'%r][dataset][cut] += float(w_dict[r].weight()[selection.all(*allcuts_reg)].sum())
+        if not isRealData:
+            zemcut = ak.fill_none(ak.any((genlepflavor!=1), axis=1),True)
+            zttcut = ak.fill_none(ak.any((genlepflavor==1), axis=1),False)
+            selection.add('Zem', zemcut)
+            selection.add('Ztt', zttcut)
+            selection.add('hadhad_genmatch', genTauTauDecay==1.)
+            selection.add('hadel_genmatch', genTauTauDecay==2.)
+            selection.add('hadmu_genmatch', genTauTauDecay==3.)
+
+        if shift_name is None:
+            for r in regions:
+                allcuts_reg = set()
+                if 'cutflow_%s'%r not in output:
+                    continue
+                if 'DYJets' in dataset:
+                    for addname in ['_Zem','_Ztt']:
+                        output['cutflow_%s'%r][dataset+addname]['none'] += float(w_dict[r].weight().sum())
+                elif 'Spin0' in dataset:
+                    for addname in ['','_nomatch']:
+                        output['cutflow_%s'%r][dataset+addname]['none'] += float(w_dict[r].weight().sum())
+                else:
+                    output['cutflow_%s'%r][dataset]['none'] += float(w_dict[r].weight().sum())
+                precuts = []
+                if self._plotopt==0:
+                    if 'hadhad' in r:
+                        if 'met' in r:
+                            precuts.append('methard')
+                            addcuts = []
+                        else:
+                            addcuts = ['met50']
+                        addcuts.extend(['ptreg_hadhad','nn_disc_hadhad'])
+                    elif 'hadel' in r:
+                        addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
+                    elif 'hadmu' in r:
+                        addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
+                elif self._plotopt==3:
+                    addcuts = []
+                else:
+                    if 'hadhad' in r:
+                        addcuts = ['nn_disc_hadhad'] 
+                    elif 'hadel' in r:
+                        addcuts = ['met100','ptreg_hadel','nn_disc_hadel'] 
+                    elif 'hadmu' in r:
+                        addcuts = ['met100','ptreg_hadmu','nn_disc_hadmu']
+                if 'DYJets' in dataset:
+                    for addname in ['Zem','Ztt']:
+                        for cut in precuts+regions[r]+addcuts:
+                            allcuts_reg.add(cut)
+                            output['cutflow_%s'%r][dataset+'_'+addname][cut] += float(w_dict[r].weight()[selection.all(*(allcuts_reg.union({addname})))].sum())
+                elif 'Spin0' in dataset:
+                    if 'hadel' in r:
+                        genmatch = 'hadel_genmatch'
+                    elif 'hadmu' in r:
+                        genmatch = 'hadmu_genmatch'
+                    else:
+                        genmatch = 'hadhad_genmatch'
+                    for addname in ['','_nomatch']:
+                        for cut in precuts+regions[r]+addcuts:
+                            allcuts_reg.add(cut)
+                            output['cutflow_%s'%r][dataset+addname][cut] += float(w_dict[r].weight()[selection.all(*(allcuts_reg.union({} if addname=='_nomatch' else {genmatch})))].sum())
+                else:
+                    for cut in precuts+regions[r]+addcuts:
+                        allcuts_reg.add(cut)
+                        output['cutflow_%s'%r][dataset][cut] += float(w_dict[r].weight()[selection.all(*allcuts_reg)].sum())
 
         systematics = [
             None,
@@ -1102,20 +1207,36 @@ class HttProcessor(processor.ProcessorABC):
             #'btagWeightDown',
             #'btagEffStatUp',
             #'btagEffStatDown',
-            #'TopPtReweightUp',
+            'TopPtReweightUp',
             #'TopPtReweightDown',
-            #'L1PreFiringUp',
-            #'L1PreFiringDown',
+            'L1PreFiringUp',
+            'L1PreFiringDown',
+            #'scalevar_3ptUp',
+            #'scalevar_3ptDown',
+            #'scalevar_7ptUp',
+            #'scalevar_7ptDown',
+            #'PDFaS_weightUp',
+            #'PDFaS_weightDown',
+            #'aS_weightUp',
+            #'aS_weightDown',
+            #'PDF_weightUp',
+            #'PDF_weightDown',
         ]
-        if isRealData:
+        if shift_name is not None:
             systematics = [None]
 
-        def fill(region, systematic, wmod=None, realData=False, addcut=None, addname=""):
+        def fill(region, systematic, wmod=None, realData=False, addcut=None, addname="", shift=None):
             selections = regions[region]
             cut = selection.all(*selections)
             if addcut is not None:
                 cut = cut * addcut
-            sname = 'nominal' if systematic is None else systematic
+            if shift is None:
+                if systematic is None:
+                    sname = 'nominal'
+                else:
+                    sname = systematic
+            else:
+                sname = shift
             if wmod is None:
                 if not realData:
                     weight = w_dict[region].weight(modifier=systematic)
@@ -1244,12 +1365,22 @@ class HttProcessor(processor.ProcessorABC):
         #print('ztagger_el(eh) ',np.histogram(ztagger_el[ak.fill_none(ak.any((genlepflavor==1), axis=1),False)],bins=np.linspace(0.,1.01,102)))
         #print('ztagger_mu(mh) ',np.histogram(ztagger_mu[ak.fill_none(ak.any((genlepflavor==1), axis=1),False)],bins=np.linspace(0.,1.01,102)))
         for region in regions:
-            for systematic in systematics:
-                if 'DYJets' in dataset:
-                    fill(region, systematic, realData=isRealData, addcut=ak.fill_none(ak.any((genlepflavor!=1), axis=1),True), addname="_Zem")
-                    fill(region, systematic, realData=isRealData, addcut=ak.fill_none(ak.any((genlepflavor==1), axis=1),False), addname="_Ztt")
+            if 'Spin0' in dataset:
+                if 'hadel' in region:
+                    genmatch = genTauTauDecay==2.
+                elif 'hadmu' in region:
+                    genmatch = genTauTauDecay==3.
                 else:
-                    fill(region, systematic, realData=isRealData)
+                    genmatch = genTauTauDecay==1.
+            for systematic in systematics if shift_name is None else [None]:
+                if 'DYJets' in dataset:
+                    fill(region, systematic, realData=isRealData, addcut=zemcut, addname="_Zem", shift=shift_name)
+                    fill(region, systematic, realData=isRealData, addcut=zttcut, addname="_Ztt", shift=shift_name)
+                elif 'Spin0' in dataset:
+                    fill(region, systematic, realData=isRealData, addcut=genmatch, addname="", shift=shift_name)
+                    fill(region, systematic, realData=isRealData, addcut=(~genmatch), addname="_nomatch", shift=shift_name)
+                else:
+                    fill(region, systematic, realData=isRealData, shift=shift_name)
 
 #        del w_hadhad
 #        del w_hadhadmet

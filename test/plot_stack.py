@@ -63,11 +63,24 @@ line_opts = {
 overflow_sum = 'all'
 #overflow_sum = 'allnan'
 
-def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,forcetop=[],verbose=False,signame=[],systematic='nominal',qcd_hists=[],qcd_cut_shape={},qcd_cut_num={},qcd_cut_den={},savepng=False):
+def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,regionsel,savename,xlimits='',blind='',solo=False,sigscale=50.,sigstack=False,noratio=False,dosigrat=False,rebin=[1],overflow='none',xlog=False,xexp=False,norm=None,density=False,docomp=False,comp_var=[],comp_cut=[],complabels=[],colormap=True,forcetop=[],verbose=False,signame=[],systematic='nominal',qcd_hists=[],qcd_cut_shape={},qcd_cut_num={},qcd_cut_den={},qcdscale=-1.,qcd_flat_tf=True,savepng=False):
+    print('qcd_cut_shape:',qcd_cut_shape)
+    print('qcd_cut_num:  ',qcd_cut_num)
+    print('qcd_cut_den:  ',qcd_cut_den)
+    qcd_cut_shape = {**vars_cut,**qcd_cut_shape}
+    qcd_cut_num = {**vars_cut,**qcd_cut_num}
+    qcd_cut_den = {**vars_cut,**qcd_cut_den}
+    print('vars_cut     :',vars_cut)
+    print('qcd_cut_shape:',qcd_cut_shape)
+    print('qcd_cut_num:  ',qcd_cut_num)
+    print('qcd_cut_den:  ',qcd_cut_den)
     exceptions = ['process', var_name]
     qcd_shape_exceptions = ['process', var_name]
     qcd_num_exceptions = ['process']
     qcd_den_exceptions = ['process']
+    if not qcd_flat_tf:
+        qcd_num_exceptions.append(var_name)
+        qcd_den_exceptions.append(var_name)
     if systematic != '':
         exceptions.append('systematic')
         qcd_shape_exceptions.append('systematic')
@@ -119,17 +132,24 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             qcd_shape = qcd_shape[:, float(qcd_cut_shape[var_name][0]) if qcd_cut_shape[var_name][0] is not None else None:float(qcd_cut_shape[var_name][1]) if qcd_cut_shape[var_name][1] is not None else None]
     
         for var,val in qcd_cut_num.items():
-            if verbose: print('integrating ',var,val[0],val[1])
-            qcd_num = qcd_num.integrate(var,slice(float(val[0]) if val[0] is not None else None,float(val[1]) if val[1] is not None else None),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
+            if var!=var_name or qcd_flat_tf:
+                if verbose: print('integrating ',var,val[0],val[1])
+                qcd_num = qcd_num.integrate(var,slice(float(val[0]) if val[0] is not None else None,float(val[1]) if val[1] is not None else None),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
+        if var_name in qcd_cut_num.keys() and not qcd_flat_tf:
+            qcd_num = qcd_num[:, float(qcd_cut_num[var_name][0]) if qcd_cut_num[var_name][0] is not None else None:float(qcd_cut_num[var_name][1]) if qcd_cut_num[var_name][1] is not None else None]
     
         for var,val in qcd_cut_den.items():
-            if verbose: print('integrating ',var,val[0],val[1])
-            qcd_den = qcd_den.integrate(var,slice(float(val[0]) if val[0] is not None else None,float(val[1]) if val[1] is not None else None),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
+            if var!=var_name or qcd_flat_tf:
+                if verbose: print('integrating ',var,val[0],val[1])
+                qcd_den = qcd_den.integrate(var,slice(float(val[0]) if val[0] is not None else None,float(val[1]) if val[1] is not None else None),overflow='none' if val[0] is not None and val[1] is not None else 'under' if val[0] is None and val[1] is not None else 'over' if val[0] is not None and val[1] is None else 'allnan')
+        if var_name in qcd_cut_den.keys() and not qcd_flat_tf:
+            qcd_den = qcd_den[:, float(qcd_cut_den[var_name][0]) if qcd_cut_den[var_name][0] is not None else None:float(qcd_cut_den[var_name][1]) if qcd_cut_den[var_name][1] is not None else None]
 
     xaxis = var_name
     x.axis(xaxis).label = var_label
     for ih,hkey in enumerate(x.identifiers('process')):
         x.identifiers('process')[ih].label = process_latex[hkey.name]
+
 
     x.axis('process').sorting = 'integral'
     if (noratio and not dosigrat): fig,ax = plt.subplots()
@@ -140,8 +160,18 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     if len(rebin)==1:
         if (rebin[0]>1): 
             x = x.rebin(xaxis,int(rebin[0]))
+            if len(qcd_hists)==3:
+                qcd_shape = qcd_shape.rebin(xaxis,int(rebin[0]))
+                if not qcd_flat_tf:
+                    qcd_num = qcd_num.rebin(xaxis,int(rebin[0]))
+                    qcd_den = qcd_den.rebin(xaxis,int(rebin[0]))
     else:
         x = x.rebin(xaxis,hist.Bin(xaxis, var_label, rebin))
+        if len(qcd_hists)==3:
+            qcd_shape = qcd_shape.rebin(xaxis,hist.Bin(xaxis, var_label, rebin))
+            if not qcd_flat_tf:
+                qcd_num = qcd_num.rebin(xaxis,hist.Bin(xaxis, var_label, rebin))
+                qcd_den = qcd_den.rebin(xaxis,hist.Bin(xaxis, var_label, rebin))
  
     if (solo):
         if (sample=='sig'):
@@ -167,10 +197,14 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             x = x[nobkg]
         elif (sample=='bkg'):
             x = x[nosig]
+        elif (sample=='qcdest'):
+            x_data = x['data']
+            x = x[noqcd]
         elif (sample!='all'):
             x = x[sample]
 
         x = x.sum(*[ax for ax in h.axes() if ax.name=='process'])
+        if sample=='qcdest': x_data = x_data.sum(*[ax for ax in h.axes() if ax.name=='process'])
 
         comp_axis = hist.Cat('compsel', 'Selections')
         comp_map = {}
@@ -185,8 +219,10 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         cmax = [len(c) for c in comp_cut]
         while clis[-1] < cmax[-1]:
             tmpx = x
+            if sample=='qcdest': tmpx_data = x_data
             for ic in range(len(comp_cut)):
                 tmpx = tmpx.integrate(comp_var[ic],slice(comp_cut[ic][clis[ic]][0],comp_cut[ic][clis[ic]][1]))
+                if sample=='qcdest': tmpx_data = tmpx_data.integrate(comp_var[ic],slice(comp_cut[ic][clis[ic]][0],comp_cut[ic][clis[ic]][1]))
             slicesum = False
             for key,val in tmpx.values().items():
                 if val.sum() > 0.:
@@ -201,14 +237,22 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         #{'new_bin': (slice, ...), ...}
         if verbose: print(comp_map)
         x = x.group(old_axes=tuple(comp_var), new_axis=comp_axis, mapping=comp_map)
+        if sample=='qcdest': 
+            x_data = x_data.group(old_axes=tuple(comp_var), new_axis=comp_axis, mapping=comp_map)
+            x.scale(-1.)
+            x.add(x_data)
         if verbose: print(x.values())
-        hist.plot1d(x,
+        totalsum = 0.
+        for key,val in x.values().items():
+            totalsum+=val.sum()
+        if totalsum>0.:
+            hist.plot1d(x,
                 overlay='compsel',ax=ax,
                 clear=False,
                 stack=False,
                 line_opts={
                     'linewidth':2,
-                    'drawstyle':'steps'
+                    #'drawstyle':'steps'
                 },
                 density=density,
                 binwnorm=norm,
@@ -261,19 +305,41 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
             qcd_den = qcd_den[noqcd].sum('process')
             qcd_den.scale(lumifb)
             qcd_den = qcd_den_data.values()[()] - qcd_den.values()[()]
-            qcd_ratio = qcd_num/qcd_den if qcd_den!=0. else qcd_num
-            if qcd_ratio<0.: qcd_ratio = -qcd_ratio
+            if qcd_flat_tf:
+                qcd_ratio = qcd_num/qcd_den if qcd_den!=0. else qcd_num
+                if qcd_ratio<0.: qcd_ratio = 0.
+            else:
+                print(qcd_num)
+                print(qcd_den)
+                qcd_ratio = np.divide(qcd_num,qcd_den, out=np.zeros_like(qcd_num), where=qcd_den!=0.)
+                qcd_ratio[qcd_ratio<0.] = 0.
+            print('QCD est: ',qcd_shape_data,qcd_shape_data.values(),qcd_shape,qcd_num,qcd_den)
 
             x_qcd = x_nosig['qcd'].copy()
             x_qcd.clear()
             x_nosig = x_nosig.remove([iq for iq in x_nosig.axis('process').identifiers() if iq.name=='qcd'],'process')
+
             qcdfill = np.array(sum([[qcd_shape_data.axis(var_name).centers()[ibin]]*int(qcd_shape_data.values()[()][ibin]) for ibin in range(len(qcd_shape))],[]))
             qcdw = np.array(sum([[qcd_shape[ibin]/(qcd_shape_data.values()[()][ibin]) if qcd_shape[ibin]>0. else 0.]*int(qcd_shape_data.values()[()][ibin]) for ibin in range(len(qcd_shape))],[]))
-            print(qcd_shape)
-            print(np.mean(qcdw))
-            print(qcd_ratio)
-            x_qcd.fill(**{'process':'qcd',var_name:qcdfill,'weight':qcdw*qcd_ratio})
+            #print('qcd_shape: ',qcd_shape)
+            #print('qcdw: ',np.mean(qcdw))
+            #print('ratio: ',qcd_num,'/',qcd_den,' = ',qcd_ratio)
+            if qcd_flat_tf:
+                x_qcd.fill(**{'process':'qcd',var_name:qcdfill,'weight':qcdw*qcd_ratio})
+            else:
+                qcdi = np.array(sum([[ibin]*int(qcd_shape_data.values()[()][ibin]) for ibin in range(len(qcd_shape))],[]))
+                x_qcd.fill(**{'process':'qcd',var_name:qcdfill,'weight':qcdw*qcd_ratio[qcdi]})
+            if not qcdscale>-1.:
+                datatotal = x['data'].copy()
+                nonqcdtotal = x_nosig[noqcd].copy()
+                qcdpred = x_qcd['qcd'].copy()
+                qcdscale = (datatotal.sum('process').sum(var_name).values()[()] - nonqcdtotal.sum('process').sum(var_name).values()[()])/qcdpred.sum('process').sum(var_name).values()[()]
+                if qcdscale<0.: qcdscale = 0.
+                if qcdscale>100.: qcdscale = 100.
+            x_nosig['qcd'].clear()
             x_nosig = x_nosig.add(x_qcd)
+        if (qcdscale>-1.): x_nosig.scale({'qcd':qcdscale}, axis="process")
+        else: qcdscale = 1.
     
         if verbose: print(x_nobkg.identifiers('process'))
     
@@ -423,6 +489,7 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
         if verbose: print('MC: %.4f Sig: %.4f S/sqrt(B): %.4f - Data: %.4f'%(all_bkg,all_sig,all_sig/math.sqrt(all_bkg),all_data if blindi==0 else 0.))
 
     ax.autoscale(axis='x', tight=True)
+    ax.autoscale(axis='y')
     if len(xlimits)==2:
         try:
             ax.set_xlim(float(xlimits[0]), None)
@@ -460,6 +527,8 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     for xl in old_labels:
         #if (('H(125)' in xl or '\phi' in xl) and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
         if (('\phi' in xl) and sigscale!=1): xl = xl + " (x " + str(sigscale) + ")"
+        if (('Multijet' in xl) and abs(1.-abs(qcdscale))>0.01): 
+            xl = xl + " (x %.2f)"%qcdscale
         new_labels.append(xl)
     if "Stat. Unc." in new_labels:
         new_labels = new_labels[new_labels.index("Stat. Unc.")-1::-1] + [new_labels[new_labels.index("Stat. Unc.")]] + new_labels[:new_labels.index("Stat. Unc."):-1] 
@@ -498,11 +567,23 @@ def drawStack(h,sel,var_name,var_label,plottitle,sample,lumifb,vars_cut,sig_cut,
     if (docomp or solo) and density:
         ax.set_ylim(ax.get_ylim()[1]/10.,ax.get_ylim()[1]*80.)
     else:
-        ax.set_ylim(logmin/10. if logmin>1. else 0.1, ax.get_ylim()[1]*80.)
+        #ax.set_ylim(logmin/10. if logmin>1. else 0.1, ax.get_ylim()[1]*80.)
+        ax.set_ylim(0.1, ax.get_ylim()[1]*80.)
     fig.savefig("%s_%s_%s_%s_lumi%i%s_logy.%s"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else ''),"png" if savepng else "pdf"))
     if verbose: print("%s_%s_%s_%s_lumi%i%s_logy.pdf"%(('solo' if solo else 'comp' if docomp else 'stack'),sel,var_name,savename,lumifb,('_xexp' if xexp else '_xlog' if xlog else '')))
 
     plt.close('all') 
+
+def makeSel(sellist, base_dict = {}):
+    if (len(sellist)%3==0):
+        for vi in range(int(len(sellist)/3)):
+            if (sellist[vi*3+1]=='neginf'):
+                base_dict[sellist[vi*3]] = [None, float(sellist[vi*3+2])]
+            elif (sellist[vi*3+2]=='inf'):
+                base_dict[sellist[vi*3]] = [float(sellist[vi*3+1]), None]
+            else:
+                base_dict[sellist[vi*3]] = [float(sellist[vi*3+1]), float(sellist[vi*3+2])]
+    return base_dict
 
 def getPlots(args,returnHist=False):
     if args.verbose: print(args.lumi)
@@ -559,36 +640,11 @@ def getPlots(args,returnHist=False):
     var_name = args.var
     var_label = r"%s"%args.varlabel
     #print(args.sel)
-    def makeSel(sellist, base_dict = {}):
-      if (len(sellist)%3==0):
-        for vi in range(int(len(sellist)/3)):
-          if (sellist[vi*3+1]=='neginf'):
-            base_dict[sellist[vi*3]] = [None, float(sellist[vi*3+2])]
-          elif (sellist[vi*3+2]=='inf'):
-            base_dict[sellist[vi*3]] = [float(sellist[vi*3+1]), None]
-          else:
-            base_dict[sellist[vi*3]] = [float(sellist[vi*3+1]), float(sellist[vi*3+2])]
-      return base_dict
+
     vars_cut = makeSel(args.sel, {})
-#    if (len(args.sel)%3==0):
-#      for vi in range(int(len(args.sel)/3)):
-#        if (args.sel[vi*3+1]=='neginf'):
-#          vars_cut[args.sel[vi*3]] = [None, float(args.sel[vi*3+2])]
-#        elif (args.sel[vi*3+2]=='inf'):
-#          vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), None]
-#        else:
-#          vars_cut[args.sel[vi*3]] = [float(args.sel[vi*3+1]), float(args.sel[vi*3+2])]
     if args.verbose: print(vars_cut)
     sig_cut = makeSel(args.sigsel, {})
-#    if (len(args.sigsel)%3==0):
-#      for vi in range(int(len(args.sigsel)/3)):
-#        if (args.sigsel[vi*3+1]=='neginf'):
-#          sig_cut[args.sigsel[vi*3]] = [None, float(args.sigsel[vi*3+2])]
-#        elif (args.sigsel[vi*3+2]=='inf'):
-#          sig_cut[args.sigsel[vi*3]] = [float(args.sigsel[vi*3+1]), None]
-#        else:
-#          sig_cut[args.sigsel[vi*3]] = [float(args.sigsel[vi*3+1]), float(args.sigsel[vi*3+2])]
-#    if args.verbose: print(sig_cut)
+    if args.verbose: print(sig_cut)
     qcd_cut_shape = makeSel(args.qcdshapesel, vars_cut.copy())
     qcd_cut_num = makeSel(args.qcdnumsel, vars_cut.copy())
     qcd_cut_den = makeSel(args.qcddensel, vars_cut.copy())
@@ -624,7 +680,7 @@ def getPlots(args,returnHist=False):
     if args.verbose: print('rebin',args.rebin)
 
     if not returnHist:
-        drawStack(hist_mapped,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,'',savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors,args.forcetop,args.verbose,args.signame,systematic=args.systematic,qcd_hists=qcd_hists,qcd_cut_shape=qcd_cut_shape,qcd_cut_num=qcd_cut_num,qcd_cut_den=qcd_cut_den,savepng=args.png)
+        drawStack(hist_mapped,args.hist,var_name,var_label,args.title,args.sample,lumifb,vars_cut,sig_cut,'',savename,args.xlimits,args.blind,args.solo,args.sigscale,args.sigstack,args.noratio,args.dosigrat,args.rebin,args.overflow,args.xlog,args.xexp,normed,args.density,args.comp,comp_var,comp_cut,comp_labels,args.defcolors,args.forcetop,args.verbose,args.signame,systematic=args.systematic,qcd_hists=qcd_hists,qcd_cut_shape=qcd_cut_shape,qcd_cut_num=qcd_cut_num,qcd_cut_den=qcd_cut_den,qcdscale=args.qcdscale,qcd_flat_tf=args.qcdflattf,savepng=args.png)
         os.chdir(pwd)
         return None
 
@@ -680,6 +736,8 @@ if __name__ == "__main__":
     parser.add_argument('--qcdshapesel', dest='qcdshapesel', default='',           help='qcdshapesel',            nargs='+')
     parser.add_argument('--qcdnumsel',   dest='qcdnumsel',   default='',           help='qcdnumsel',              nargs='+')
     parser.add_argument('--qcddensel',   dest='qcddensel',   default='',           help='qcddensel',              nargs='+')
+    parser.add_argument('--qcdscale',    dest='qcdscale',    default=-1.,          help='qcdscale',    type=float)
+    parser.add_argument('--qcdflattf',   dest='qcdflattf',   action='store_true',  help='qcdflattf')
     args = parser.parse_args()
 
     getPlots(args)

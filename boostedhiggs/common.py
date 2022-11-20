@@ -12,7 +12,7 @@ dataset_ordering = {
 pd_to_trig = {
   '2016':{
     "Ele27_WPTight_Gsf":'SingleElectron',
-    "Ele105_CaloIdVT_GsfTrkIdT":'SingleElectron',
+    "Ele115_CaloIdVT_GsfTrkIdT":'SingleElectron',
     "Photon175":'SingleElectron',
     "Mu50":'SingleMuon',
     "TkMu50":'SingleMuon',
@@ -164,7 +164,7 @@ def matchedBosonFlavorLep(candidates, bosons, maxdR=0.8):
               + (ak.all((childid != 15) & (childid != 13) & (childid != 11), -1)) * 0
     return ak.fill_none(genflavor, 0)
 
-def getHTauTauDecayInfo(events,mod=False):
+def getTauTauDecayInfo(events,mod=False):
     genvistau_higgs = events.GenVisTau
     ngenvistau_higgs = ak.sum(ak.fill_none(genvistau_higgs.pt,0)>0., -1)
 
@@ -211,22 +211,22 @@ def getHTauTauDecayInfo(events,mod=False):
                 ak.pad_none(
                     genvistau_higgs[:,1:2].status, 1,clip=True), 15))
 
-    genHTauTauDecay = np.zeros_like(ngenvistau_higgs)
+    genTauTauDecay = np.zeros_like(ngenvistau_higgs)
     genHadTau1Decay = np.zeros_like(ngenvistau_higgs)
     genHadTau2Decay = np.zeros_like(ngenvistau_higgs)
     '''
     Meant to encode what really happened. ie tt->?? or tt->ee or tt->mumu, etc
     '''
-    genHTauTauDecay = np.zeros_like(ngenvistau_higgs) + 1*np.array((ngenvistau_higgs==2) & (nel_taus==0) & (nmu_taus==0)).astype(int) + 2*np.array((ngenvistau_higgs==1) & (nel_taus==1) & (nmu_taus==0)).astype(int) + 3*np.array((ngenvistau_higgs==1) & (nel_taus==0) & (nmu_taus==1)).astype(int) + 4*np.array((ngenvistau_higgs==0) & (nel_taus==1) & (nmu_taus==1)).astype(int) + 5*np.array((ngenvistau_higgs==0) & (nel_taus==2) & (nmu_taus==0)).astype(int) + 6*np.array((ngenvistau_higgs==0) & (nel_taus==0) & (nmu_taus==2)).astype(int)
+    genTauTauDecay = np.zeros_like(ngenvistau_higgs) + 1*np.array((ngenvistau_higgs==2) & (nel_taus==0) & (nmu_taus==0)).astype(int) + 2*np.array((ngenvistau_higgs==1) & (nel_taus==1) & (nmu_taus==0)).astype(int) + 3*np.array((ngenvistau_higgs==1) & (nel_taus==0) & (nmu_taus==1)).astype(int) + 4*np.array((ngenvistau_higgs==0) & (nel_taus==1) & (nmu_taus==1)).astype(int) + 5*np.array((ngenvistau_higgs==0) & (nel_taus==2) & (nmu_taus==0)).astype(int) + 6*np.array((ngenvistau_higgs==0) & (nel_taus==0) & (nmu_taus==2)).astype(int)
     if mod:
         '''
         Flip the sign if it was because of some failed gen matching
         '''
-        genHTauTauDecay = genHTauTauDecay * \
+        genTauTauDecay = genTauTauDecay * \
                 ak.fill_none(ak.to_numpy(ak.any((tau_pair_dr<0.8) & (tau_pair_dr>0.), -1) 
-                            & ak.all(tau_pt[:,:2]>25., -1)), 0)
+                            & ak.all(tau_pt[:,:2]>25., -1)), 1)
     else:
-        genHTauTauDecay = genHTauTauDecay * (2*ak.fill_none(ak.to_numpy( 
+        genTauTauDecay = genTauTauDecay * (2*ak.fill_none(ak.to_numpy( 
             ak.any((tau_pair_dr<0.8) & (tau_pair_dr>0.), 1) 
             & ak.all(tau_pt[:,:2]>25., 1)),0) - 1)
     genHadTau1Decay = 0 \
@@ -237,4 +237,4 @@ def getHTauTauDecayInfo(events,mod=False):
                     + 1*np.array((genvistau2_decay==0)).astype(int) \
                     + 2*np.array((genvistau2_decay==1)  | (genvistau2_decay==2)).astype(int) \
                     + 3*np.array((genvistau2_decay==10) | (genvistau2_decay==11)).astype(int)
-    return genHTauTauDecay, genHadTau1Decay, genHadTau2Decay
+    return genTauTauDecay, genHadTau1Decay, genHadTau2Decay

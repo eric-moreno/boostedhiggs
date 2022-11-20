@@ -63,9 +63,10 @@ special_char_list = ['_','-']
 def getindices(s):
     return [i for i, c in enumerate(s) if c.isupper() or c in special_char_list]
 
-def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
+def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True,savepng=False):
 
     cutlist = []
+    print(h)
     for c in h[list(h.keys())[0]]:
         cutlist.append(c)
 
@@ -180,7 +181,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
 
     ax.autoscale(axis='x', tight=True)
     #ax.set_xlim(20, 200)
-    ax.set_ylim(0, None)
+    ax.set_ylim(0, ax.get_ylim()[1]*10.)
     plt.xticks(range(len(cutnames)), cutnames, rotation=60)
     #ax.ticklabel_format(axis='x', style='sci')
     old_handles, old_labels = ax.get_legend_handles_labels()
@@ -191,7 +192,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     if "Stat. Unc." in new_labels:
         new_labels = new_labels[new_labels.index("Stat. Unc.")-1::-1] + [new_labels[new_labels.index("Stat. Unc.")]] + new_labels[:new_labels.index("Stat. Unc."):-1] 
         old_handles = old_handles[new_labels.index("Stat. Unc.")-1::-1] + [old_handles[new_labels.index("Stat. Unc.")]] + old_handles[:new_labels.index("Stat. Unc."):-1] 
-    leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='lower left')
+    leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='upper right',ncol=3)
     lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     cmstext = plt.text(0., 1., "CMS",fontsize=19,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
     addtext = plt.text(0.085, 1., "Simulation Preliminary",fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
@@ -216,7 +217,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
                                       numticks=100)
     ax.yaxis.set_minor_locator(locmin)
     ax.yaxis.set_minor_formatter(mpltick.NullFormatter())
-    fig.savefig("cutflow_%s_lumi%i_logy.pdf"%(regionsel,lumifb))
+    fig.savefig("cutflow_%s_lumi%i_logy.%s"%(regionsel,lumifb,"png" if savepng else "pdf"))
 
 #----------------------------
     fig,ax = plt.subplots()
@@ -242,7 +243,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     new_labels = []
     for xl in old_labels:
         new_labels.append(xl)
-    leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='lower left')
+    leg = ax.legend(handles=old_handles,labels=new_labels,title=r'$%s$'%plottitle,frameon=True,framealpha=1.0,facecolor='white',loc='upper right',ncol=3)
     lumi = plt.text(1., 1., r"%.1f fb$^{-1}$ (13 TeV)"%lumifb,fontsize=16,horizontalalignment='right',verticalalignment='bottom',transform=ax.transAxes)
     cmstext = plt.text(0., 1., "CMS",fontsize=20,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, fontweight='bold')
     addtext = plt.text(0.085, 1., "Simulation Preliminary",fontsize=16,horizontalalignment='left',verticalalignment='bottom',transform=ax.transAxes, style='italic')
@@ -251,7 +252,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
     minvals = []
     for xd in x.values():
         if (min(np.trim_zeros(x.values()[xd]))>0.): minvals.append(min(np.trim_zeros(x.values()[xd]))) 
-    ax.set_ylim(10.**float(math.floor(math.log10(min(minvals)))))
+    ax.set_ylim(10.**float(math.floor(math.log10(min(minvals)))), ax.get_ylim()[1]*10.)
     ylo, yhi = ax.get_ylim()
     nticksy = int(math.floor(math.log10(yhi))-math.floor(math.log10(ylo)))+2
 
@@ -263,7 +264,7 @@ def drawCutflow(h,plottitle,lumifb,regionsel,colormap=True):
                                       numticks=100)
     ax.yaxis.set_minor_locator(locmin)
     ax.yaxis.set_minor_formatter(mpltick.NullFormatter())
-    fig.savefig("cuteff_%s_lumi%i_logy.pdf"%(regionsel,lumifb))
+    fig.savefig("cuteff_%s_lumi%i_logy.%s"%(regionsel,lumifb,"png" if savepng else "pdf"))
 
     plt.close('all') 
 
@@ -307,7 +308,7 @@ def getPlots(args):
     
     os.chdir(odir)
     for ir,r in enumerate(args.regions):
-        drawCutflow(dict_mapped[r],args.title[ir],lumifb,r, args.defcolors)
+        drawCutflow(dict_mapped[r],args.title[ir],lumifb,r, colormap=args.defcolors, savepng=args.png)
 
     os.chdir(pwd)
     del dict_mapped
@@ -321,6 +322,9 @@ if __name__ == "__main__":
     parser.add_argument('--lumi',       dest='lumi',      default=50.,          help="lumi",       type=float)
     parser.add_argument('--regions',    dest='regions',   default='',           help='regionsel',  nargs='+')
     parser.add_argument('--defcolors',  dest='defcolors', action='store_false', help='defcolors')
+    parser.add_argument('--png',        dest='png',       action='store_true',  help='png')
     args = parser.parse_args()
+
+
 
     getPlots(args)

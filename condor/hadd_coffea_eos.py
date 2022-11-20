@@ -1,5 +1,4 @@
 #!/usr/bin/python
-from coffea import hist
 import json
 import os
 import subprocess
@@ -10,7 +9,9 @@ import pickle
 from os import listdir
 from os.path import isfile, join
 
-def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, chunk_size):
+from coffea import hist
+
+def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, chunk_size, f_resub):
 
     if not samples:
         onlyfiles = [f[:-4] for f in os.listdir("condor/"+indir+"/") if os.path.isfile(os.path.join("condor/"+indir+"/", f)) and f.endswith(".jdl")]
@@ -35,7 +36,7 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
         onlyfiles.remove(f)
  
     if not missing_files or ignore:
-        if not not missing_files:
+        if missing_files:
             print('Missing files (ignoring them):')
             print(missing_files)
         chunk_names = []
@@ -47,13 +48,19 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
               x = "%s/outfiles/%s.hist"%(indir,fi)
               os.system("xrdcp -f root://cmseos.fnal.gov/%s%s condor/%s/"%(eosdir,x,indir))
               with open("condor/%s/%s.hist"%(indir,fi), 'rb') as f:
-                flist.append(pickle.load(f))
+                try:
+                  flist.append(pickle.load(f))
+                except:
+                  print('Problem loading %s, skipping...'%fi)
           else:
             for fi in onlyfiles[i:]:
               x = "%s/outfiles/%s.hist"%(indir,fi)
               os.system("xrdcp -f root://cmseos.fnal.gov/%s%s condor/%s/"%(eosdir,x,indir))
               with open("condor/%s/%s.hist"%(indir,fi), 'rb') as f:
-                flist.append(pickle.load(f))
+                try:
+                  flist.append(pickle.load(f))
+                except:
+                  print('Problem loading %s, skipping...'%fi)
         
           for key in flist[0]:
             if isinstance(flist[0][key], hist.Hist):
@@ -107,16 +114,21 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
         print('scaling using',scale1fb)
 
         dylist = []
+        philist = []
         for s in samples:
             if s not in scale1fb: scale1fb[s] = 1.
         for da in scale1fb:
             if "DYJets" in da:
                 dylist.append(da)
+            elif "Spin0" in da:
+                philist.append(da)
         for dy in dylist:
             scale1fb[dy+"_Zee"] = scale1fb[dy]
             scale1fb[dy+"_Zem"] = scale1fb[dy]
             scale1fb[dy+"_Zmm"] = scale1fb[dy]
             scale1fb[dy+"_Ztt"] = scale1fb[dy]
+        for phi in philist:
+            scale1fb[phi+"_nomatch"] = scale1fb[phi]
         
         print('noscale =',noscale)
         if not noscale:
@@ -139,28 +151,206 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
     
     else:
         for mf in missing_files:
-            #if (not noresub): os.system('condor_submit condor/%s/%s.jdl;'%(indir,mf))
-            print('File: %s.jdl resubmitted succesfully!'%mf)
+            if (not noresub): 
+                #os.system('condor_submit condor/%s/%s.jdl;'%(indir,mf))
+                f_resub.write('condor_submit condor/%s/%s.jdl\n'%(indir,mf))
+            print('File: %s.jdl flagged succesfully!'%mf)
 
 #python hadd_coffea_eos.py Apr30
 #python hadd_coffea_eos.py Sep17 --samples DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-200to400_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-1200to2500_TuneCP5_13TeV-madgraphMLM-pythia8 DYJetsToLL_M-50_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8 --outname hists_sum_zll
 samp_dict = {
-    '2016':{
-        "SingleElectron":[
-            "SingleElectron",
+    '2016APV':{
+        "ST":[
+            'ST_s-channel_4f_leptonDecays',
+            'ST_s-channel_4f_hadronicDecays',
+            'ST_t-channel_antitop_4f_InclusiveDecays',
+            'ST_t-channel_top_4f_InclusiveDecays',
+            'ST_tW_antitop_5f_inclusiveDecays',
+            'ST_tW_top_5f_inclusiveDecays',
         ],
-        "SingleMuon":[
-            "SingleMuon",
+        "VJetsToQQ":[
+            'WJetsToQQ_HT-400to600',
+            'WJetsToQQ_HT-600to800',
+            'WJetsToQQ_HT-800toInf',
+            'ZJetsToQQ_HT-400to600',
+            'ZJetsToQQ_HT-800toInf',
+            'ZJetsToQQ_HT-600to800',
+        ],
+        "VV":[
+            'WW',
+            'WZ',
+            'ZZ',
         ],
         "WJetsToLNu":[
-            "WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8",
-            "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8",
+            'WJetsToLNu_HT-100To200',
+            'WJetsToLNu_HT-1200To2500',
+            'WJetsToLNu_HT-800To1200',
+            'WJetsToLNu_HT-600To800',
+            'WJetsToLNu_HT-2500ToInf',
+            'WJetsToLNu_HT-200To400',
+            'WJetsToLNu_HT-70To100',
+            'WJetsToLNu_HT-400To600',
+        ],
+        "QCD":[
+            'QCD_Pt_3200toInf',
+            'QCD_Pt_1400to1800',
+            'QCD_Pt_170to300',
+            'QCD_Pt_300to470',
+            'QCD_Pt_470to600',
+            'QCD_Pt_1000to1400',
+            'QCD_Pt_2400to3200',
+            'QCD_Pt_600to800',
+            'QCD_Pt_800to1000',
+            'QCD_Pt_1800to2400',
+        ],
+        "TT":[
+            'TTToSemiLeptonic',
+            'TTToHadronic',
+            'TTTo2L2Nu',
+        ],
+        "DYJetsToLL":[
+            'DYJetsToLL_Pt-50To100',
+            'DYJetsToLL_Pt-100To250',
+            'DYJetsToLL_Pt-250To400',
+            'DYJetsToLL_Pt-400To650',
+            'DYJetsToLL_Pt-650ToInf',
+        ],
+        "HTauTau":[
+            'GluGluHToTauTau',
+            'VBFHToTauTau',
+            'WminusHToTauTau',
+            'WplusHToTauTau',
+            'ZHToTauTau',
+            'ttHToTauTau',
+        ],
+        "MET":[
+            'MET_Run2016B_ver2_HIPM',
+            'MET_Run2016C_HIPM',
+            'MET_Run2016D_HIPM',
+            'MET_Run2016E_HIPM',
+            'MET_Run2016F_HIPM',
+        ],
+        "SingleElectron":[
+            'SingleElectron_Run2016B_ver2_HIPM',
+            'SingleElectron_Run2016C_HIPM',
+            'SingleElectron_Run2016D_HIPM',
+            'SingleElectron_Run2016E_HIPM',
+            'SingleElectron_Run2016F_HIPM',
+        ],
+        "SingleMuon":[
+            'SingleMuon_Run2016B_ver2_HIPM',
+            'SingleMuon_Run2016C_HIPM',
+            'SingleMuon_Run2016D_HIPM',
+            'SingleMuon_Run2016E_HIPM',
+            'SingleMuon_Run2016F_HIPM',
+        ],
+        "Spin0ToTauTau":[
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
+        ],
+    },
+    '2016':{
+        "ST":[
+            'ST_s-channel_4f_leptonDecays',
+            'ST_s-channel_4f_hadronicDecays',
+            'ST_t-channel_antitop_4f_InclusiveDecays',
+            'ST_t-channel_top_4f_InclusiveDecays',
+            'ST_tW_antitop_5f_inclusiveDecays',
+            'ST_tW_top_5f_inclusiveDecays',
+        ],
+        "VJetsToQQ":[
+            'WJetsToQQ_HT-400to600',
+            'WJetsToQQ_HT-600to800',
+            'WJetsToQQ_HT-800toInf',
+            'ZJetsToQQ_HT-400to600',
+            'ZJetsToQQ_HT-800toInf',
+            'ZJetsToQQ_HT-600to800',
+        ],
+        "VV":[
+            'WW',
+            'WZ',
+            'ZZ',
+        ],
+        "WJetsToLNu":[
+            'WJetsToLNu_HT-100To200',
+            'WJetsToLNu_HT-1200To2500',
+            'WJetsToLNu_HT-800To1200',
+            'WJetsToLNu_HT-600To800',
+            'WJetsToLNu_HT-2500ToInf',
+            'WJetsToLNu_HT-200To400',
+            'WJetsToLNu_HT-70To100',
+            'WJetsToLNu_HT-400To600',
+        ],
+        "QCD":[
+            'QCD_Pt_3200toInf',
+            'QCD_Pt_1400to1800',
+            'QCD_Pt_170to300',
+            'QCD_Pt_300to470',
+            'QCD_Pt_470to600',
+            'QCD_Pt_1000to1400',
+            'QCD_Pt_2400to3200',
+            'QCD_Pt_600to800',
+            'QCD_Pt_800to1000',
+            'QCD_Pt_1800to2400',
+        ],
+        "TT":[
+            'TTToSemiLeptonic',
+            'TTToHadronic',
+            'TTTo2L2Nu',
+        ],
+        "DYJetsToLL":[
+            'DYJetsToLL_Pt-50To100',
+            'DYJetsToLL_Pt-100To250',
+            'DYJetsToLL_Pt-250To400',
+            'DYJetsToLL_Pt-400To650',
+            'DYJetsToLL_Pt-650ToInf',
+        ],
+        "HTauTau":[
+            'GluGluHToTauTau',
+            'VBFHToTauTau',
+            'WminusHToTauTau',
+            'WplusHToTauTau',
+            'ZHToTauTau',
+            'ttHToTauTau',
+        ],
+        "MET":[
+            'MET_Run2016F',
+            'MET_Run2016G',
+            'MET_Run2016H',
+        ],
+        "SingleElectron":[
+            'SingleElectron_Run2016F',
+            'SingleElectron_Run2016G',
+            'SingleElectron_Run2016H',
+        ],
+        "SingleMuon":[
+            'SingleMuon_Run2016F',
+            'SingleMuon_Run2016G',
+            'SingleMuon_Run2016H',
+        ],
+        "Spin0ToTauTau":[
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
         ],
     },
     '2017':{
@@ -187,9 +377,12 @@ samp_dict = {
             'QCD_Pt_1800to2400',
         ],
         "ST":[
-            'ST_tW_top_5f_inclusiveDecays',
             'ST_s-channel_4f_leptonDecays',
+            'ST_s-channel_4f_hadronicDecays',
+            'ST_t-channel_antitop_4f_InclusiveDecays',
+            'ST_t-channel_top_4f_InclusiveDecays',
             'ST_tW_antitop_5f_inclusiveDecays',
+            'ST_tW_top_5f_inclusiveDecays',
         ],
         "TT":[
             'TTToSemiLeptonic',
@@ -214,16 +407,12 @@ samp_dict = {
             'WJetsToQQ_HT-800toInf',
             'WJetsToQQ_HT-400to600',
         ],
+        "VV":[
+            'WW',
+            'WZ',
+            'ZZ',
+        ],
         "HTauTau":[
-            #"GluGluHToTauTau_M125_13TeV_powheg_pythia8",
-            #"VBFHToTauTau_M125_13TeV_powheg_pythia8",
-            #"WminusHToTauTau_M125_13TeV_powheg_pythia8",
-            #"WplusHToTauTau_M125_13TeV_powheg_pythia8",
-            #"ZHToTauTau_M125_13TeV_powheg_pythia8",
-            #"ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8",
-            #"ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8",
-            #"ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8",
-            #"ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8",
             "GluGluHToTauTau",
             "VBFHToTauTau",
             "WminusHToTauTau",
@@ -233,9 +422,16 @@ samp_dict = {
         ],
         "Spin0ToTauTau":[
             'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
         ],
         "SingleElectron":[
@@ -262,82 +458,99 @@ samp_dict = {
     },
     '2018':{
         "DYJetsToLL":[
-            'DYJetsToLL_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8',
-            'DYJetsToLL_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8',
-            'DYJetsToLL_Pt-400To650_TuneCP5_13TeV-amcatnloFXFX-pythia8',
-            'DYJetsToLL_Pt-650ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8',
+            'DYJetsToLL_Pt-50To100',
+            'DYJetsToLL_Pt-100To250',
+            'DYJetsToLL_Pt-250To400',
+            'DYJetsToLL_Pt-400To650',
+            'DYJetsToLL_Pt-650ToInf',
         ],
-        #"GluGluHToTauTau":[
-        #    'GluGluHTauTau_13TeV',
-        #],
         "QCD":[
-            'QCD_HT500to700_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'QCD_HT700to1000_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'QCD_HT1500to2000_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'QCD_HT2000toInf_TuneCP5_13TeV-madgraphMLM-pythia8',
+            'QCD_Pt_3200toInf',
+            'QCD_Pt_1400to1800',
+            'QCD_Pt_170to300',
+            'QCD_Pt_300to470',
+            'QCD_Pt_470to600',
+            'QCD_Pt_1000to1400',
+            'QCD_Pt_2400to3200',
+            'QCD_Pt_600to800',
+            'QCD_Pt_800to1000',
+            'QCD_Pt_1800to2400',
         ],
         "ST":[
-            'ST_s-channel_4f_hadronicDecays_TuneCP5_13TeV-madgraph-pythia8',
-            'ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-madgraph-pythia8',
-            'ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8',
-            'ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8',
-            'ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
-            'ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8',
+            'ST_s-channel_4f_leptonDecays',
+            'ST_s-channel_4f_hadronicDecays',
+            'ST_t-channel_antitop_4f_InclusiveDecays',
+            'ST_t-channel_top_4f_InclusiveDecays',
+            'ST_tW_antitop_5f_inclusiveDecays',
+            'ST_tW_top_5f_inclusiveDecays',
         ],
         "TT":[
-            'TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8',
-            'TTToHadronic_TuneCP5_13TeV-powheg-pythia8',
-            'TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8',
+            'TTToSemiLeptonic',
+            'TTToHadronic',
+            'TTTo2L2Nu',
         ],
         "HTauTau":[
-            'GluGluHToTauTau_M125_13TeV_powheg_pythia8',
-            'VBFHToTauTau_M125_13TeV_powheg_pythia8',
-            'WminusHToTauTau_M125_13TeV_powheg_pythia8',
-            'WplusHToTauTau_M125_13TeV_powheg_pythia8',
-            'ZHToTauTau_M125_13TeV_powheg_pythia8',
-            'ggZH_HToTauTau_ZToLL_M125_13TeV_powheg_pythia8',
-            'ggZH_HToTauTau_ZToNuNu_M125_13TeV_powheg_pythia8',
-            'ggZH_HToTauTau_ZToQQ_M125_13TeV_powheg_pythia8',
-            'ttHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8',
+            "GluGluHToTauTau",
+            "VBFHToTauTau",
+            "WminusHToTauTau",
+            "WplusHToTauTau",
+            "ZHToTauTau",
+            "ttHToTauTau",
         ],
         "WJetsToLNu":[
-            'WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-70To100_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8',
+            'WJetsToLNu_HT-100To200',
+            'WJetsToLNu_HT-1200To2500',
+            'WJetsToLNu_HT-800To1200',
+            'WJetsToLNu_HT-600To800',
+            'WJetsToLNu_HT-2500ToInf',
+            'WJetsToLNu_HT-200To400',
+            'WJetsToLNu_HT-70To100',
+            'WJetsToLNu_HT-400To600',
         ],
         "VJetsToQQ":[
-            'WJetsToQQ_HT-800toInf_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToQQ_HT400to600_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'WJetsToQQ_HT600to800_qc19_3j_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'ZJetsToQQ_HT-800toInf_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'ZJetsToQQ_HT400to600_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
-            'ZJetsToQQ_HT600to800_qc19_4j_TuneCP5_13TeV-madgraphMLM-pythia8',
+            'ZJetsToQQ_HT-400to600',
+            'ZJetsToQQ_HT-800toInf',
+            'ZJetsToQQ_HT-600to800',
+            'WJetsToQQ_HT-600to800',
+            'WJetsToQQ_HT-800toInf',
+            'WJetsToQQ_HT-400to600',
+        ],
+        "VV":[
+            'WW',
+            'WZ',
+            'ZZ',
+        ],
+        "Spin0ToTauTau":[
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
         ],
         "SingleMuon":[
-            #'SingleMuon_pancakes-02_Run2018A-12Nov2019_UL2018_rsb-v1',
-            #'SingleMuon_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
-            #'SingleMuon_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
-            #'SingleMuon_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
-            "SingleMuon",
+            'SingleMuon_Run2018A',
+            'SingleMuon_Run2018B',
+            'SingleMuon_Run2018C',
+            'SingleMuon_Run2018D',
         ],
         "MET":[
-            'MET_pancakes-02_Run2018A-12Nov2019_UL2018-v3',
-            'MET_pancakes-02_Run2018B-12Nov2019_UL2018_rsb-v1',
-            'MET_pancakes-02_Run2018C-12Nov2019_UL2018_rsb-v1',
-            'MET_pancakes-02_Run2018D-12Nov2019_UL2018_rsb-v2',
+            'MET_Run2018A',
+            'MET_Run2018B',
+            'MET_Run2018C',
+            'MET_Run2018D',
         ],
         "EGamma":[
-            #'EGamma_pancakes-02_Run2018A-12Nov2019_UL2018-v2',
-            #'EGamma_pancakes-02_Run2018B-12Nov2019_UL2018-v2',
-            #'EGamma_pancakes-02_Run2018C-12Nov2019_UL2018-v2',
-            #'EGamma_pancakes-02_Run2018D-12Nov2019_UL2018-v4',
-            "EGamma",
+            'EGamma_Run2018A',
+            'EGamma_Run2018B',
+            'EGamma_Run2018C',
+            'EGamma_Run2018D',
         ],
     },
 }
@@ -359,10 +572,12 @@ parser.add_argument('--fullsplit', action='store_true')
 parser.add_argument('--chunk', metavar='chunk', help='chunk size', type=int, default=10)
 args = parser.parse_args()
 
-#python condor/hadd_coffea_eos.py Apr10_2017_UL/ --samples Data MC --sampsplit --fullsplit --year 2017 --ignore
+#python condor/hadd_coffea_eos.py Jun06_2017_UL/ --samples Data MC --sampsplit --fullsplit --year 2017 --ignore
+
+f_resub = open("condor/%s/condor_resub"%(args.indir), "w")
 
 if not args.sampsplit:
-    run_hadd(args.indir, args.eosdir, args.samples, args.invert, args.ignore, args.outname, args.noscale, args.noresub, args.chunk)
+    run_hadd(args.indir, args.eosdir, args.samples, args.invert, args.ignore, args.outname, args.noscale, args.noresub, args.chunk, f_resub)
 
 else:
     if not args.samples:
@@ -384,8 +599,9 @@ else:
     
     for block in theblocks:
         if not args.fullsplit:
-            run_hadd(args.indir, args.eosdir, samp_dict[args.year][block], args.invert, args.ignore, "%s_%s"%(args.outname,block), True if block in datalist else args.noscale, args.noresub, args.chunk)
+            run_hadd(args.indir, args.eosdir, samp_dict[args.year][block], args.invert, args.ignore, "%s_%s"%(args.outname,block), True if block in datalist else args.noscale, args.noresub, args.chunk, f_resub)
         else:
             for bs in samp_dict[args.year][block]:
-                run_hadd(args.indir, args.eosdir, [bs], args.invert, args.ignore, "%s_%s"%(args.outname,bs), True if block in datalist else args.noscale, args.noresub, args.chunk)
+                run_hadd(args.indir, args.eosdir, [bs], args.invert, args.ignore, "%s_%s"%(args.outname,bs), True if block in datalist else args.noscale, args.noresub, args.chunk, f_resub)
 
+f_resub.close()
