@@ -730,7 +730,7 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
             [sessions[m].get_outputs()[0].name],
             {sessions[m].get_inputs()[iin].name: tagger_inputs[nin] for iin,nin in enumerate(inference_model_dict[m])}
         )
-        print(m,type(tagger_outputs[m]))
+        #print(m,type(tagger_outputs[m]))
     for input_name in list(tagger_inputs):
         del tagger_inputs[input_name]
     del tagger_inputs

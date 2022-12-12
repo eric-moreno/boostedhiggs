@@ -248,7 +248,8 @@ class HttProcessor(processor.ProcessorABC):
         #ztagger_el_bin = hist.Bin('ztagger_el',r'$Z^{e\tau}_{NN}[Ze\tau]$', [0.,0.1,0.5,0.8,0.9,0.95,0.99,0.995,0.999,0.9999,0.99995,0.99999,0.999999,1.])
         ztagger_mu_bin = hist.Bin('ztagger_mu', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         ztagger_el_bin = hist.Bin('ztagger_el', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.8,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,1.000001])
+        #nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.5,0.8,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,1.000001])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.9,0.98,0.995,0.9999,1.000001])
         massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.])
         massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
         ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 101, 0., 1.01)
@@ -266,11 +267,12 @@ class HttProcessor(processor.ProcessorABC):
         jetlepmet_m_bin = hist.Bin('jetlepmet_m', r'Jet+lepton+MET $m$ [GeV]', 20, 0, 600.)
         jetmet_dphi_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 2, 0., 3.14)
         jetmet_dphi_fine_bin = hist.Bin('jetmet_dphi', r'$\Delta\phi(jet,MET)$', 35, 0., 3.5)
-        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,75.,100.,150.,1000.])
+        #met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,50.,75.,100.,150.,1000.])
+        met_pt_bin = hist.Bin('met_pt', r'PuppiMET [GeV]', [20.,75.,150.,1000.])
         met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 100, 0, 1000)
         met_pup_pt_bin = hist.Bin('met_pup_pt', r'PUPPI MET [GeV]', 100, 0, 1000)
-        n2b1_bin = hist.Bin('n2b1', r'N_{2}', 2, -1.,1.)
-        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,300,350,400,1200])
+        n2b1_bin = hist.Bin('n2b1', r'N_{2}', 100, -1.,1.)
+        #h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,400,1200])
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',4,-0.5,3.5)
@@ -305,46 +307,46 @@ class HttProcessor(processor.ProcessorABC):
                 # dataset -> cut -> count
                 'cutflow_hadhad_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_signal_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadhad_cr_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadhad_cr_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 #'cutflow_hadhad_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_b_met': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadhad_cr_b_met_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadhad_cr_b_met_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_b_met_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 #'cutflow_hadhad_cr_b_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_b_mu_iso': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_mu': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_mu_iso': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadhad_cr_b_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadhad_cr_mu_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadhad_cr_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadhad_cr_b_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadhad_cr_mu_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadhad_cr_mu_iso_anti_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_b_mu_iso_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_mu_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadhad_cr_mu_iso_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadel_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadmu_signal': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadel_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadmu_cr_b': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_b_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_b_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadel_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadmu_cr_w': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_w_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_w_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadel_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
                 'cutflow_hadmu_cr_qcd': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadel_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
-                'cutflow_hadmu_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_qcd_ztag_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadel_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                #'cutflow_hadmu_cr_qcd_dphi_inv': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
             })
         if self._plotopt==0:
             self._accumulator.add(processor.dict_accumulator({
@@ -353,7 +355,7 @@ class HttProcessor(processor.ProcessorABC):
                     hist.Cat('dataset', 'Dataset'),
                     hist.Cat('systematic', 'Systematic'),
                     hist.Cat('region', 'Region'),
-                    met_pt_bin, massreg_bin, nn_disc_bin, h_pt_bin, 
+                    met_pt_bin, massreg_bin, nn_disc_bin#, h_pt_bin, 
                 )}
             ))
         elif self._plotopt==3:
@@ -957,13 +959,13 @@ class HttProcessor(processor.ProcessorABC):
             'hadhad_signal':               ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met','jetmet_dphi'],
             'hadhad_signal_met':           ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','jetmet_dphi'],
             'hadhad_cr_dphi_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','jetmet_dphiInv'],
-            'hadhad_cr_anti_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiIdInv','jetmet_dphi'],
+            #'hadhad_cr_anti_inv':          ['met_trigger', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem','antiIdInv','jetmet_dphi'],
             #'hadhad_cr_b':                 ['hadhad_trigger', 'noleptons', 'jetacceptance450', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met'],
             #'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphi'],
             #'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiId','jetmet_dphiInv'],
             'hadhad_cr_b_met':             ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','jetmet_dphi'],
             'hadhad_cr_b_met_dphi_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','jetmet_dphiInv'],
-            'hadhad_cr_b_met_anti_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiIdInv','jetmet_dphi'],
+            #'hadhad_cr_b_met_anti_inv':    ['met_trigger', 'methard', 'noleptons', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08','antiIdInv','jetmet_dphi'],
             #'hadhad_cr_b_mu':              ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIsoInv'],
             #'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphi'],
             #'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphi'],
@@ -971,9 +973,9 @@ class HttProcessor(processor.ProcessorABC):
             'hadhad_cr_b_mu_iso':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphi'],
             'hadhad_cr_mu':                ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','jetmet_dphi'],
             'hadhad_cr_mu_iso':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphi'],
-            'hadhad_cr_b_mu_iso_anti_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
-            'hadhad_cr_mu_anti_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiIdInv','jetmet_dphi'],
-            'hadhad_cr_mu_iso_anti_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
+            #'hadhad_cr_b_mu_iso_anti_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
+            #'hadhad_cr_mu_anti_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiIdInv','jetmet_dphi'],
+            #'hadhad_cr_mu_iso_anti_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiIdInv','jetmet_dphi'],
             #'hadhad_cr_b_mu_iso_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
             #'hadhad_cr_mu_dphi_inv':       ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIsoInv','antiId','jetmet_dphiInv'],
             #'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','antiId','jetmet_dphiInv'],
@@ -982,26 +984,26 @@ class HttProcessor(processor.ProcessorABC):
             'hadhad_cr_mu_iso_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8Inv', 'muonIso','jetmet_dphiInv'],
             'hadmu_signal':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_mu'],
             'hadel_signal':          ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_el'],
-            'hadmu_cr_ztag_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
-            'hadel_cr_ztag_inv':     ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
+            #'hadmu_cr_ztag_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
+            #'hadel_cr_ztag_inv':     ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
             'hadmu_cr_dphi_inv':     ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'muonIso', 'jetmet_dphiInv','ztagger_mu'],
             'hadel_cr_dphi_inv':     ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmet', 'elecIso', 'jetmet_dphiInv','ztagger_el'],
-            'hadmu_cr_qcd_ztag_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphi','ztagger_muInv'],
-            'hadel_cr_qcd_ztag_inv': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphi','ztagger_elInv'],
+            #'hadmu_cr_qcd_ztag_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphi','ztagger_muInv'],
+            #'hadel_cr_qcd_ztag_inv': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphi','ztagger_elInv'],
             'hadmu_cr_qcd_dphi_inv': ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphiInv','ztagger_mu'],
             'hadel_cr_qcd_dphi_inv': ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphiInv','ztagger_el'],
             'hadmu_cr_qcd':          ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'muonIsoInv','jetmet_dphi','ztagger_mu'],
             'hadel_cr_qcd':          ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'lepDrAK8', 'elecIsoInv','jetmet_dphi','ztagger_el'],
             'hadmu_cr_b':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphi','ztagger_mu'],
             'hadel_cr_b':            ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphi','ztagger_el'],
-            'hadmu_cr_b_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphi','ztagger_muInv'],
-            'hadel_cr_b_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphi','ztagger_elInv'],
+            #'hadmu_cr_b_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphi','ztagger_muInv'],
+            #'hadel_cr_b_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphi','ztagger_elInv'],
             'hadmu_cr_b_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'muonIso','jetmet_dphiInv','ztagger_mu'],
             'hadel_cr_b_dphi_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'ak4btagMedium08', 'met', 'lepDrAK8', 'elecIso','jetmet_dphiInv','ztagger_el'],
             'hadmu_cr_w':            ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphi','ztagger_mu'],
             'hadel_cr_w':            ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphi','ztagger_el'],
-            'hadmu_cr_w_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
-            'hadel_cr_w_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
+            #'hadmu_cr_w_ztag_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphi','ztagger_muInv'],
+            #'hadel_cr_w_ztag_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphi','ztagger_elInv'],
             'hadmu_cr_w_dphi_inv':   ['hadmu_trigger', 'onemuon', 'muonkin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'muonIso', 'jetmet_dphiInv','ztagger_mu'],
             'hadel_cr_w_dphi_inv':   ['hadel_trigger', 'oneelec', 'eleckin', 'jetacceptance', 'jet_msd', 'jetid', 'antiak4btagMediumOppHem', 'met', 'lepDrAK8', 'mt_lepmetInv', 'elecIso', 'jetmet_dphiInv','ztagger_el'],
             #'noselection': [],
@@ -1207,8 +1209,6 @@ class HttProcessor(processor.ProcessorABC):
             #'btagWeightDown',
             #'btagEffStatUp',
             #'btagEffStatDown',
-            'TopPtReweightUp',
-            #'TopPtReweightDown',
             'L1PreFiringUp',
             'L1PreFiringDown',
             #'scalevar_3ptUp',
@@ -1222,9 +1222,11 @@ class HttProcessor(processor.ProcessorABC):
             #'PDF_weightUp',
             #'PDF_weightDown',
         ]
-        if shift_name is not None:
+        if 'TT' in dataset:
+            systematics.append('TopPtReweightUp')
+        if shift_name is not None or self._plotopt>0:
             systematics = [None]
-
+            
         def fill(region, systematic, wmod=None, realData=False, addcut=None, addname="", shift=None):
             selections = regions[region]
             cut = selection.all(*selections)
@@ -1244,6 +1246,7 @@ class HttProcessor(processor.ProcessorABC):
                     weight = w_dict[region].weight(modifier=None)
             else:
                 weight = w_dict[region].weight() * wmod
+
 
             #weight = zero if cut fails
             #seems reasonable enough, right?
@@ -1295,7 +1298,7 @@ class HttProcessor(processor.ProcessorABC):
                     met_pt=normalize(met_p4.pt),
                     massreg=normalize(massreg),
                     nn_disc=normalize(nn_disc),
-                    h_pt=normalize(ptreg),
+                    #h_pt=normalize(ptreg),
                     weight=weight,
                 )
 #                if 'signal' in region:

@@ -405,25 +405,25 @@ def add_VJets_kFactors(weights, genpart, dataset):
 
     if "ZJetsToQQ_HT" in dataset or "DYJetsToLL_M-50" in dataset:
         vpt = get_vpt()
-        qcdcorr = vjets_kfactors["ULZ_MLMtoFXFX"].evaluate(vpt)
+        #qcdcorr = vjets_kfactors["ULZ_MLMtoFXFX"].evaluate(vpt)
+        qcdcorr = vjets_kfactors["ULZ_MLMtoNNLOQCD"].evaluate(vpt)
         ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
         add_systs(zsysts, qcdcorr, ewkcorr, vpt)
     elif "WJetsToQQ_HT" in dataset or "WJetsToLNu_HT" in dataset:
         vpt = get_vpt()
-        qcdcorr = vjets_kfactors["ULW_MLMtoFXFX"].evaluate(vpt)
+        #qcdcorr = vjets_kfactors["ULW_MLMtoFXFX"].evaluate(vpt)
+        qcdcorr = vjets_kfactors["ULW_MLMtoNNLOQCD"].evaluate(vpt)
         ewkcorr = vjets_kfactors["W_FixedOrderComponent"]
         add_systs(wsysts, qcdcorr, ewkcorr, vpt)
     elif "DYJetsToLL_Pt" in dataset:
         vpt = get_vpt()
+        nnloqcd = vjets_kfactors["ULZ_MLMtoNNLOQCD"].evaluate(vpt)/vjets_kfactors["ULZ_MLMtoFXFX"].evaluate(vpt)
         ewkcorr = vjets_kfactors["Z_FixedOrderComponent"]
-        add_systs(znlosysts, None, ewkcorr, vpt)
+        add_systs(znlosysts, nnloqcd, ewkcorr, vpt)
 
 def add_TopPtReweighting(weights, topPt, year, dataset):
 #$SF(p_T)=e^{0.0615-0.0005\cdot p_T}$ for data/POWHEG+Pythia8
     if 'TT' in dataset:
         toppt_weight1 = np.exp(0.0615-0.0005*np.clip(topPt[:,0],0.,500.))
         toppt_weight2 = np.exp(0.0615-0.0005*np.clip(topPt[:,1],0.,500.))
-    else:
-        toppt_weight1 = np.ones_like(topPt[:,0])
-        toppt_weight2 = np.ones_like(topPt[:,1])
-    weights.add('TopPtReweight', np.sqrt(toppt_weight1 * toppt_weight2), np.ones_like(toppt_weight1), np.sqrt(toppt_weight1 * toppt_weight2))
+        weights.add('TopPtReweight', np.sqrt(toppt_weight1 * toppt_weight2), np.ones_like(toppt_weight1), np.sqrt(toppt_weight1 * toppt_weight2))
