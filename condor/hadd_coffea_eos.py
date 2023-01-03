@@ -11,7 +11,7 @@ from os.path import isfile, join
 
 from coffea import hist
 
-def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, chunk_size, f_resub):
+def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, onlyresub, chunk_size, f_resub):
 
     if not samples:
         onlyfiles = [f[:-4] for f in os.listdir("condor/"+indir+"/") if os.path.isfile(os.path.join("condor/"+indir+"/", f)) and f.endswith(".jdl")]
@@ -39,6 +39,11 @@ def run_hadd(indir, eosdir, samples, invert, ignore, outname, noscale, noresub, 
         if missing_files:
             print('Missing files (ignoring them):')
             print(missing_files)
+            if (not noresub): 
+                for mf in missing_files:
+                    f_resub.write('condor_submit condor/%s/%s.jdl\n'%(indir,mf))
+        if onlyresub:
+            return
         chunk_names = []
         for i in range(0,len(onlyfiles),chunk_size):
           print('Chunk',i)
@@ -361,9 +366,9 @@ samp_dict = {
             'DYJetsToLL_Pt-400To650',
             'DYJetsToLL_Pt-650ToInf',
         ],
-        "GluGluHToTauTau":[
-            'GluGluHToTauTau',
-        ],
+        #"GluGluHToTauTau":[
+        #    'GluGluHToTauTau',
+        #],
         "QCD":[
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -566,6 +571,7 @@ parser.add_argument('--ignore', action='store_true')
 parser.add_argument('--outname', metavar='outname', default='hists_sum', help='outname', type=str)
 parser.add_argument('-n', '--noscale', action='store_true')
 parser.add_argument('--noresub', action='store_true')
+parser.add_argument('--onlyresub', action='store_true')
 parser.add_argument('--sampsplit', action='store_true')
 parser.add_argument('--year', metavar='year', default='2017', help='year')
 parser.add_argument('--fullsplit', action='store_true')
@@ -577,7 +583,7 @@ args = parser.parse_args()
 f_resub = open("condor/%s/condor_resub"%(args.indir), "w")
 
 if not args.sampsplit:
-    run_hadd(args.indir, args.eosdir, args.samples, args.invert, args.ignore, args.outname, args.noscale, args.noresub, args.chunk, f_resub)
+    run_hadd(args.indir, args.eosdir, args.samples, args.invert, args.ignore, args.outname, args.noscale, args.noresub, args.onlyresub, args.chunk, f_resub)
 
 else:
     if not args.samples:
@@ -599,9 +605,9 @@ else:
     
     for block in theblocks:
         if not args.fullsplit:
-            run_hadd(args.indir, args.eosdir, samp_dict[args.year][block], args.invert, args.ignore, "%s_%s"%(args.outname,block), True if block in datalist else args.noscale, args.noresub, args.chunk, f_resub)
+            run_hadd(args.indir, args.eosdir, samp_dict[args.year][block], args.invert, args.ignore, "%s_%s"%(args.outname,block), True if block in datalist else args.noscale, args.noresub, args.onlyresub, args.chunk, f_resub)
         else:
             for bs in samp_dict[args.year][block]:
-                run_hadd(args.indir, args.eosdir, [bs], args.invert, args.ignore, "%s_%s"%(args.outname,bs), True if block in datalist else args.noscale, args.noresub, args.chunk, f_resub)
+                run_hadd(args.indir, args.eosdir, [bs], args.invert, args.ignore, "%s_%s"%(args.outname,bs), True if block in datalist else args.noscale, args.noresub, args.onlyresub, args.chunk, f_resub)
 
 f_resub.close()

@@ -15,11 +15,11 @@ lumi_dict = {
 
 #SETTINGS
 
-doAlt = 1
+doAlt = 0
 doAltCutflow = False
 skipCutflow = False
 skipNomPlots = False
-doLowMETPlots = False
+doLowMETPlots = True
 doQCDPlots = False
 doQCDComp = False
 
@@ -28,11 +28,12 @@ year = '2017'
 lumi = lumi_dict[year]
 #infilePre = 'condor/Jun21_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
 #infilePre = 'condor/Jun28_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
-infilePre = 'condor/Jun06_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
-#infilePre = 'condor/Nov13_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
+#infilePre = 'condor/Jun06_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
+#infilePre = 'condor/Nov22_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
+#infilePre = 'condor/Nov29_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
+infilePre = 'condor/Nov30_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
 #infilePre = 'condor/Nov04_%s%s_UL/hists_sum_'%("" if doAlt==0 else "Opt"+str(doAlt)+"_",year)
-#tag = "Nov15_%s_UL"%year
-tag = "Jun08_%s_UL"%year
+tag = "Dec01_%s_UL"%year
 massVar = "massreg"
 massRange = [0.,400.]
 massLabel = r"$m_{NN}$"
@@ -47,20 +48,21 @@ lepLooseNN = "0.9"
 hadLooseNN = "0.995"
 
 altplots = ({ 
-    #'jet_pt':r"$p_{T}(j)$", 
-    #'jet_eta':r"$\eta(j)$", 
+    'jet_pt':r"$p_{T}(j)$", 
+    'jet_eta':r"$\eta(j)$", 
     'jet_msd':r"$m_{SD}(j)$", 
-    #'mt_lepmet':r"$m_{T}(LEP,MET)$", 
+    'mt_lepmet':r"$m_{T}(LEP,MET)$", 
     'mt_jetmet':r"$m_{T}(j,MET)$", 
-    #'lep_pt':r"$p_{T}(LEP)$", 
-    #'lep_eta':r"$\eta(LEP)$", 
-    #'lep_jet_dr':r"$\Delta R(j,LEP)$", 
-    #'jetlep_m':r"$m(j-LEP)$",
-    #'met_nopup_pt':r"$p_{T}^{miss}$",
-    #'met_pup_pt':r"PUPPI $p_{T}^{miss}$",
-    #'jetmet_dphi':r"$\Delta\phi(j,MET)$",
+    'lep_pt':r"$p_{T}(LEP)$", 
+    'lep_eta':r"$\eta(LEP)$", 
+    'lep_jet_dr':r"$\Delta R(j,LEP)$", 
+    'n2b1':r"$N^{2}_{1}$",
+    'jetlep_m':r"$m(j-LEP)$",
+    'met_nopup_pt':r"$p_{T}^{miss}$",
+    'met_pup_pt':r"PUPPI $p_{T}^{miss}$",
+    'jetmet_dphi':r"$\Delta\phi(j,MET)$",
     'massreg':r"$m_{NN}$",
-    #'ztagger':r"$Z^{\ell\tau}(NN)$",
+    'ztagger':r"$Z^{\ell\tau}(NN)$",
   },{
     'lep_miso':r"miniIso$(LEP)$",
     'nn_hadhad':r"$D_{\phi}^{\tau_{h}\tau_{h}}$(v6)",
@@ -91,7 +93,7 @@ srHist = "met_nn_kin" if doAlt==0 else "massreg_kin"
 regionList = [
   "hadhad_signal",
   "hadhad_signal_met",
-  "hadhad_cr_anti_inv",
+  #"hadhad_cr_anti_inv",
   "hadhad_cr_dphi_inv",
   #"hadhad_cr_b",
   "hadhad_cr_b_met",
@@ -99,34 +101,34 @@ regionList = [
   "hadhad_cr_mu",
   "hadhad_cr_mu_iso",
   "hadhad_cr_b_mu_iso",
-  "hadhad_cr_mu_anti_inv",
-  "hadhad_cr_mu_iso_anti_inv",
-  "hadhad_cr_b_mu_iso_anti_inv",
+  #"hadhad_cr_mu_anti_inv",
+  #"hadhad_cr_mu_iso_anti_inv",
+  #"hadhad_cr_b_mu_iso_anti_inv",
   "hadhad_cr_mu_dphi_inv",
   "hadhad_cr_mu_iso_dphi_inv",
   "hadhad_cr_b_mu_iso_dphi_inv",
   "hadmu_signal",
   "hadel_signal",
-  "hadmu_cr_ztag_inv",
-  "hadel_cr_ztag_inv",
+  #"hadmu_cr_ztag_inv",
+  #"hadel_cr_ztag_inv",
   "hadmu_cr_dphi_inv",
   "hadel_cr_dphi_inv",
   "hadmu_cr_qcd",
   "hadel_cr_qcd",
-  "hadmu_cr_qcd_ztag_inv",
-  "hadel_cr_qcd_ztag_inv",
+  #"hadmu_cr_qcd_ztag_inv",
+  #"hadel_cr_qcd_ztag_inv",
   "hadmu_cr_qcd_dphi_inv",
   "hadel_cr_qcd_dphi_inv",
   "hadmu_cr_b",
   "hadel_cr_b",
-  "hadmu_cr_b_ztag_inv",
-  "hadel_cr_b_ztag_inv",
+  #"hadmu_cr_b_ztag_inv",
+  #"hadel_cr_b_ztag_inv",
   "hadmu_cr_b_dphi_inv",
   "hadel_cr_b_dphi_inv",
   "hadmu_cr_w",
   "hadel_cr_w",
-  "hadmu_cr_w_ztag_inv",
-  "hadel_cr_w_ztag_inv",
+  #"hadmu_cr_w_ztag_inv",
+  #"hadel_cr_w_ztag_inv",
   "hadmu_cr_w_dphi_inv",
   "hadel_cr_w_dphi_inv",
 ]
@@ -134,46 +136,46 @@ regionList = [
 cutList = [
   "cutflow_hadhad_signal",
   "cutflow_hadhad_signal_met",
-  "cutflow_hadhad_cr_anti_inv",
+  #"cutflow_hadhad_cr_anti_inv",
   "cutflow_hadhad_cr_dphi_inv",
   #"cutflow_hadhad_cr_b",
   "cutflow_hadhad_cr_b_met",
-  "cutflow_hadhad_cr_b_met_anti_inv",
+  #"cutflow_hadhad_cr_b_met_anti_inv",
   "cutflow_hadhad_cr_b_met_dphi_inv",
   #"cutflow_hadhad_cr_b_mu",
   "cutflow_hadhad_cr_b_mu_iso",
   "cutflow_hadhad_cr_mu",
   "cutflow_hadhad_cr_mu_iso",
-  "cutflow_hadhad_cr_b_mu_iso_anti_inv",
-  "cutflow_hadhad_cr_mu_anti_inv",
-  "cutflow_hadhad_cr_mu_iso_anti_inv",
+  #"cutflow_hadhad_cr_b_mu_iso_anti_inv",
+  #"cutflow_hadhad_cr_mu_anti_inv",
+  #"cutflow_hadhad_cr_mu_iso_anti_inv",
   "cutflow_hadhad_cr_b_mu_iso_dphi_inv",
   "cutflow_hadhad_cr_mu_dphi_inv",
   "cutflow_hadhad_cr_mu_iso_dphi_inv",
   "cutflow_hadel_signal",
   "cutflow_hadmu_signal",
-  "cutflow_hadel_cr_ztag_inv",
-  "cutflow_hadmu_cr_ztag_inv",
-  "cutflow_hadel_cr_dphi_inv",
-  "cutflow_hadmu_cr_dphi_inv",
+  #"cutflow_hadel_cr_ztag_inv",
+  #"cutflow_hadmu_cr_ztag_inv",
+  #"cutflow_hadel_cr_dphi_inv",
+  #"cutflow_hadmu_cr_dphi_inv",
   "cutflow_hadel_cr_b",
   "cutflow_hadmu_cr_b",
-  "cutflow_hadmu_cr_b_ztag_inv",
-  "cutflow_hadel_cr_b_ztag_inv",
-  "cutflow_hadmu_cr_b_dphi_inv",
-  "cutflow_hadel_cr_b_dphi_inv",
+  #"cutflow_hadmu_cr_b_ztag_inv",
+  #"cutflow_hadel_cr_b_ztag_inv",
+  #"cutflow_hadmu_cr_b_dphi_inv",
+  #"cutflow_hadel_cr_b_dphi_inv",
   "cutflow_hadel_cr_w",
   "cutflow_hadmu_cr_w",
-  "cutflow_hadmu_cr_w_ztag_inv",
-  "cutflow_hadel_cr_w_ztag_inv",
-  "cutflow_hadmu_cr_w_dphi_inv",
-  "cutflow_hadel_cr_w_dphi_inv",
+  #"cutflow_hadmu_cr_w_ztag_inv",
+  #"cutflow_hadel_cr_w_ztag_inv",
+  #"cutflow_hadmu_cr_w_dphi_inv",
+  #"cutflow_hadel_cr_w_dphi_inv",
   "cutflow_hadel_cr_qcd",
   "cutflow_hadmu_cr_qcd",
-  "cutflow_hadel_cr_qcd_ztag_inv",
-  "cutflow_hadmu_cr_qcd_ztag_inv",
-  "cutflow_hadel_cr_qcd_dphi_inv",
-  "cutflow_hadmu_cr_qcd_dphi_inv",
+  #"cutflow_hadel_cr_qcd_ztag_inv",
+  #"cutflow_hadmu_cr_qcd_ztag_inv",
+  #"cutflow_hadel_cr_qcd_dphi_inv",
+  #"cutflow_hadmu_cr_qcd_dphi_inv",
 ]
   
 #looseList = ["hadhad_signal", "hadhad_signal_met", "hadhad_cr_b", "hadhad_cr_b_met", "hadhad_cr_b_mu", "hadhad_cr_b_mu_iso", "hadhad_cr_mu", "hadhad_cr_mu_iso", "hadel_signal", "hadmu_signal", "hadel_cr_b", "hadel_cr_w", "hadel_cr_qcd", "hadmu_cr_b", "hadmu_cr_w", "hadmu_cr_qcd"]
@@ -187,7 +189,7 @@ plotList = {
     "selStr":["", "", "_zoom"],
     "sels":[{}, {}, {"nn_disc":[0.9,None]}],
     #"addOpts":[{}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True}],
-    "addOpts":[{}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True}],
+    "addOpts":[{}, {"rebin":[0.,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True}],
     "blindSel":["", ["None", hadLepCut], ["None", hadLepCut]],
     "addOptsBase":{"signame":["phi10","phi30","phi50","phi125","phi300"],"qcd_flat_tf":False},
   },
@@ -208,7 +210,7 @@ plotList = {
     "selStr":["", "_nnpass", "", "_zoom", "", "_nnpass"],
     "sels":[{}, {"nn_disc":["NNCUT",None]}, {}, {"nn_disc":[0.9,None]}, {}, {"nn_disc":["NNCUT",None]}],
     #"addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001],"dosigrat":True}, {"xlimits":[0.9,1.],"dosigrat":True,"xexp":True,"rebin":[0.9,0.95,0.99,0.995,0.999,0.9995,0.9999,1.000001]}, {"dosigrat":True}, {"dosigrat":True}],
-    "addOpts":[{}, {}, {"rebin":[0.,0.1,0.5,0.8,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True,"rebin":[0.9,0.95,0.98,0.99,0.995,0.999,0.9995,1.000001]}, {}, {}],
+    "addOpts":[{}, {}, {"rebin":[0.,0.9,1.000001]}, {"xlimits":[0.9,1.],"xexp":True,"rebin":[0.9,0.98,0.995,0.9999,1.000001]}, {}, {}],
     "blindSel":["", "", ["None", hadLepCut], ["None", hadLepCut], "", ""],
     "addOptsBase":{"signame":["phi10","phi30","phi50","phi125","phi300"],"qcd_flat_tf":False},
   },
@@ -929,6 +931,7 @@ def doPlotting(infileList,tag,lumi,region,hist,plotList,regopts,qcd_args={},add_
     print(comb_opt_dict)
     print(regopts["sigSel"])
     #comb_opt_dict.update({"forcetop":['ztt']})
+    #print(thePlotList["varName"][ivar],thePlotList["varLabel"][ivar],regopts["titleBase"]+thePlotList["titleAdd"][ivar],sample,lumi,ndict,regopts["sigSel"],'',region+thePlotList["selStr"][ivar]+regopts["saveLabel"],comb_opt_dict)
     #plot_stack.drawStack(cofhist,hist,thePlotList["varName"][ivar],thePlotList["varLabel"][ivar],regopts["titleBase"]+thePlotList["titleAdd"][ivar],sample,lumi,ndict,regopts["sigSel"],[region],region+thePlotList["selStr"][ivar]+regopts["saveLabel"],**comb_opt_dict)
     plot_stack.drawStack(cofhist,hist,thePlotList["varName"][ivar],thePlotList["varLabel"][ivar],regopts["titleBase"]+thePlotList["titleAdd"][ivar],sample,lumi,ndict,regopts["sigSel"],'',region+thePlotList["selStr"][ivar]+regopts["saveLabel"],qcd_hists=qcdhists,**comb_opt_dict)
   os.chdir(pwd)
@@ -1143,9 +1146,9 @@ regionList = [
   "hadhad_cr_mu",
   "hadhad_cr_mu_iso",
   "hadhad_cr_b_mu_iso",
-  "hadhad_cr_mu_anti_inv",
-  "hadhad_cr_mu_iso_anti_inv",
-  "hadhad_cr_b_mu_iso_anti_inv",
+  #"hadhad_cr_mu_anti_inv",
+  #"hadhad_cr_mu_iso_anti_inv",
+  #"hadhad_cr_b_mu_iso_anti_inv",
   "hadhad_cr_mu_dphi_inv",
   "hadhad_cr_mu_iso_dphi_inv",
   "hadhad_cr_b_mu_iso_dphi_inv",
@@ -2567,9 +2570,9 @@ region_opts = {
 }
 
 qcdRegions = {
-  "hadhad_signal_met":["hadhad_cr_mu", "hadhad_cr_anti_inv", "hadhad_cr_mu_anti_inv"],
-  "hadhad_cr_mu_iso":["hadhad_cr_mu_iso", "hadhad_cr_mu_iso_anti_inv", "hadhad_cr_mu_iso_anti_inv"],
-  "hadhad_cr_b_mu_iso":["hadhad_cr_b_mu_iso", "hadhad_cr_b_mu_iso_anti_inv", "hadhad_cr_b_mu_iso_anti_inv"],
+  "hadhad_signal_met":["hadhad_cr_mu", "hadhad_cr_dphi_inv", "hadhad_cr_mu_dphi_inv"],
+  "hadhad_cr_mu_iso":["hadhad_cr_mu_iso", "hadhad_cr_mu_iso_dphi_inv", "hadhad_cr_mu_iso_dphi_inv"],
+  "hadhad_cr_b_mu_iso":["hadhad_cr_b_mu_iso", "hadhad_cr_b_mu_iso_dphi_inv", "hadhad_cr_b_mu_iso_dphi_inv"],
   "hadmu_signal":["hadmu_signal","hadmu_cr_qcd","hadmu_cr_qcd"],
   "hadel_signal":["hadel_signal","hadel_cr_qcd","hadel_cr_qcd"],
   "hadmu_cr_b":["hadmu_cr_b","hadmu_cr_qcd","hadmu_cr_qcd"],

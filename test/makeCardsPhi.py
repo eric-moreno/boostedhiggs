@@ -40,19 +40,11 @@ def expo_sample(norm, scale, obs):
 def gaus_sample(norm, loc, scale, obs):
     cdf = scipy.stats.norm.cdf(loc=loc, scale=scale, x=obs.binning) * norm
     return (np.diff(cdf), obs.binning, obs.name)
-
-singleBinCR = False
-singleBinLepFail = False
-singleBinHadFail = True
-
+    
 lowmassbin = 2
 highmassbin = -1
-lowqcdmasslep = 55.
-lowqcdmasshad = 55.
-lowqcdincrease = 0.25
-highmasslep = 560.
-highmasshad = 560.
-highbkgincrease = 0.3
+
+bkgthresh = -1.
 
 fig, axs = plt.subplots(4, 2, sharex=True)
 axs = axs.reshape(4,2)
@@ -60,7 +52,7 @@ axs = axs.reshape(4,2)
 fig_shape, axs_shape = plt.subplots(4, 2, sharex=True)
 axs_shape = axs_shape.reshape(4,2)
 
-def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, leptype, tmpdir, label, usingData, nnCut, nnCut_loose, metCut, lowMetCut, h_pt_min, singleBinFail, masspoints, shaperegion, year, doHtt, noSyst):
+def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, leptype, tmpdir, label, usingData, nnCut, nnCut_loose, metCut, lowMetCut, h_pt_min, singleBinCR, singleBinFail, lowqcdmass, lowqcdincrease, highbkgmass, highbkgincrease, highmassone, unifiedBkgEff, masspoints, shaperegion, year, doHtt, noSyst):
 
     #could be made region-dependent
 
@@ -70,8 +62,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         'htt125'     : ['h125'],
         'multijet'   : ['qcd'],
         'dy'         : ['zem','ztt'],
-        'wlnu'       : ['wjets'],
-        'vvqq'       : ['vv','vqq'],
+        'wlnu'       : ['wjets','vv','vqq'],
+        #'vvqq'       : ['vv','vqq'],
         'ignore'     : [],
     }
     for m in masspoints:
@@ -132,32 +124,36 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcd_loosepass = rl.NuisanceParameter('qcd_Rloosepass_had%s'%leptype, 'shape')
     qcd_pass = rl.NuisanceParameter('qcd_Rpass_had%s'%leptype, 'shape')
     #qcd_lowmass = rl.NuisanceParameter('qcd_lowmass_had%s'%leptype, 'shape')
-    qcd_lowmass = [rl.NuisanceParameter('qcd_lowmass_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasslep]
-    qcd_lowmass_top = [rl.NuisanceParameter('qcd_lowmass_top_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasslep]
-    qcd_lowmass_wlnu = [rl.NuisanceParameter('qcd_lowmass_wlnu_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasslep]
+    qcd_lowmass = [rl.NuisanceParameter('qcd_lowmass_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
+    qcd_lowmass_top = [rl.NuisanceParameter('qcd_lowmass_top_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
+    qcd_lowmass_wlnu = [rl.NuisanceParameter('qcd_lowmass_wlnu_bin%i_had%s'%(ix,leptype), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
     highmassx = -1
     top_highmass = []
     wlnu_highmass = []
     for ix in range(len(mttbins[lowmassbin:highmassbin])):
-        if (mttbins[lowmassbin:highmassbin])[ix]>highmasshad:
+        if (mttbins[lowmassbin:highmassbin])[ix]>highbkgmass:
             if highmassx == -1:
                 highmassx = ix
             top_highmass.append(rl.NuisanceParameter('top_highmass_bin%i_had%s'%(ix,leptype), 'shape'))
             wlnu_highmass.append(rl.NuisanceParameter('wlnu_highmass_bin%i_had%s'%(ix,leptype), 'shape'))
+    if highmassone:
+        top_highmass = rl.NuisanceParameter('top_highmass_had%s'%(leptype), 'shape')
+        wlnu_highmass = rl.NuisanceParameter('wlnu_highmass_had%s'%(leptype), 'shape')
     qcdnormSF = rl.IndependentParameter('qcdnormSF_had%s'%leptype, 1., 0, 10)
     #qcdnormSF = rl.NuisanceParameter('qcdnormSF_had%s'%leptype, 'lnN')
-    #qcdtop_fail = rl.NuisanceParameter('qcd_top_Rfail_had%s'%leptype, 'shape')
-    #qcdtop_loosepass = rl.NuisanceParameter('qcd_top_Rloosepass_had%s'%leptype, 'shape')
-    #qcdtop_pass = rl.NuisanceParameter('qcd_top_Rpass_had%s'%leptype, 'shape')
+    qcdtop_fail = rl.NuisanceParameter('qcd_top_Rfail_had%s'%leptype, 'shape')
+    qcdtop_loosepass = rl.NuisanceParameter('qcd_top_Rloosepass_had%s'%leptype, 'shape')
+    qcdtop_pass = rl.NuisanceParameter('qcd_top_Rpass_had%s'%leptype, 'shape')
     qcdnormSF_top = rl.IndependentParameter('qcdnormSF_top_had%s'%leptype, 1., 0, 10)
     #qcdnormSF_top = rl.NuisanceParameter('qcdnormSF_top_had%s'%leptype, 'lnN')
-    #qcdwlnu_fail = rl.NuisanceParameter('qcd_wlnu_Rfail_had%s'%leptype, 'shape')
-    #qcdwlnu_loosepass = rl.NuisanceParameter('qcd_wlnu_Rloosepass_had%s'%leptype, 'shape')
-    #qcdwlnu_pass = rl.NuisanceParameter('qcd_wlnu_Rpass_had%s'%leptype, 'shape')
+    qcdwlnu_fail = rl.NuisanceParameter('qcd_wlnu_Rfail_had%s'%leptype, 'shape')
+    qcdwlnu_loosepass = rl.NuisanceParameter('qcd_wlnu_Rloosepass_had%s'%leptype, 'shape')
+    qcdwlnu_pass = rl.NuisanceParameter('qcd_wlnu_Rpass_had%s'%leptype, 'shape')
     qcdnormSF_wlnu = rl.IndependentParameter('qcdnormSF_wlnu_had%s'%leptype, 1., 0, 10)
     #qcdnormSF_wlnu = rl.NuisanceParameter('qcdnormSF_wlnu_had%s'%leptype, 'lnN')
 
     m_scale = rl.NuisanceParameter('massscale_had%s'%leptype, 'shape')
+    m_scale_bkg = rl.NuisanceParameter('massscale_bkg_had%s'%leptype, 'shape')
 
     topeffSF = rl.IndependentParameter('topeffSF_had%s'%leptype, 1., 0, 10)
     #topnormSF = rl.IndependentParameter('topnormSF_had%s'%leptype, 1., 0, 10)
@@ -166,6 +162,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
 
     topLeffSF = rl.IndependentParameter('topLeffSF_had%s'%leptype, 1., 0, 10)
     wlnuLeffSF = rl.IndependentParameter('wlnuLeffSF_had%s'%leptype, 1., 0, 10)
+    
+    bkgeffSF = rl.IndependentParameter('bkgeffSF_had%s'%leptype, 1., 0, 10)
+    bkgLeffSF = rl.IndependentParameter('bkgLeffSF_had%s'%leptype, 1., 0, 10)
 
     #rdy = rl.IndependentParameter('r_dy_had%s'%leptype, 1., 0, 10)
     #rdy = rl.NuisanceParameter('r_dy_had%s'%leptype, 'lnN')
@@ -283,8 +282,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         qcd_data_w2[qcd_data_w2==default] = 0.
         qcd_data_int = hist.poisson_interval(qcd_data,qcd_data_w2)
         qcd_temp = qcd_data
-        qcd_temp_dn = np.minimum(np.array([qcd_data_int[0][bi] if qcd_data_int[0][bi] >= 0. and not np.isnan(qcd_data_int[0][bi]) else 0. for bi in range(len(qcd_data))]),qcd_data_altdn)
-        qcd_temp_up = np.maximum(np.array([qcd_data_int[1][bi] if qcd_data_int[1][bi] >= 0. and not np.isnan(qcd_data_int[1][bi]) else 0. for bi in range(len(qcd_data))]),qcd_data_altup)
+        qcd_temp_dn = np.minimum(np.array([qcd_data_int[0][bi] if qcd_data_int[0][bi] >= 0. and not np.isnan(qcd_data_int[0][bi]) else default for bi in range(len(qcd_data))]),qcd_data_altdn)
+        qcd_temp_up = np.maximum(np.array([qcd_data_int[1][bi] if qcd_data_int[1][bi] >= 0. and not np.isnan(qcd_data_int[1][bi]) else default for bi in range(len(qcd_data))]),qcd_data_altup)
         return qcd_temp,qcd_temp_dn,qcd_temp_up
 
     qcd_data_hists = {}
@@ -385,13 +384,29 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcdfail_temp_dn = {}
     qcdfail_temp_up = {}
 
+    topfail_temp = {}
+    topfail_temp_dn = {}
+    topfail_temp_up = {}
+
+    wlnufail_temp = {}
+    wlnufail_temp_dn = {}
+    wlnufail_temp_up = {}
+
     for qcdregion in ["lowmet","qcdlowmet","qcdnom"]:
         qcdfail_temp[qcdregion] = {}
         qcdfail_temp_dn[qcdregion] = {}
         qcdfail_temp_up[qcdregion] = {}
+        topfail_temp[qcdregion] = {}
+        topfail_temp_dn[qcdregion] = {}
+        topfail_temp_up[qcdregion] = {}
+        wlnufail_temp[qcdregion] = {}
+        wlnufail_temp_dn[qcdregion] = {}
+        wlnufail_temp_up[qcdregion] = {}
         for region in ['fail','loosepass','pass']:
             #qcdfail_temp[region], qcdfail_temp_dn[region], qcdfail_temp_up[region] = getQCDfromData(qcd_cr_hists["lowmet"],region,default=0.)
             qcdfail_temp[qcdregion][region], qcdfail_temp_dn[qcdregion][region], qcdfail_temp_up[qcdregion][region] = getQCDfromData(sig_hists[qcdregion] if "qcd" not in qcdregion else qcd_cr_hists[qcdregion.replace('qcd','')],region,default=0.)
+            topfail_temp[qcdregion][region], topfail_temp_dn[qcdregion][region], topfail_temp_up[qcdregion][region] = getQCDfromData(top_cr_hists[qcdregion] if "qcd" not in qcdregion else qcd_cr_hists[qcdregion.replace('qcd','')],region,default=0.)
+            wlnufail_temp[qcdregion][region], wlnufail_temp_dn[qcdregion][region], wlnufail_temp_up[qcdregion][region] = getQCDfromData(wlnu_cr_hists[qcdregion] if "qcd" not in qcdregion else qcd_cr_hists[qcdregion.replace('qcd','')],region,default=0.)
             #qcdfail_temp[region] = np.array([np.sum(qcdfail_temp[region])])
             #qcdfail_temp_dn[region] = np.array([np.sum(qcdfail_temp_dn[region])])
             #qcdfail_temp_up[region] = np.array([np.sum(qcdfail_temp_up[region])])
@@ -400,22 +415,48 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcdratio_F_dn = {}
     qcdratio_F_up = {}
 
+    topratio_F = {}
+    topratio_F_dn = {}
+    topratio_F_up = {}
+
+    wlnuratio_F = {}
+    wlnuratio_F_dn = {}
+    wlnuratio_F_up = {}
+
     for qcdregion in ["lowmet","qcdlowmet","qcdnom"]:
         qcdratio_F[qcdregion] = {}
         qcdratio_F_dn[qcdregion] = {}
         qcdratio_F_up[qcdregion] = {}
+        topratio_F[qcdregion] = {}
+        topratio_F_dn[qcdregion] = {}
+        topratio_F_up[qcdregion] = {}
+        wlnuratio_F[qcdregion] = {}
+        wlnuratio_F_dn[qcdregion] = {}
+        wlnuratio_F_up[qcdregion] = {}
         for ireg,reg in enumerate(["fail","loosepass","pass"]):
             #qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp[qcdregion][reg],qcdfail_temp[qcdregion][shaperegion[ireg]], out=qcdfail_temp[qcdregion][reg], where=qcdfail_temp[qcdregion][shaperegion[ireg]]!=0.)
             #qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp_dn[qcdregion][reg],qcdfail_temp_dn[qcdregion][shaperegion[ireg]], out=qcdfail_temp_dn[qcdregion][reg], where=qcdfail_temp_dn[qcdregion][shaperegion[ireg]]!=0.)
             #qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp_up[qcdregion][reg],qcdfail_temp_up[qcdregion][shaperegion[ireg]], out=qcdfail_temp_up[qcdregion][reg], where=qcdfail_temp_up[qcdregion][shaperegion[ireg]]!=0.)
-            qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp[qcdregion][reg])/np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]))
-            qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_dn[qcdregion][reg])/np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]))
-            qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_up[qcdregion][reg])/np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]))
+            qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp[qcdregion][reg])/(np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]])>0. else 1.))
+            qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_dn[qcdregion][reg])/(np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]])>0. else 1.))
+            qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_up[qcdregion][reg])/(np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]])>0. else 1.))
+            topratio_F[qcdregion][reg] = np.ones_like(topfail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(topfail_temp[qcdregion][reg])/(np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]) if np.sum(topfail_temp[qcdregion][shaperegion[ireg]])>0. else 1.))
+            topratio_F_dn[qcdregion][reg] = np.ones_like(topfail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(topfail_temp_dn[qcdregion][reg])/(np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]) if np.sum(topfail_temp_dn[qcdregion][shaperegion[ireg]])>0. else 1.))
+            topratio_F_up[qcdregion][reg] = np.ones_like(topfail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(topfail_temp_up[qcdregion][reg])/(np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]) if np.sum(topfail_temp_up[qcdregion][shaperegion[ireg]])>0. else 1.))
+            wlnuratio_F[qcdregion][reg] = np.ones_like(wlnufail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(wlnufail_temp[qcdregion][reg])/(np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]) if np.sum(wlnufail_temp[qcdregion][shaperegion[ireg]])>0. else 1.))
+            wlnuratio_F_dn[qcdregion][reg] = np.ones_like(wlnufail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(wlnufail_temp_dn[qcdregion][reg])/(np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]) if np.sum(wlnufail_temp_dn[qcdregion][shaperegion[ireg]])>0. else 1.))
+            wlnuratio_F_up[qcdregion][reg] = np.ones_like(wlnufail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(wlnufail_temp_up[qcdregion][reg])/(np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]) if np.sum(wlnufail_temp_up[qcdregion][shaperegion[ireg]])>0. else 1.))
     for qcdreg in qcdratio_F:
         for reg in qcdratio_F[qcdreg]:
             qcdratio_F[qcdreg][reg] = np.nan_to_num(qcdratio_F[qcdreg][reg])
             qcdratio_F_dn[qcdreg][reg] = np.nan_to_num(qcdratio_F_dn[qcdreg][reg])
             qcdratio_F_up[qcdreg][reg] = np.nan_to_num(qcdratio_F_up[qcdreg][reg])
+            topratio_F[qcdreg][reg] = np.nan_to_num(topratio_F[qcdreg][reg])
+            topratio_F_dn[qcdreg][reg] = np.nan_to_num(topratio_F_dn[qcdreg][reg])
+            topratio_F_up[qcdreg][reg] = np.nan_to_num(topratio_F_up[qcdreg][reg])
+            wlnuratio_F[qcdreg][reg] = np.nan_to_num(wlnuratio_F[qcdreg][reg])
+            wlnuratio_F_dn[qcdreg][reg] = np.nan_to_num(wlnuratio_F_dn[qcdreg][reg])
+            wlnuratio_F_up[qcdreg][reg] = np.nan_to_num(wlnuratio_F_up[qcdreg][reg])
 
     qcd_from_data_sig = {reg:{pf:[getQCDfromData(sig_hists[reg],shaperegion[ipf],hptslice=slice(sig_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,sig_hists[reg].axis('h_pt').edges()[ix] if ix<len(sig_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(sig_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
     qcd_from_data_qcd = {reg:{pf:[getQCDfromData(qcd_cr_hists[reg],shaperegion[ipf],hptslice=slice(qcd_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(qcd_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
@@ -484,9 +525,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_qcd[pfreg]["nom"][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_qcd[pfreg]["nom"][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_qcd[pfreg]["nom"][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_qcd[pfreg]["nom"][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_qcd[pfreg]["nom"][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -505,9 +546,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_sig[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_sig[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_sig[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_sig[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_sig[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_sig[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -526,9 +567,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_top[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_top[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_top[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_top[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_top[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_top[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -547,9 +588,9 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -585,18 +626,18 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     for pfreg in ["fail","loosepass","pass"]:
         for qcdreg in ["faildphi","lowmet_faildphi","lowmet","nom"]:
             for ptbin in range(npt):
-                qcdratio_sig[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin])
-                qcdratio_qcd[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])
-                qcdratio_top[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin])
-                qcdratio_wlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])
-                qcdratio_sig_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_dn[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin])
-                qcdratio_qcd_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin])
-                qcdratio_top_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_dn[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin])
-                qcdratio_wlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])
-                qcdratio_sig_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_up[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin])
-                qcdratio_qcd_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_up[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin])
-                qcdratio_top_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_up[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin])
-                qcdratio_wlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])
+                qcdratio_sig[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_qcd[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_top[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_wlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_sig_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_dn[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_qcd_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_top_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_dn[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_wlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_sig_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_up[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_qcd_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_up[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_top_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_up[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_wlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])>0. else 1.)
 
     #print('qcdratio_sig',qcdratio_sig,qcdratio_sig_dn,qcdratio_sig_up)
     #print('qcdratio_qcd',qcdratio_qcd,qcdratio_qcd_dn,qcdratio_qcd_up)
@@ -619,6 +660,17 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
 
     #check mIso CR [L] & [P]
     
+    def doMassShift(nom_full):
+        shift_dn = nom_full[lowmassbin-1:highmassbin-1]
+        shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
+        shiftwidth = mttbins[1]-mttbins[0]
+        shiftfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+1]-mttbins[lowmassbin+ib]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
+        shiftfrac_dn = np.insert(shiftfrac, 0, shiftfrac[0])[:-1]
+        shiftfrac_up = np.append(shiftfrac, shiftfrac[-1])[1:]
+        shift_dn = shift_dn*shiftfrac_dn + nom_full[lowmassbin:highmassbin]*(1.-shiftfrac)
+        shift_up = shift_up*shiftfrac_up + nom_full[lowmassbin:highmassbin]*(1.-shiftfrac)
+        return shift_dn,shift_up
+
     for ptbin in range(npt):
         for iregion,region in enumerate(['fail','loosepass','pass']):
             ch = rl.Channel("ptbin%d%s%s%s" % (ptbin, region, 'had%s'%leptype, year))
@@ -665,55 +717,63 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                     sample = rl.TemplateSample(ch.name + '_' + sName.name, stype, templ)
         
                     if sName.name in syst_dict:
-                        nom = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin]
+                        nom_base = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin]
                         for syst in syst_dict[sName.name]:
                             syst_params = syst_dict[sName.name][syst]
                             dnmod = np.clip(intRegion(thehist[sName],region,systematic=syst_params[1],hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin],0.,None)
                             upmod = intRegion(thehist[sName],region,systematic=syst_params[2],hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin]
                             if singleBinFail and not isPass and not isLoosePass:
-                                sample.setParamEffect(syst_params[0], np.array([np.sum(np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001)]), np.array([np.sum(np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)]))
+                                dnmod = np.array([np.sum(dnmod)])
+                                nom = np.array([np.sum(nom_base)])
+                                upmod = np.array([np.sum(upmod)])
                             else:
-                                sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                                nom = nom_base
+                            sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                     if sName.name=='top':
                         sample.setParamEffect(top_norm, 1.05)
                         if not singleBinFail or isPass or isLoosePass:
-                            for imx in range(len(top_highmass)):
-                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                            if highmassone:
+                                sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                            else:
+                                for imx in range(len(top_highmass)):
+                                    sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                     if sName.name=='wlnu':
                         sample.setParamEffect(wlnu_norm, 1.10)
                         if not singleBinFail or isPass or isLoosePass:
-                            for imx in range(len(wlnu_highmass)):
-                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                            if highmassone:
+                                sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                            else:
+                                for imx in range(len(wlnu_highmass)):
+                                    sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                     if sName.name=='multijet':
+                        if singleBinFail and not isPass and not isLoosePass:
+                            err_dn = np.sqrt(np.sum((qcdpred - qcdpred_dn)*(qcdpred - qcdpred_dn)))
+                            err_up = np.sqrt(np.sum((qcdpred_up - qcdpred)*(qcdpred_up - qcdpred)))
+                            qcdpred = np.array([np.sum(qcdpred)])
+                            err_dn = qcdpred - np.array([np.sum(qcdpred_dn)])
+                            err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
+                            qcdpred_dn = qcdpred - err_dn
+                            qcdpred_up = qcdpred + err_up
                         #sample.setParamEffect(qcd_norm, 1.20)
                         qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
                         #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
                         qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
                         #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
-                        if singleBinFail and not isPass and not isLoosePass:
-                            sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.array([np.sum(qcd_shape_dn)]), np.array([np.sum(qcd_shape_up)]))
-                            #sample.setParamEffect(qcd_lowmass, np.array([np.sum(np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]))]), np.array([np.sum(np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]))]))
-                        else:
-                            sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
-                        #sample.setParamEffect(qcd_lowmass, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]))
+                        sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, qcd_shape_dn, qcd_shape_up)
+                        if not singleBinFail or isPass or isLoosePass:
+                        #sample.setParamEffect(qcd_lowmass, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]))
                             for imx in range(len(qcd_lowmass)):
                                 sample.setParamEffect(qcd_lowmass[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
                     if sName.name=='vvqq':
                         sample.setParamEffect(vvqq_norm, 1.20)
                     if sName.name=='dy':
                         sample.setParamEffect(dy_norm, 1.05)
-                    if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                    if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                         nom_full = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0]
-                        shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                        shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                        shiftwidth = mttbins[1]-mttbins[0]
-                        dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                        shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                        upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                        shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                        shift_dn, shift_up = doMassShift(nom_full)
                         if not singleBinFail or (isPass or isLoosePass):
-                            sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                            sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                         #print(leptype,'htt125 ptbin',ptbin,region,nom_full[lowmassbin:highmassbin])
                     if sName.name!='multijet':
                         sample.setParamEffect(trig, 1.02)
@@ -721,7 +781,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         for il in range(len(lumi_list)):
                             sample.setParamEffect(lumi_list[il], lumi_vals[il])
             
-                    ch.addSample(sample)
+                    if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                        ch.addSample(sample)
             if not usingData and isPass:
                 if singleBinFail and not isPass and not isLoosePass:
                     ch.setObservation((np.zeros(len(mttone.binning)-1),mttone.binning, mttone.name))
@@ -760,15 +821,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
         topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
         topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-        toppass.setParamEffect(topeffSF, 1*topeffSF)
-        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-        #toppass.setParamEffect(topnormSF, 1*topnormSF)
-        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-        #topfail.setParamEffect(topnormSF, 1*topnormSF)
+        if unifiedBkgEff:
+            toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+            toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+            toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+        else:
+            toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+            toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+            toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+            toppass.setParamEffect(topeffSF, 1*topeffSF)
+            #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+            topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+            #toppass.setParamEffect(topnormSF, 1*topnormSF)
+            #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+            #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
         wlnupass = passCh['wlnu']
         wlnuloosepass = loosePassCh['wlnu']
@@ -776,15 +844,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
         wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
         wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        if unifiedBkgEff:
+            wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+            wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+            wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+        else:
+            wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+            wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+            wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+            wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+            #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+            wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+            #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+            #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+            #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
         dypass = passCh['dy']
         dyloosepass = loosePassCh['dy']
@@ -796,7 +871,7 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         dypass.setParamEffect(dy_eff, 1*dy_eff)
         dyloosepass.setParamEffect(dy_eff, (1 - dy_eff) * dyLP + 1)
         passCh['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-        loosePassCh['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+        #loosePassCh['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
         if not doHtt:
             for m in masspoints:
                 passCh['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -809,8 +884,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         #dyfail.setParamEffect(rdy, 1.05)
         if not doHtt:
             passCh['htt125'].setParamEffect(rh125, 1.10)
-            loosePassCh['htt125'].setParamEffect(rh125, 1.10)
-            failCh['htt125'].setParamEffect(rh125, 1.10)
+            #loosePassCh['htt125'].setParamEffect(rh125, 1.10)
+            #failCh['htt125'].setParamEffect(rh125, 1.10)
 
 
     # Fill in top CR
@@ -838,9 +913,12 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 ch.setObservation(templ, read_sumw2=True)
             else:
                 if sName.name=='multijet':
-                    qcdpred = np.sum(np.stack([(qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_top[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["lowmet"][region][ix])/2. for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0)
-                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0),0.,None)
-                    qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    #qcdpred = np.sum(np.stack([(qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin]*qcdratio_F["lowmet"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_top[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["qcdnom"][region][ix])/2. for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0)
+                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0),0.,None)
+                    #qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * topratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred_dn = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_top_dn[shaperegion[iregion]]["nom"][ptbin] * topratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_top_up[shaperegion[iregion]]["nom"][ptbin] * topratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
                     #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0),0.,None)
                     #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][1] * qcdratio_sig_dn[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0),0.,None)
                     #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_top["lowmet"][shaperegion[iregion]][ix][2] * qcdratio_sig_up[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["lowmet"][region]))]),axis=0),0.,None)
@@ -866,18 +944,24 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                             upmod = np.array([np.sum(upmod)])
                         else:
                             nom = nom_base
-                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                 if sName.name=='top':
                     sample.setParamEffect(top_norm, 1.05)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(top_highmass)):
-                            sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(top_highmass)):
+                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='wlnu':
                     sample.setParamEffect(wlnu_norm, 1.10)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(wlnu_highmass)):
-                            sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(wlnu_highmass)):
+                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='multijet':
                     #sample.setParamEffect(qcd_norm, 1.20)
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
@@ -888,39 +972,33 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
                         qcdpred_dn = qcdpred - err_dn
                         qcdpred_up = qcdpred + err_up
-                    ##sample.setParamEffect(qcdtop_pass if isPass else qcdtop_loosepass if isLoosePass else qcdtop_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
+                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
+                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
                     #sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
-                    else:
-                        qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                        #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
-                        qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                        #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
-                        sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
-                        #sample.setParamEffect(qcd_lowmass_top, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]))
+                    sample.setParamEffect(qcdtop_pass if isPass else qcdtop_loosepass if isLoosePass else qcdtop_fail, qcd_shape_dn, qcd_shape_up)
+                    if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
+                        #sample.setParamEffect(qcd_lowmass_top, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]))
                         for imx in range(len(qcd_lowmass_top)):
                             sample.setParamEffect(qcd_lowmass_top[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vvqq_norm, 1.20)
                 if sName.name=='dy':
                     sample.setParamEffect(dy_norm, 1.05)
-                if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                     nom_full = intRegion(thehist[sName],region)[0]
-                    shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                    shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                    shiftwidth = mttbins[1]-mttbins[0]
-                    dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                    upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                    shift_dn, shift_up = doMassShift(nom_full)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                        sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                 if sName.name!='multijet':
                     sample.setParamEffect(trig, 1.02)
                     sample.setParamEffect(lepid, 1.02)
                     for il in range(len(lumi_list)):
                         sample.setParamEffect(lumi_list[il], lumi_vals[il])
         
-                ch.addSample(sample)
+                if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                    ch.addSample(sample)
 
     qcdpass = model['topCRpasshad%s%s'%(leptype,year)]['multijet']
     qcdloosepass = model['topCRloosepasshad%s%s'%(leptype,year)]['multijet']
@@ -931,9 +1009,10 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #qcdpass.setParamEffect(qcdnormSF_top, 1.20)
     #qcdloosepass.setParamEffect(qcdnormSF_top, 1.20)
     #qcdfail.setParamEffect(qcdnormSF_top, 1.20)
-    qcdpass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
-    qcdloosepass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
-    qcdfail.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+    if singleBinCR:
+        qcdpass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+        qcdloosepass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+        qcdfail.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
 
     toppass = model['topCRpasshad%s%s'%(leptype,year)]['top']
     toploosepass = model['topCRloosepasshad%s%s'%(leptype,year)]['top']
@@ -941,15 +1020,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
     topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
     topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-    toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-    toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-    toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-    toppass.setParamEffect(topeffSF, 1*topeffSF)
-    #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-    topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-    #toppass.setParamEffect(topnormSF, 1*topnormSF)
-    #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-    #topfail.setParamEffect(topnormSF, 1*topnormSF)
+    if unifiedBkgEff:
+        toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+    else:
+        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+        toppass.setParamEffect(topeffSF, 1*topeffSF)
+        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+        #toppass.setParamEffect(topnormSF, 1*topnormSF)
+        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+        #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
     wlnupass = model['topCRpasshad%s%s'%(leptype,year)]['wlnu']
     wlnuloosepass = model['topCRloosepasshad%s%s'%(leptype,year)]['wlnu']
@@ -957,15 +1043,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
     wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
     wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-    wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-    wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-    wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-    wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-    #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+    if unifiedBkgEff:
+        wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+    else:
+        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
     dypass = model['topCRpasshad%s%s'%(leptype,year)]['dy']
     dyloosepass = model['topCRloosepasshad%s%s'%(leptype,year)]['dy']
@@ -976,8 +1069,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         phittLP = {m:model['topCRpasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() / model['topCRloosepasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() if model['topCRloosepasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() > 0. else 1. for m in masspoints}
     dypass.setParamEffect(dy_eff, 1*dy_eff)
     dyloosepass.setParamEffect(dy_eff, (1 - dy_eff)* dyLP + 1)
-    model['topCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-    model['topCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+    #model['topCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
+    #model['topCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
     if not doHtt:
         for m in masspoints:
             model['topCRpasshad%s%s'%(leptype,year)]['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -988,10 +1081,10 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #dypass.setParamEffect(rdy, 1.05)
     #dyloosepass.setParamEffect(rdy, 1.05)
     #dyfail.setParamEffect(rdy, 1.05)
-    if not doHtt:
-        model['topCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
-        model['topCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
-        model['topCRfailhad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #if not doHtt:
+    #    model['topCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['topCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['topCRfailhad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
 
     # Fill in wlnu CR
     for iregion,region in enumerate(['fail', 'loosepass', 'pass']):
@@ -1018,9 +1111,12 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 ch.setObservation(templ, read_sumw2=True)
             else:
                 if sName.name=='multijet':
-                    qcdpred = np.sum(np.stack([(qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][region][ix][0]*qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["lowmet"][region][ix])/2. for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0)
-                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0),0.,None)
-                    qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    #qcdpred = np.sum(np.stack([(qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][region][ix][0]*qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["lowmet"][region][ix])/2. for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0)
+                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0),0.,None)
+                    #qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * wlnuratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred_dn = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_wlnu_dn[shaperegion[iregion]]["nom"][ptbin] * wlnuratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
+                    qcdpred_up = np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_wlnu_up[shaperegion[iregion]]["nom"][ptbin] * wlnuratio_F["lowmet"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0)
                     #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0),0.,None)
                     #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][1] * qcdratio_sig_dn[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0),0.,None)
                     #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_wlnu["lowmet"][shaperegion[iregion]][ix][2] * qcdratio_sig_up[shaperegion[iregion]]["lowmet"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["lowmet"][region]))]),axis=0),0.,None)
@@ -1046,18 +1142,24 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                             upmod = np.array([np.sum(upmod)])
                         else:
                             nom = nom_base
-                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                 if sName.name=='top':
                     sample.setParamEffect(top_norm, 1.05)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(top_highmass)):
-                            sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(top_highmass)):
+                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='wlnu':
                     sample.setParamEffect(wlnu_norm, 1.10)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(wlnu_highmass)):
-                            sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(wlnu_highmass)):
+                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='multijet':
                     #sample.setParamEffect(qcd_norm, 1.20)
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
@@ -1068,39 +1170,33 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
                         qcdpred_dn = qcdpred - err_dn
                         qcdpred_up = qcdpred + err_up
-                    ##sample.setParamEffect(qcdwlnu_pass if isPass else qcdwlnu_loosepass if isLoosePass else qcdwlnu_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
                     #sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.), np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.))
-                    else:
-                        qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                        #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
-                        qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                        #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
-                        sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
-                        #sample.setParamEffect(qcd_lowmass_wlnu, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmasslep else 1. for ix in range(len(qcdpred))]))
+                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
+                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
+                        #sample.setParamEffect(qcd_lowmass_wlnu, np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmass else 1. for ix in range(len(qcdpred))]))
+                    sample.setParamEffect(qcdwlnu_pass if isPass else qcdwlnu_loosepass if isLoosePass else qcdwlnu_fail, qcd_shape_dn, qcd_shape_up)
+                    if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
                         for imx in range(len(qcd_lowmass_wlnu)):
                             sample.setParamEffect(qcd_lowmass_wlnu[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vvqq_norm, 1.20)
                 if sName.name=='dy':
                     sample.setParamEffect(dy_norm, 1.05)
-                if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                     nom_full = intRegion(thehist[sName],region)[0]
-                    shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                    shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                    shiftwidth = mttbins[1]-mttbins[0]
-                    dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                    upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                    shift_dn, shift_up = doMassShift(nom_full)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                        sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                 if sName.name!='multijet':
                     sample.setParamEffect(trig, 1.02)
                     sample.setParamEffect(lepid, 1.02)
                     for il in range(len(lumi_list)):
                         sample.setParamEffect(lumi_list[il], lumi_vals[il])
         
-                ch.addSample(sample)
+                if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                    ch.addSample(sample)
 
     qcdpass = model['wlnuCRpasshad%s%s'%(leptype,year)]['multijet']
     qcdloosepass = model['wlnuCRloosepasshad%s%s'%(leptype,year)]['multijet']
@@ -1111,9 +1207,10 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #qcdpass.setParamEffect(qcdnormSF_wlnu, 1.20)
     #qcdloosepass.setParamEffect(qcdnormSF_wlnu, 1.20)
     #qcdfail.setParamEffect(qcdnormSF_wlnu, 1.20)
-    qcdpass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
-    qcdloosepass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
-    qcdfail.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+    if singleBinCR:    
+        qcdpass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+        qcdloosepass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+        qcdfail.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
 
     toppass = model['wlnuCRpasshad%s%s'%(leptype,year)]['top']
     toploosepass = model['wlnuCRloosepasshad%s%s'%(leptype,year)]['top']
@@ -1121,15 +1218,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
     topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
     topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-    toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-    toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-    toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-    toppass.setParamEffect(topeffSF, 1*topeffSF)
-    #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-    topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-    #toppass.setParamEffect(topnormSF, 1*topnormSF)
-    #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-    #topfail.setParamEffect(topnormSF, 1*topnormSF)
+    if unifiedBkgEff:
+        toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+    else:
+        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+        toppass.setParamEffect(topeffSF, 1*topeffSF)
+        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+        #toppass.setParamEffect(topnormSF, 1*topnormSF)
+        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+        #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
     wlnupass = model['wlnuCRpasshad%s%s'%(leptype,year)]['wlnu']
     wlnuloosepass = model['wlnuCRloosepasshad%s%s'%(leptype,year)]['wlnu']
@@ -1137,15 +1241,22 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
     wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
     wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-    wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-    wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-    wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-    wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-    #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+    if unifiedBkgEff:
+        wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+    else:
+        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
     dypass = model['wlnuCRpasshad%s%s'%(leptype,year)]['dy']
     dyloosepass = model['wlnuCRloosepasshad%s%s'%(leptype,year)]['dy']
@@ -1156,8 +1267,8 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         phittLP = {m:model['wlnuCRpasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() / model['wlnuCRloosepasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() if model['wlnuCRloosepasshad%s%s'%(leptype,year)]['phitt%s'%m].getExpectation(nominal=True).sum() > 0. else 1. for m in masspoints}
     dypass.setParamEffect(dy_eff, 1*dy_eff)
     dyloosepass.setParamEffect(dy_eff, (1 - dy_eff) * dyLP + 1)
-    model['wlnuCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-    model['wlnuCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+    #model['wlnuCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
+    #model['wlnuCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
     if not doHtt:
         for m in masspoints:
             model['wlnuCRpasshad%s%s'%(leptype,year)]['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -1168,17 +1279,17 @@ def createLepHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #dypass.setParamEffect(rdy, 1.05)
     #dyloosepass.setParamEffect(rdy, 1.05)
     #dyfail.setParamEffect(rdy, 1.05)
-    if not doHtt:
-        model['wlnuCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
-        model['wlnuCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
-        model['wlnuCRfailhad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #if not doHtt:
+    #    model['wlnuCRpasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['wlnuCRloosepasshad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['wlnuCRfailhad%s%s'%(leptype,year)]['htt125'].setParamEffect(rh125, 1.10)
 
     with open(os.path.join("%s/%s"%(str(tmpdir),label), 'had%sModel.pkl'%leptype), "wb") as fout:
         pickle.dump(model, fout, protocol=2)
 
     #model.renderCombine(os.path.join("%s/%s"%(str(tmpdir),label), 'had%sModel'%leptype))
 
-def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, tmpdir, label, usingData, nnCut_met, nnCut_met_loose, metCut, lowMetCut, h_pt_min, singleBinFail, masspoints, shaperegion, year, doHtt, noSyst):
+def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi, top_cr_faildphi, wlnu_cr_faildphi, qcd_cr_faildphi, var_name, mttbins, ptbins, tmpdir, label, usingData, nnCut_met, nnCut_met_loose, metCut, lowMetCut, h_pt_min, singleBinCR, singleBinFail, lowqcdmass, lowqcdincrease, highbkgmass, highbkgincrease, highmassone, unifiedBkgEff, masspoints, shaperegion, year, doHtt, noSyst):
 
     #could be made region-dependent
     samp_combinations = {
@@ -1187,8 +1298,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         'htt125'     : ['h125'],
         'multijet'   : ['qcd'],
         'dy'         : ['zem','ztt'],
-        'wlnu'       : ['wjets'],
-        'vvqq'       : ['vv','vqq'],
+        'wlnu'       : ['wjets','vv','vqq'],
+        #'vvqq'       : ['vv','vqq'],
         'ignore'     : [],
     }
     for m in masspoints:
@@ -1220,7 +1331,7 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcd_cr_hists["lowmet_faildphi"] = qcd_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,metCut),'under')
 
     sig_hists["faildphi"] = sig_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
-    top_cr_hists["faildphi"] = top_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
+    top_cr_hists["faildphi"] = top_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
     wlnu_cr_hists["faildphi"] = wlnu_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
     qcd_cr_hists["faildphi"] = qcd_cr_faildphi.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
 
@@ -1230,7 +1341,7 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcd_cr_hists["lowmet"] = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,metCut),'under')
 
     sig_hists["nom"] = sig_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
-    top_cr_hists["nom"] = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
+    top_cr_hists["nom"] = top_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(metCut,None),'over')
     wlnu_cr_hists["nom"] = wlnu_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
     qcd_cr_hists["nom"] = qcd_cr_hist.group("process", hist.Cat("sample", "sample"), samp_combinations).integrate('met_pt',slice(lowMetCut,None),'over')
 
@@ -1259,32 +1370,36 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcd_loosepass = rl.NuisanceParameter('qcd_Rloosepass_hadhad', 'shape')
     qcd_pass = rl.NuisanceParameter('qcd_Rpass_hadhad', 'shape')
     #qcd_lowmass = rl.NuisanceParameter('qcd_lowmass_hadhad', 'shape')
-    qcd_lowmass = [rl.NuisanceParameter('qcd_lowmass_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasshad]
-    qcd_lowmass_top = [rl.NuisanceParameter('qcd_lowmass_top_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasshad]
-    qcd_lowmass_wlnu = [rl.NuisanceParameter('qcd_lowmass_wlnu_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmasshad]
+    qcd_lowmass = [rl.NuisanceParameter('qcd_lowmass_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
+    qcd_lowmass_top = [rl.NuisanceParameter('qcd_lowmass_top_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
+    qcd_lowmass_wlnu = [rl.NuisanceParameter('qcd_lowmass_wlnu_bin%i_hadhad'%(ix), 'shape') for ix in range(len(mttbins[lowmassbin:highmassbin])) if (mttbins[lowmassbin:highmassbin])[ix]<lowqcdmass]
     highmassx = -1
     top_highmass = []
     wlnu_highmass = []
     for ix in range(len(mttbins[lowmassbin:highmassbin])):
-        if (mttbins[lowmassbin:highmassbin])[ix]>highmasshad:
+        if (mttbins[lowmassbin:highmassbin])[ix]>highbkgmass:
             if highmassx == -1:
-                highmassx = ix
+                    highmassx = ix
             top_highmass.append(rl.NuisanceParameter('top_highmass_bin%i_hadhad'%(ix), 'shape'))
             wlnu_highmass.append(rl.NuisanceParameter('wlnu_highmass_bin%i_hadhad'%(ix), 'shape'))
+    if highmassone:
+        top_highmass = rl.NuisanceParameter('top_highmass_hadhad', 'shape')
+        wlnu_highmass = rl.NuisanceParameter('wlnu_highmass_hadhad', 'shape')
     qcdnormSF = rl.IndependentParameter('qcdnormSF_hadhad', 1., 0, 10)
     #qcdnormSF = rl.NuisanceParameter('qcdnormSF_hadhad', 'lnN')
-    #qcdtop_fail = rl.NuisanceParameter('qcd_top_Rfail_hadhad', 'shape')
-    #qcdtop_loosepass = rl.NuisanceParameter('qcd_top_Rloosepass_hadhad', 'shape')
-    #qcdtop_pass = rl.NuisanceParameter('qcd_top_Rpass_hadhad', 'shape')
+    qcdtop_fail = rl.NuisanceParameter('qcd_top_Rfail_hadhad', 'shape')
+    qcdtop_loosepass = rl.NuisanceParameter('qcd_top_Rloosepass_hadhad', 'shape')
+    qcdtop_pass = rl.NuisanceParameter('qcd_top_Rpass_hadhad', 'shape')
     qcdnormSF_top = rl.IndependentParameter('qcdnormSF_top_hadhad', 1., 0, 10)
     #qcdnormSF_top = rl.NuisanceParameter('qcdnormSF_top_hadhad', 'lnN')
-    #qcdwlnu_fail = rl.NuisanceParameter('qcd_wlnu_Rfail_hadhad', 'shape')
-    #qcdwlnu_loosepass = rl.NuisanceParameter('qcd_wlnu_Rloosepass_hadhad', 'shape')
-    #qcdwlnu_pass = rl.NuisanceParameter('qcd_wlnu_Rpass_hadhad', 'shape')
+    qcdwlnu_fail = rl.NuisanceParameter('qcd_wlnu_Rfail_hadhad', 'shape')
+    qcdwlnu_loosepass = rl.NuisanceParameter('qcd_wlnu_Rloosepass_hadhad', 'shape')
+    qcdwlnu_pass = rl.NuisanceParameter('qcd_wlnu_Rpass_hadhad', 'shape')
     qcdnormSF_wlnu = rl.IndependentParameter('qcdnormSF_wlnu_hadhad', 1., 0, 10)
     #qcdnormSF_wlnu = rl.NuisanceParameter('qcdnormSF_wlnu_hadhad', 'lnN')
 
     m_scale = rl.NuisanceParameter('massscale_hadhad', 'shape')
+    m_scale_bkg = rl.NuisanceParameter('massscale_bkg_hadhad', 'shape')
 
     topeffSF = rl.IndependentParameter('topeffSF_hadhad', 1., 0, 10)
     #topnormSF = rl.IndependentParameter('topnormSF_hadhad', 1., 0, 10)
@@ -1293,6 +1408,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
 
     topLeffSF = rl.IndependentParameter('topLeffSF_hadhad', 1., 0, 10)
     wlnuLeffSF = rl.IndependentParameter('wlnuLeffSF_hadhad', 1., 0, 10)
+    
+    bkgeffSF = rl.IndependentParameter('bkgeffSF_hadhad', 1., 0, 10)
+    bkgLeffSF = rl.IndependentParameter('bkgLeffSF_hadhad', 1., 0, 10)
 
     #rdy = rl.IndependentParameter('r_dy_hadhad', 1., 0, 10)
     #rdy = rl.NuisanceParameter('r_dy_hadhad', 'lnN')
@@ -1538,9 +1656,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
             #qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp[qcdregion][reg],qcdfail_temp[qcdregion][shaperegion[ireg]], out=qcdfail_temp[qcdregion][reg], where=qcdfail_temp[qcdregion][shaperegion[ireg]]!=0.)
             #qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp_dn[qcdregion][reg],qcdfail_temp_dn[qcdregion][shaperegion[ireg]], out=qcdfail_temp_dn[qcdregion][reg], where=qcdfail_temp_dn[qcdregion][shaperegion[ireg]]!=0.)
             #qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg]) if reg in shaperegion else np.divide(qcdfail_temp_up[qcdregion][reg],qcdfail_temp_up[qcdregion][shaperegion[ireg]], out=qcdfail_temp_up[qcdregion][reg], where=qcdfail_temp_up[qcdregion][shaperegion[ireg]]!=0.)
-            qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp[qcdregion][reg])/np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]))
-            qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_dn[qcdregion][reg])/np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]))
-            qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_up[qcdregion][reg])/np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]))
+            qcdratio_F[qcdregion][reg] = np.ones_like(qcdfail_temp[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp[qcdregion][reg])/(np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp[qcdregion][shaperegion[ireg]])>0. else 1.))
+            qcdratio_F_dn[qcdregion][reg] = np.ones_like(qcdfail_temp_dn[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_dn[qcdregion][reg])/(np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp_dn[qcdregion][shaperegion[ireg]])>0. else 1.))
+            qcdratio_F_up[qcdregion][reg] = np.ones_like(qcdfail_temp_up[qcdregion][reg])*(1. if reg in shaperegion else np.sum(qcdfail_temp_up[qcdregion][reg])/(np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]]) if np.sum(qcdfail_temp_up[qcdregion][shaperegion[ireg]])>0. else 1.))
 
     for qcdreg in qcdratio_F:
         for reg in qcdratio_F[qcdreg]:
@@ -1600,9 +1718,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_qcd[pfreg]["nom"][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_qcd[pfreg]["nom"][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_qcd[pfreg]["nom"][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_qcd[pfreg]["nom"][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_qcd[pfreg]["nom"][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -1621,9 +1739,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_sig[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_sig[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_sig[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_sig[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_sig[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_sig[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -1642,9 +1760,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_top[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_top[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_top[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_top[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_top[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_top[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -1663,9 +1781,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_up = []
                 marr = []
                 for ix in range(len(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])):
-                    if qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix]>0.:
-                        marr_dn.append(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][2][ptbin][ix])
-                        marr_up.append(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix])
+                    if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                         marr.append(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
                     else:
                         if ix==0:
@@ -1683,19 +1801,29 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     for pfreg in ["fail","loosepass","pass"]:
         for qcdreg in ["faildphi","lowmet_faildphi","lowmet","nom"]:
             for ptbin in range(npt):
-                qcdratio_sig[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin])
-                qcdratio_qcd[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])
-                qcdratio_top[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin])
-                qcdratio_wlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])
-                qcdratio_sig_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_dn[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin])
-                qcdratio_qcd_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin])
-                qcdratio_top_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_dn[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin])
-                qcdratio_wlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])
-                qcdratio_sig_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_up[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin])
-                qcdratio_qcd_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_up[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin])
-                qcdratio_top_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_up[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin])
-                qcdratio_wlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])/np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])
+                qcdratio_sig[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_qcd[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_top[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_wlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_sig_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_dn[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_qcd_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_top_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_dn[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_wlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_sig_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_up[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_qcd_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_up[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_top_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_up[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_wlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])>0. else 1.)
 
+    def doMassShift(nom_full):
+        shift_dn = nom_full[lowmassbin-1:highmassbin-1]
+        shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
+        shiftwidth = mttbins[1]-mttbins[0]
+        shiftfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+1]-mttbins[lowmassbin+ib]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
+        shiftfrac_dn = np.insert(shiftfrac, 0, shiftfrac[0])[:-1]
+        shiftfrac_up = np.append(shiftfrac, shiftfrac[-1])[1:]
+        shift_dn = shift_dn*shiftfrac_dn + nom_full[lowmassbin:highmassbin]*(1.-shiftfrac)
+        shift_up = shift_up*shiftfrac_up + nom_full[lowmassbin:highmassbin]*(1.-shiftfrac)
+        return shift_dn,shift_up
 
     for ptbin in range(npt):
         for iregion,region in enumerate(['fail','loosepass','pass']):
@@ -1726,9 +1854,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                     ch.setObservation(templ, read_sumw2=True)
                 else:
                     if sName.name=='multijet':
-                        qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][2]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["faildphi"][region][ix])/2. for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
-                        qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
-                        qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
+                        qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["faildphi"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["qcdnom"][region][ix])/2. for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
+                        qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
+                        qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
                         #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
                         #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][1] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
                         #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_sig["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_sig["faildphi"][region][0][0])]),axis=0),0.,None)
@@ -1746,61 +1874,72 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                     sample = rl.TemplateSample(ch.name + '_' + sName.name, stype, templ)
         
                     if sName.name in syst_dict:
-                        nom = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin]
+                        nom_base = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin]
                         for syst in syst_dict[sName.name]:
                             syst_params = syst_dict[sName.name][syst]
                             dnmod = np.clip(intRegion(thehist[sName],region,syst_params[1],hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin],0.,None)
                             upmod = np.clip(intRegion(thehist[sName],region,syst_params[2],hptslice=ptslices[ptbin])[0][lowmassbin:highmassbin],0.,None)
                             if singleBinFail and not isPass and not isLoosePass:
-                                sample.setParamEffect(syst_params[0], np.array([np.sum(np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001)]), np.array([np.sum(np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)]))
+                                dnmod = np.array([np.sum(dnmod)])
+                                nom = np.array([np.sum(nom_base)])
+                                upmod = np.array([np.sum(upmod)])
                             else:
-                                sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                                nom = nom_base
+                            sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                     if sName.name=='top':
                         sample.setParamEffect(top_norm, 1.05)
                         if not singleBinFail or isPass or isLoosePass:
-                            for imx in range(len(top_highmass)):
-                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                            if highmassone:
+                                sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                            else:
+                                for imx in range(len(top_highmass)):
+                                    sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                     if sName.name=='wlnu':
                         sample.setParamEffect(wlnu_norm, 1.10)
                         if not singleBinFail or isPass or isLoosePass:
-                            for imx in range(len(wlnu_highmass)):
-                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                            if highmassone:
+                                sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                            else:
+                                for imx in range(len(wlnu_highmass)):
+                                    sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                     if sName.name=='multijet':
+                        if singleBinFail and not isPass and not isLoosePass:
+                            err_dn = np.sqrt(np.sum((qcdpred - qcdpred_dn)*(qcdpred - qcdpred_dn)))
+                            err_up = np.sqrt(np.sum((qcdpred_up - qcdpred)*(qcdpred_up - qcdpred)))
+                            qcdpred = np.array([np.sum(qcdpred)])
+                            err_dn = qcdpred - np.array([np.sum(qcdpred_dn)])
+                            err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
+                            qcdpred_dn = qcdpred - err_dn
+                            qcdpred_up = qcdpred + err_up
                         #sample.setParamEffect(qcd_norm, 1.20)
                         qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
                         #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
                         qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
                         #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
-                        if singleBinFail and not isPass and not isLoosePass:
-                            sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.array([np.sum(qcd_shape_dn)]), np.array([np.sum(qcd_shape_up)]))
-                            #sample.setParamEffect(qcd_lowmass, np.array([np.sum(np.array([1.-lowqcdincrease if mtt.binning[ix]<lowqcdmasshad else 1. for ix in range(len(qcdpred))]))]), np.array([np.sum(np.array([1.+lowqcdincrease if mtt.binning[ix]<lowqcdmasshad else 1. for ix in range(len(qcdpred))]))]))
-                        else:
-                            sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
+                        if not singleBinFail or isPass or isLoosePass:
+                            sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, qcd_shape_dn, qcd_shape_up)
+                        if not singleBinFail or isPass or isLoosePass:
                             for imx in range(len(qcd_lowmass)):
-                                sample.setParamEffect(qcd_lowmass[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                                #sample.setParamEffect(qcd_lowmass[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                                sample.setParamEffect(qcd_lowmass[imx], np.array([1.-lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]))
                     if sName.name=='vvqq':
                         sample.setParamEffect(vvqq_norm, 1.20)
                     if sName.name=='dy':
                         sample.setParamEffect(dy_norm, 1.05)
-                    if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                    if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                         nom_full = intRegion(thehist[sName],region,hptslice=ptslices[ptbin])[0]
-                        shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                        shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                        shiftwidth = mttbins[1]-mttbins[0]
-                        dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                        shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                        upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                        shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                        shift_dn, shift_up = doMassShift(nom_full)
                         if not singleBinFail or (isPass or isLoosePass):
-                            sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                            sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                         #print('had htt125 ptbin',ptbin,region,nom_full[lowmassbin:highmassbin])
                     if sName.name!='multijet':
                         sample.setParamEffect(trig, 1.02)
                         for il in range(len(lumi_list)):
                             sample.setParamEffect(lumi_list[il], lumi_vals[il])
             
-                    ch.addSample(sample)
+                    if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                        ch.addSample(sample)
             if not usingData and isPass:
                 if singleBinFail and not isPass and not isLoosePass:
                     ch.setObservation((np.zeros(len(mttone.binning)-1),mttone.binning, mttone.name))
@@ -1845,15 +1984,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
         topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
         topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-        toppass.setParamEffect(topeffSF, 1*topeffSF)
-        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-        #toppass.setParamEffect(topnormSF, 1*topnormSF)
-        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-        #topfail.setParamEffect(topnormSF, 1*topnormSF)
+        if unifiedBkgEff:
+            toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+            toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+            toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+        else:
+            toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+            toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+            toppass.setParamEffect(topeffSF, 1*topeffSF)
+            toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+            #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+            topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+            #toppass.setParamEffect(topnormSF, 1*topnormSF)
+            #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+            #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
         wlnupass = passCh['wlnu']
         wlnuloosepass = loosePassCh['wlnu']
@@ -1861,15 +2007,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
         wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
         wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        if unifiedBkgEff:
+            wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+            wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+            wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+            wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+        else:
+            wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+            wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+            wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+            wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+            #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+            wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+            #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+            #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+            #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
         dypass = passCh['dy']
         dyloosepass = loosePassCh['dy']
@@ -1881,7 +2034,7 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         dypass.setParamEffect(dy_eff, 1*dy_eff)
         dyloosepass.setParamEffect(dy_eff, (1 - dy_eff) * dyLP + 1)
         passCh['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-        loosePassCh['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+        #loosePassCh['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
         if not doHtt:
             for m in masspoints:
                 passCh['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -1894,8 +2047,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         #dyfail.setParamEffect(rdy, 1.05)
         if not doHtt:
             passCh['htt125'].setParamEffect(rh125, 1.10)
-            loosePassCh['htt125'].setParamEffect(rh125, 1.10)
-            failCh['htt125'].setParamEffect(rh125, 1.10)
+        #    loosePassCh['htt125'].setParamEffect(rh125, 1.10)
+        #    failCh['htt125'].setParamEffect(rh125, 1.10)
 
 
     # Fill in top CR
@@ -1923,15 +2076,15 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 ch.setObservation(templ, read_sumw2=True)
             else:
                 if sName.name=='multijet':
-                    qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][2]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_top[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["faildphi"][region][ix])/2. for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
-                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
-                    qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    #qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_top[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["faildphi"][region][ix])/2. for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
+                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
+                    #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
                     #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
                     #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][1] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
                     #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_top["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_top["faildphi"][region]))]),axis=0),0.,None)
-                    #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
-                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_top_dn[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
-                    #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_top_up[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_top[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_top_dn[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_top_up[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
 
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
                         templ = (np.clip(np.array([np.sum(qcdpred)]),0.,None), mttone.binning, mttone.name, np.array([1000000.]))
@@ -1955,24 +2108,25 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                             upmod = np.array([np.sum(upmod)])
                         else:
                             nom = nom_base
-                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                 if sName.name=='top':
                     sample.setParamEffect(top_norm, 1.05)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(top_highmass)):
-                            sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(top_highmass)):
+                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='wlnu':
                     sample.setParamEffect(wlnu_norm, 1.10)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(wlnu_highmass)):
-                            sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(wlnu_highmass)):
+                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='multijet':
-                    #sample.setParamEffect(qcd_norm, 1.20)
-                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
-                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
                         err_dn = np.sqrt(np.sum((qcdpred - qcdpred_dn)*(qcdpred - qcdpred_dn)))
                         err_up = np.sqrt(np.sum((qcdpred_up - qcdpred)*(qcdpred_up - qcdpred)))
@@ -1981,31 +2135,32 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
                         qcdpred_dn = qcdpred - err_dn
                         qcdpred_up = qcdpred + err_up
-                    else:
-                        sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
+                    #sample.setParamEffect(qcd_norm, 1.20)
+                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
+                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
+                    sample.setParamEffect(qcdtop_pass if isPass else qcdtop_loosepass if isLoosePass else qcdtop_fail, qcd_shape_dn, qcd_shape_up)
+                    if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
                         for imx in range(len(qcd_lowmass_top)):
-                            sample.setParamEffect(qcd_lowmass_top[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                            #sample.setParamEffect(qcd_lowmass_top[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                            sample.setParamEffect(qcd_lowmass_top[imx], np.array([1.-lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vvqq_norm, 1.20)
                 if sName.name=='dy':
                     sample.setParamEffect(dy_norm, 1.05)
-                if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                     nom_full = intRegion(thehist[sName],region)[0]
-                    shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                    shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                    shiftwidth = mttbins[1]-mttbins[0]
-                    dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                    upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                    shift_dn, shift_up = doMassShift(nom_full)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                        sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                 if sName.name!='multijet':
                     sample.setParamEffect(trig, 1.02)
                     for il in range(len(lumi_list)):
                         sample.setParamEffect(lumi_list[il], lumi_vals[il])
         
-                ch.addSample(sample)
+                if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                    ch.addSample(sample)
 
     qcdpass = model['topCRpasshadhad%s'%year]['multijet']
     qcdloosepass = model['topCRloosepasshadhad%s'%year]['multijet']
@@ -2016,9 +2171,10 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #qcdpass.setParamEffect(qcdnormSF, 1.20)
     #qcdloosepass.setParamEffect(qcdnormSF, 1.20)
     #qcdfail.setParamEffect(qcdnormSF, 1.20)
-    qcdpass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
-    qcdloosepass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
-    qcdfail.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+    if singleBinCR:
+        qcdpass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+        qcdloosepass.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
+        qcdfail.setParamEffect(qcdnormSF_top, 1*qcdnormSF_top)
 
     toppass = model['topCRpasshadhad%s'%year]['top']
     toploosepass = model['topCRloosepasshadhad%s'%year]['top']
@@ -2026,15 +2182,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
     topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
     topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-    toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-    toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-    toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-    toppass.setParamEffect(topeffSF, 1*topeffSF)
-    #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-    topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-    #toppass.setParamEffect(topnormSF, 1*topnormSF)
-    #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-    #topfail.setParamEffect(topnormSF, 1*topnormSF)
+    if unifiedBkgEff:
+        toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+    else:
+        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+        toppass.setParamEffect(topeffSF, 1*topeffSF)
+        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+        #toppass.setParamEffect(topnormSF, 1*topnormSF)
+        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+        #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
     wlnupass = model['topCRpasshadhad%s'%year]['wlnu']
     wlnuloosepass = model['topCRloosepasshadhad%s'%year]['wlnu']
@@ -2042,15 +2205,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
     wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
     wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-    wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-    wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-    wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-    wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-    #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+    if unifiedBkgEff:
+        wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+    else:
+        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
     dypass = model['topCRpasshadhad%s'%year]['dy']
     dyloosepass = model['topCRloosepasshadhad%s'%year]['dy']
@@ -2061,8 +2231,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         phittLP = {m:model['topCRpasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() / model['topCRloosepasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() if model['topCRloosepasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() > 0. else 1. for m in masspoints}
     dypass.setParamEffect(dy_eff, 1*dy_eff)
     dyloosepass.setParamEffect(dy_eff, (1 - dy_eff)* dyLP + 1)
-    model['topCRpasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-    model['topCRloosepasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+    #model['topCRpasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
+    #model['topCRloosepasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
     if not doHtt:
         for m in masspoints:
             model['topCRpasshadhad%s'%year]['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -2073,10 +2243,10 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #dypass.setParamEffect(rdy, 1.05)
     #dyloosepass.setParamEffect(rdy, 1.05)
     #dyfail.setParamEffect(rdy, 1.05)
-    if not doHtt:
-        model['topCRpasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
-        model['topCRloosepasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
-        model['topCRfailhadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #if not doHtt:
+    #    model['topCRpasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['topCRloosepasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['topCRfailhadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
 
     # Fill in wlnu CR
     for region in ['fail', 'loosepass', 'pass']:
@@ -2103,15 +2273,15 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 ch.setObservation(templ, read_sumw2=True)
             else:
                 if sName.name=='multijet':
-                    qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][2]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["faildphi"][region][ix])/2. for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
-                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
-                    qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    #qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][0]*qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["faildphi"][region][ix])/2. for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
+                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
+                    #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
                     #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][0] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
                     #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][1] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
                     #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_wlnu["faildphi"][shaperegion[iregion]][ix][2] * qcdratio_sig[shaperegion[iregion]]["faildphi"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_wlnu["faildphi"][region]))]),axis=0),0.,None)
-                    #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
-                    #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_wlnu_dn[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
-                    #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_wlnu_up[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_wlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_wlnu_dn[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
+                    qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_wlnu_up[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in range(len(qcd_from_data_qcd["nom"][region]))]),axis=0),0.,None)
 
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
                         templ = (np.clip(np.array([np.sum(qcdpred)]),0.,None), mttone.binning, mttone.name, np.array([1000000.]))
@@ -2135,28 +2305,26 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                             upmod = np.array([np.sum(upmod)])
                         else:
                             nom = nom_base
-                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).all() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).all() else np.ones_like(nom)*0.999)
+                        sample.setParamEffect(syst_params[0], np.divide(upmod, nom, out=np.ones_like(nom), where=nom>0.) if (upmod!=nom).any() else np.ones_like(nom)*1.001, np.divide(dnmod, nom, out=np.ones_like(nom), where=nom>0.) if (dnmod!=nom).any() else np.ones_like(nom)*0.999)
 
                 if sName.name=='top':
                     sample.setParamEffect(top_norm, 1.05)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(top_highmass)):
-                            sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(top_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(top_highmass)):
+                                sample.setParamEffect(top_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='wlnu':
                     sample.setParamEffect(wlnu_norm, 1.10)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        for imx in range(len(wlnu_highmass)):
-                            sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
+                        if highmassone:
+                            sample.setParamEffect(wlnu_highmass, np.array([1.-highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix>=highmassx else 1. for ix in range(len(templ[0]))]))
+                        else:
+                            for imx in range(len(wlnu_highmass)):
+                                sample.setParamEffect(wlnu_highmass[imx], np.array([1.-highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]), np.array([1.+highbkgincrease if ix==imx+highmassx else 1. for ix in range(len(templ[0]))]))
                 if sName.name=='multijet':
-                    #sample.setParamEffect(qcd_norm, 1.20)
-                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
-                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
-                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
                     if singleBinCR or (singleBinFail and not isPass and not isLoosePass):
-                        print(qcdpred_dn)
-                        print(qcdpred)
-                        print(qcdpred_up)
                         err_dn = np.sqrt(np.sum((qcdpred - qcdpred_dn)*(qcdpred - qcdpred_dn)))
                         err_up = np.sqrt(np.sum((qcdpred_up - qcdpred)*(qcdpred_up - qcdpred)))
                         qcdpred = np.array([np.sum(qcdpred)])
@@ -2164,31 +2332,32 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         err_up = np.array([np.sum(qcdpred_up)]) - qcdpred
                         qcdpred_dn = qcdpred - err_dn
                         qcdpred_up = qcdpred + err_up
-                    else:
-                        sample.setParamEffect(qcd_pass if isPass else qcd_loosepass if isLoosePass else qcd_fail, np.minimum(qcd_shape_dn, qcd_shape_up),np.maximum(qcd_shape_dn, qcd_shape_up))
+                    #sample.setParamEffect(qcd_norm, 1.20)
+                    qcd_shape_dn = np.divide(qcdpred_dn, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_dn = qcd_shape_dn*np.sum(qcdpred)/np.sum(qcdpred_dn)
+                    qcd_shape_up = np.divide(qcdpred_up, qcdpred, out=np.ones_like(qcdpred), where=qcdpred>0.)
+                    #qcd_shape_up = qcd_shape_up*np.sum(qcdpred)/np.sum(qcdpred_up)
+                    sample.setParamEffect(qcdwlnu_pass if isPass else qcdwlnu_loosepass if isLoosePass else qcdwlnu_fail, qcd_shape_dn, qcd_shape_up)
+                    if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
                         for imx in range(len(qcd_lowmass_wlnu)):
-                            sample.setParamEffect(qcd_lowmass_wlnu[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                            #sample.setParamEffect(qcd_lowmass_wlnu[imx], np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                            sample.setParamEffect(qcd_lowmass_wlnu[imx], np.array([1.-lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]), np.array([1.+lowqcdincrease if ix==imx else 1. for ix in range(len(qcdpred))]))
                 if sName.name=='vvqq':
                     sample.setParamEffect(vvqq_norm, 1.20)
                 if sName.name=='dy':
                     sample.setParamEffect(dy_norm, 1.05)
-                if sName.name=='htt125' or sName.name=='dy' or 'phi' in sName.name:
+                if sName.name in ['htt125','dy','wlnu','top'] or 'phi' in sName.name:
                     nom_full = intRegion(thehist[sName],region)[0]
-                    shift_dn = nom_full[lowmassbin-1:highmassbin-1]
-                    shift_up = nom_full[lowmassbin+1:highmassbin+1 if highmassbin!=-1 else None]
-                    shiftwidth = mttbins[1]-mttbins[0]
-                    dnfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib]-mttbins[lowmassbin+ib-1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_dn = shift_dn*dnfrac + nom_full[lowmassbin:highmassbin]*(1.-dnfrac)
-                    upfrac = np.array([shiftwidth/(mttbins[lowmassbin+ib+2]-mttbins[lowmassbin+ib+1]) for ib in range(len(nom_full[lowmassbin:highmassbin]))]) # this accounts for variable bin widths
-                    shift_up = shift_up*upfrac + nom_full[lowmassbin:highmassbin]*(1.-upfrac)
+                    shift_dn, shift_up = doMassShift(nom_full)
                     if not singleBinCR and (not singleBinFail or isPass or isLoosePass):
-                        sample.setParamEffect(m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
+                        sample.setParamEffect(m_scale_bkg if sName.name in ['wlnu','top'] else m_scale, np.divide(shift_dn, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.), np.divide(shift_up, nom_full[lowmassbin:highmassbin], out=np.ones_like(nom_full[lowmassbin:highmassbin]), where=nom_full[lowmassbin:highmassbin]>0.))
                 if sName.name!='multijet':
                     sample.setParamEffect(trig, 1.02)
                     for il in range(len(lumi_list)):
                         sample.setParamEffect(lumi_list[il], lumi_vals[il])
         
-                ch.addSample(sample)
+                if sample.getExpectation(nominal=True).sum()>bkgthresh: 
+                    ch.addSample(sample)
 
     qcdpass = model['wlnuCRpasshadhad%s'%year]['multijet']
     qcdloosepass = model['wlnuCRloosepasshadhad%s'%year]['multijet']
@@ -2199,9 +2368,10 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #qcdpass.setParamEffect(qcdnormSF, 1.20)
     #qcdloosepass.setParamEffect(qcdnormSF, 1.20)
     #qcdfail.setParamEffect(qcdnormSF, 1.20)
-    qcdpass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
-    qcdloosepass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
-    qcdfail.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+    if singleBinCR:
+        qcdpass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+        qcdloosepass.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
+        qcdfail.setParamEffect(qcdnormSF_wlnu, 1*qcdnormSF_wlnu)
 
     toppass = model['wlnuCRpasshadhad%s'%year]['top']
     toploosepass = model['wlnuCRloosepasshadhad%s'%year]['top']
@@ -2209,15 +2379,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     topPF = (toploosepass.getExpectation(nominal=True).sum() + toppass.getExpectation(nominal=True).sum()) / topfail.getExpectation(nominal=True).sum()
     topLPF = toppass.getExpectation(nominal=True).sum() / toploosepass.getExpectation(nominal=True).sum()
     topRLPF = 1./(1.+(1./topLPF)) # P/(L+P)
-    toppass.setParamEffect(topLeffSF, 1*topLeffSF)
-    toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
-    toploosepass.setParamEffect(topeffSF, 1*topeffSF)
-    toppass.setParamEffect(topeffSF, 1*topeffSF)
-    #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
-    topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
-    #toppass.setParamEffect(topnormSF, 1*topnormSF)
-    #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
-    #topfail.setParamEffect(topnormSF, 1*topnormSF)
+    if unifiedBkgEff:
+        toppass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        toploosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        toppass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        topfail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * topPF + 1)
+    else:
+        toppass.setParamEffect(topLeffSF, 1*topLeffSF)
+        toploosepass.setParamEffect(topLeffSF, (1 - topLeffSF) * topLPF + 1)
+        toploosepass.setParamEffect(topeffSF, 1*topeffSF)
+        toppass.setParamEffect(topeffSF, 1*topeffSF)
+        #topfail.setParamEffect(topeffSF, (1 - topeffSF) * (1-topRLPF) * topPF + 1)
+        topfail.setParamEffect(topeffSF, (1 - topeffSF) * topPF + 1)
+        #toppass.setParamEffect(topnormSF, 1*topnormSF)
+        #toploosepass.setParamEffect(topnormSF, 1*topnormSF)
+        #topfail.setParamEffect(topnormSF, 1*topnormSF)
 
     wlnupass = model['wlnuCRpasshadhad%s'%year]['wlnu']
     wlnuloosepass = model['wlnuCRloosepasshadhad%s'%year]['wlnu']
@@ -2225,15 +2402,22 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     wlnuPF = (wlnuloosepass.getExpectation(nominal=True).sum() + wlnupass.getExpectation(nominal=True).sum()) / wlnufail.getExpectation(nominal=True).sum()
     wlnuLPF = wlnupass.getExpectation(nominal=True).sum() / wlnuloosepass.getExpectation(nominal=True).sum()
     wlnuRLPF = 1./(1.+(1./wlnuLPF)) # P/(L+P)
-    wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
-    wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
-    wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
-    #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
-    wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
-    #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
-    #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
+    if unifiedBkgEff:
+        wlnupass.setParamEffect(bkgLeffSF, 1*bkgLeffSF)
+        wlnuloosepass.setParamEffect(bkgLeffSF, (1 - bkgLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnupass.setParamEffect(bkgeffSF, 1*bkgeffSF)
+        wlnufail.setParamEffect(bkgeffSF, (1 - bkgeffSF) * wlnuPF + 1)
+    else:
+        wlnupass.setParamEffect(wlnuLeffSF, 1*wlnuLeffSF)
+        wlnuloosepass.setParamEffect(wlnuLeffSF, (1 - wlnuLeffSF) * wlnuLPF + 1)
+        wlnuloosepass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        wlnupass.setParamEffect(wlnueffSF, 1*wlnueffSF)
+        #wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * (1-wlnuRLPF) * wlnuPF + 1)
+        wlnufail.setParamEffect(wlnueffSF, (1 - wlnueffSF) * wlnuPF + 1)
+        #wlnupass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnuloosepass.setParamEffect(wlnunormSF, 1*wlnunormSF)
+        #wlnufail.setParamEffect(wlnunormSF, 1*wlnunormSF)
 
     dypass = model['wlnuCRpasshadhad%s'%year]['dy']
     dyloosepass = model['wlnuCRloosepasshadhad%s'%year]['dy']
@@ -2244,8 +2428,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         phittLP = {m:model['wlnuCRpasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() / model['wlnuCRloosepasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() if model['wlnuCRloosepasshadhad%s'%year]['phitt%s'%m].getExpectation(nominal=True).sum() > 0. else 1. for m in masspoints}
     dypass.setParamEffect(dy_eff, 1*dy_eff)
     dyloosepass.setParamEffect(dy_eff, (1 - dy_eff) * dyLP + 1)
-    model['wlnuCRpasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
-    model['wlnuCRloosepasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
+    #model['wlnuCRpasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, 1*dy_eff)
+    #model['wlnuCRloosepasshadhad%s'%year]['htt125'].setParamEffect(dy_eff, (1 - dy_eff) * httLP + 1)
     if not doHtt:
         for m in masspoints:
             model['wlnuCRpasshadhad%s'%year]['phitt%s'%m].setParamEffect(dy_eff, 1*dy_eff)
@@ -2256,10 +2440,10 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #dypass.setParamEffect(rdy, 1.05)
     #dyloosepass.setParamEffect(rdy, 1.05)
     #dyfail.setParamEffect(rdy, 1.05)
-    if not doHtt:
-        model['wlnuCRpasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
-        model['wlnuCRloosepasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
-        model['wlnuCRfailhadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #if not doHtt:
+    #    model['wlnuCRpasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['wlnuCRloosepasshadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
+    #    model['wlnuCRfailhadhad%s'%year]['htt125'].setParamEffect(rh125, 1.10)
 
     with open(os.path.join("%s/%s"%(str(tmpdir),label), 'hadhadModel.pkl'), "wb") as fout:
         pickle.dump(model, fout, protocol=2)
@@ -2344,6 +2528,20 @@ def makeCards(args):
     metCutHad = args.metCutHad
     lowMetCutHad = args.lowMetCutHad
     h_pt_min = args.hPtCut if args.hPtCut>0. else None
+
+    singleBinLepCR = args.singleBinLepCR
+    singleBinHadCR = args.singleBinHadCR
+    singleBinLepFail = args.singleBinLepFail
+    singleBinHadFail = args.singleBinHadFail
+    lowqcdmasslep = args.lowqcdmasslep
+    lowqcdmasshad = args.lowqcdmasshad
+    lowqcdincrease = args.lowqcdincrease
+    highmasslep = args.highmasslep
+    highmasshad = args.highmasshad
+    highmassone = args.highmassone
+    highbkgincrease = args.highbkgincrease
+
+    unifiedBkgEff = args.unifiedBkgEff
     
     includeData = False
     signalmasses = ['10', '20', '30', '40', '50', '75', '100', '125', '150', '200', '250', '300']
@@ -2422,11 +2620,11 @@ def makeCards(args):
 
     #createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_mu_iso'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_anti_inv'], full_dict['hadhad_cr_b_mu_iso_anti_inv'], full_dict['hadhad_cr_mu_iso_anti_inv'], full_dict['hadhad_cr_mu_anti_inv'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCutHad, lowMetCutHad, h_pt_min, signalmasses, args.shapeRegionsHad)
     if not args.noHad: 
-        createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_mu_iso'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCutHad, lowMetCutHad, h_pt_min, singleBinHadFail, signalmasses, args.shapeRegionsHad, args.year, args.doHtt, args.noSyst)
-        #createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_met'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_met_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCutHad, lowMetCutHad, h_pt_min, singleBinHadFail, signalmasses, args.shapeRegionsHad, args.year, args.doHtt, args.noSyst)
+        #createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_mu_iso'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCutHad, lowMetCutHad, h_pt_min, singleBinHadCR, singleBinHadFail, lowqcdmasshad, lowqcdincrease, highmasshad, highbkgincrease, highmassone, unifiedBkgEff, signalmasses, args.shapeRegionsHad, args.year, args.doHtt, args.noSyst)
+        createHadHad(full_dict['hadhad_signal_met'], full_dict['hadhad_cr_b_met'], full_dict['hadhad_cr_mu_iso'], full_dict['hadhad_cr_mu'], full_dict['hadhad_cr_dphi_inv'], full_dict['hadhad_cr_b_met_dphi_inv'], full_dict['hadhad_cr_mu_iso_dphi_inv'], full_dict['hadhad_cr_mu_dphi_inv'], 'massreg', mttbins, hadptbins, odir, args.label, args.unblind, nnCut_hadhad_met, nnCut_hadhad_met_loose, metCutHad, lowMetCutHad, h_pt_min, singleBinHadCR, singleBinHadFail, lowqcdmasshad, lowqcdincrease, highmasshad, highbkgincrease, highmassone, unifiedBkgEff, signalmasses, args.shapeRegionsHad, args.year, args.doHtt, args.noSyst)
     if not args.noLep:
-        createLepHad(full_dict['hadel_signal'], full_dict['hadel_cr_b'], full_dict['hadel_cr_w'], full_dict['hadel_cr_qcd'], full_dict['hadel_cr_dphi_inv'], full_dict['hadel_cr_b_dphi_inv'], full_dict['hadel_cr_w_dphi_inv'], full_dict['hadel_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "el", odir, args.label, args.unblind, nnCut_hadel, nnCut_hadel_loose, metCutLep, lowMetCutLep, h_pt_min, singleBinLepFail, signalmasses, args.shapeRegionsLep, args.year, args.doHtt, args.noSyst)
-        createLepHad(full_dict['hadmu_signal'], full_dict['hadmu_cr_b'], full_dict['hadmu_cr_w'], full_dict['hadmu_cr_qcd'], full_dict['hadmu_cr_dphi_inv'], full_dict['hadmu_cr_b_dphi_inv'], full_dict['hadmu_cr_w_dphi_inv'], full_dict['hadmu_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "mu", odir, args.label, args.unblind, nnCut_hadmu, nnCut_hadmu_loose, metCutLep, lowMetCutLep, h_pt_min, singleBinLepFail, signalmasses, args.shapeRegionsLep, args.year, args.doHtt, args.noSyst)
+        createLepHad(full_dict['hadel_signal'], full_dict['hadel_cr_b'], full_dict['hadel_cr_w'], full_dict['hadel_cr_qcd'], full_dict['hadel_cr_dphi_inv'], full_dict['hadel_cr_b_dphi_inv'], full_dict['hadel_cr_w_dphi_inv'], full_dict['hadel_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "el", odir, args.label, args.unblind, nnCut_hadel, nnCut_hadel_loose, metCutLep, lowMetCutLep, h_pt_min, singleBinLepCR, singleBinLepFail, lowqcdmasslep, lowqcdincrease, highmasslep, highbkgincrease, highmassone, unifiedBkgEff, signalmasses, args.shapeRegionsLep, args.year, args.doHtt, args.noSyst)
+        createLepHad(full_dict['hadmu_signal'], full_dict['hadmu_cr_b'], full_dict['hadmu_cr_w'], full_dict['hadmu_cr_qcd'], full_dict['hadmu_cr_dphi_inv'], full_dict['hadmu_cr_b_dphi_inv'], full_dict['hadmu_cr_w_dphi_inv'], full_dict['hadmu_cr_qcd_dphi_inv'], 'massreg', mttbins, lepptbins, "mu", odir, args.label, args.unblind, nnCut_hadmu, nnCut_hadmu_loose, metCutLep, lowMetCutLep, h_pt_min, singleBinLepCR, singleBinLepFail, lowqcdmasslep, lowqcdincrease, highmasslep, highbkgincrease, highmassone, unifiedBkgEff, signalmasses, args.shapeRegionsLep, args.year, args.doHtt, args.noSyst)
 
     for ax1 in axs:
         for ax in ax1:
@@ -2474,6 +2672,18 @@ def makeCards(args):
     f.write("\nHadBins: " + ", ".join(args.hPtBinsHad))
     f.write("\nShape Regions (Lep): " + ", ".join(args.shapeRegionsLep))
     f.write("\nShape Regions (Had): " + ", ".join(args.shapeRegionsHad))
+    f.write("\nSingle Bin CR (Lep): " + str(args.singleBinLepCR))
+    f.write("\nSingle Bin CR (Had): " + str(args.singleBinHadCR))
+    f.write("\nSingle Bin Fail (Lep): " + str(args.singleBinLepFail))
+    f.write("\nSingle Bin Fail (Had): " + str(args.singleBinHadFail))
+    f.write("\nLow mass QCD cutoff (Lep): " + str(args.lowqcdmasslep))
+    f.write("\nLow mass QCD cutoff (Had): " + str(args.lowqcdmasshad))
+    f.write("\nLow mass QCD increase: " + str(args.lowqcdincrease))
+    f.write("\nHigh mass bkg cutoff (Lep): " + str(args.highmasslep))
+    f.write("\nHigh mass bkg cutoff (Had): " + str(args.highmasshad))
+    f.write("\nHigh mass bkg one bin: " + str(args.highmassone))
+    f.write("\nHigh mass bkg increase: " + str(args.highbkgincrease))
+    f.write("\nUnified Bkg efficiency: " + str(args.unifiedBkgEff))
     f.close()
 
     if args.plots:
@@ -2547,6 +2757,24 @@ if __name__ == "__main__":
     parser.add_argument('--noLep',              dest='noLep',      action="store_true",           help="noLep")
     parser.add_argument('--doHtt',              dest='doHtt',      action="store_true",           help="doHtt")
     parser.add_argument('--noSyst',             dest='noSyst',     action="store_true",           help="noSyst")
+
+    parser.add_argument('--singleBinLepCR',     dest='singleBinLepCR',     action="store_true",           help="singleBinLepCR")
+    parser.add_argument('--singleBinHadCR',     dest='singleBinHadCR',     action="store_true",           help="singleBinHadCR")
+    parser.add_argument('--singleBinLepFail',   dest='singleBinLepFail',   action="store_true",           help="singleBinLepFail")
+    parser.add_argument('--singleBinHadFail',   dest='singleBinHadFail',   action="store_true",           help="singleBinHadFail")
+    
+    parser.add_argument('--lowqcdmasslep',      dest='lowqcdmasslep',      default=55.,                    help="lowqcdmasslep",   type=float)
+    parser.add_argument('--lowqcdmasshad',      dest='lowqcdmasshad',      default=105.,                    help="lowqcdmasshad",   type=float)    
+    parser.add_argument('--lowqcdincrease',     dest='lowqcdincrease',     default=0.5,                    help="lowqcdincrease",   type=float)    
+
+    parser.add_argument('--highmasslep',        dest='highmasslep',        default=145.,                    help="highmasslep",   type=float)    
+    parser.add_argument('--highmasshad',        dest='highmasshad',        default=145.,                    help="highmasshad",   type=float)    
+    parser.add_argument('--highbkgincrease',    dest='highbkgincrease',    default=0.3,                    help="highbkgincrease",   type=float)    
+    parser.add_argument('--highmassone',    dest='highmassone',    action="store_true",          help="highmassone")
+
+    parser.add_argument('--unifiedBkgEff',  dest='unifiedBkgEff',   action="store_true",         help="unifiedBkgEff")
+
+# python test/makeCardsPhi.py --hist condor/Nov30_2017_UL/hists_sum_ --year 2017 --lumi 41.5 --tag Dec12_2017 --label 34 --hPtBinsLep None --hPtCut -1 --hPtBinsHad None --shapeRegionsHad fail loosepass loosepass --metCutLep 75. --lowMetCutHad 75. --unblind --singleBinLepCR --singleBinHadFail --singleBinHadCR --highmassone --unifiedBkgEff
 
     args = parser.parse_args()
 
