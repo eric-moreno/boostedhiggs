@@ -30,7 +30,8 @@ log_level_dict = {
     "CRITICAL": 50,
 }
 
-def getQCDShape(c,hists):
+
+def getQCDShape(c, hists):
     """
     gets data-MC (and dn/up variations from poisson unc.)
     for each "sig", "top_cr", "wlnu_cr", "qcd_cr" region
@@ -47,7 +48,8 @@ def getQCDShape(c,hists):
                 hists_qcd[region][invregion][category] = data_hist
     return hists_qcd
 
-def getRatioFail(c,hists_qcd):
+
+def getRatioFail(c, hists_qcd):
     """
     get ratio to NN fail region
     pass/fail or loosepass/fail or fail/fail
@@ -55,61 +57,64 @@ def getRatioFail(c,hists_qcd):
     for each "top_cr", "wlnu_cr", "qcd_cr" region
     """
     ratio_F = collections.defaultdict(dict)
-    num_to_denom = {
-        "loosepass": "fail", 
-        "pass": "fail", 
-        "fail": "fail"
-    }
+    num_to_denom = {"loosepass": "fail", "pass": "fail", "fail": "fail"}
 
     def get_ratio(numerator, denominator):
-        return np.nan_to_num(np.ones_like(numerator) * (np.sum(numerator)/np.sum(denominator)))
+        return np.nan_to_num(
+            np.ones_like(numerator) * (np.sum(numerator) / np.sum(denominator))
+        )
 
     regions_to_loop = {
         "noqcdcr_fail": ["noqcdcr", "fail"],
         "qcdcr_nom": ["qcd_cr", "nom"],
         "qcdcr_fail": ["qcd_cr", "fail"],
     }
-    
+
     for pred_region in ["sig", "top_cr", "wlnu_cr"]:
-        for rtag,ritem in regions_to_loop.items():
+        for rtag, ritem in regions_to_loop.items():
             ratio_F[pred_region][rtag] = collections.defaultdict(dict)
-            region,rinv = ritem
-            region = pred_region if region=="noqcdcr" else region
+            region, rinv = ritem
+            region = pred_region if region == "noqcdcr" else region
 
             for num, denom in num_to_denom.items():
                 ratio_F[pred_region][rtag][num] = collections.defaultdict(dict)
                 for iv, var in enumerate(c.variations):
-                    ratio_F[pred_region][rtag][num][var] = get_ratio(hists_qcd[region][rinv][num][iv], hists_qcd[region][rinv][denom][iv])
-                    
+                    ratio_F[pred_region][rtag][num][var] = get_ratio(
+                        hists_qcd[region][rinv][num][iv],
+                        hists_qcd[region][rinv][denom][iv],
+                    )
+
     return ratio_F
 
-def getQCDRatio(c,hists_qcd):
+
+def getQCDRatio(c, hists_qcd):
     """
     Get ratios:
     sig_to_qcd: sig_fail(p,lp,f)/qcd_cr_fail
-    or 
+    or
     nom_to_fail: qcd_cr_nom(p,lp,f)/qcd_cr_fail
     """
     logger = logging.getLogger("get-qcd-ratio")
 
     qcd_ratio = collections.defaultdict(dict)
     for region in c.regions:
-        if "qcd_cr": continue
+        if region == "qcd_cr":
+            continue
 
         qcd_ratio[region] = collections.defaultdict(dict)
         for qcdregion in ["sig_to_qcd", "nom_to_fail"]:
             qcd_ratio[region][qcdregion] = collections.defaultdict(dict)
+            # denominator always from the QCD CR (fail)
+            denom = hists_qcd["qcd_cr"]["fail"]["fail"][0]
+            denom_dn = hists_qcd["qcd_cr"]["fail"]["fail"][1]
+            denom_up = hists_qcd["qcd_cr"]["fail"]["fail"][2]
+
             # for each pass/loosepass/fail
             for category in c.nnregions:
                 qcd_ratio[region][qcdregion][category] = collections.defaultdict(dict)
-                
-                # the denominator is always taken from the QCD CR
-                denom = hists_qcd["qcd_cr"]["fail"][category][0]
-                denom_dn = hists_qcd["qcd_cr"]["fail"][category][1]
-                denom_up = hists_qcd["qcd_cr"]["fail"][category][2]
 
                 num = {
-                    "sig_to_qcd": { 
+                    "sig_to_qcd": {
                         "sig": hists_qcd["sig"]["fail"][category],
                         "top_cr": hists_qcd["top_cr"]["fail"][category],
                         "wlnu_cr": hists_qcd["wlnu_cr"]["fail"][category],
@@ -118,17 +123,22 @@ def getQCDRatio(c,hists_qcd):
                         "sig": hists_qcd["qcd_cr"]["nom"][category],
                         "top_cr": hists_qcd["qcd_cr"]["nom"][category],
                         "wlnu_cr": hists_qcd["qcd_cr"]["nom"][category],
-                    }
+                    },
                 }[qcdregion][region]
+
+                norm = {
+                    "sig_to_qcd": hists_qcd["qcd_cr"]["nom"]["fail"],  # H
+                    "nom_to_fail": hists_qcd[region]["fail"]["fail"],  # A
+                }[qcdregion]
 
                 for iv, var in enumerate(c.variations):
                     qcd_ratio[region][qcdregion][category][var] = []
 
                     # take nom/dn/up variations of that template
                     tvar = num[iv]
-                    # this will be temp/denom
+                    # this will be num/denom
                     ratio = []
-                    print(len(denom))
+
                     for ix in range(len(denom)):
                         if denom_dn[ix] > 0.0:
                             # the denominator is always the nominal variation
@@ -140,19 +150,18 @@ def getQCDRatio(c,hists_qcd):
                                 ratio.append(ratio[-1])
                     ratio = np.array(ratio)
 
-                    qcd_ratio[region][qcdregion][category][var] = (
-                        np.sum(ratio * num[0])
-                        / (
-                            np.sum(num[0])
-                            if np.sum(num[0]) > 0.0
-                            else 1.0
-                        )
-                    )
+                    # normalize to norm
+                    qcd_ratio[region][qcdregion][category][var] = np.sum(
+                        ratio * norm[iv]
+                    ) / (np.sum(norm[iv]) if np.sum(norm[iv]) > 0.0 else 1.0)
 
                     # this should be one single number
-                    logger.debug(f"qcd_ratio in {region}{qcdregion}{category}{var} is {qcd_ratio[region][qcdregion][category][var]}")
+                    logger.info(
+                        f"qcd_ratio in {region}{qcdregion}{category}{var} is {qcd_ratio[region][qcdregion][category][var]}"
+                    )
     return qcd_ratio
-           
+
+
 def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False):
     """
     Create cards.
@@ -186,12 +195,12 @@ def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False)
     # data driven QCD
     logger.info(f"Extracting data-driven QCD histograms for each region")
     # get (data-MC)
-    hists_qcd = getQCDShape(c,hists)
-    # get ratio to fail region
-    ratio_F = getRatioFail(c,hists_qcd)
-    # get QCD ratio
-    qcd_ratio = getQCDRatio(c,hists_qcd)
-    
+    hists_qcd = getQCDShape(c, hists)
+    # get ratio to fail region (["noqcdcr_fail","qcdcr_nom","qcdcr_fail"])
+    ratio_F = getRatioFail(c, hists_qcd)
+    # get QCD ratio (["sig_to_qcd", "nom_to_fail"])
+    qcd_ratio = getQCDRatio(c, hists_qcd)
+
     def build_qcdpred(region, islephad):
         """
         Build QCD prediction
@@ -202,80 +211,77 @@ def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False)
         :type islephad: bool
         :param var: Variation, Can be "nom","dn","up"
         :type var: str
-        
+
         return: qcd predictions for that variation of the QCD estimate (nom/up/dn)
         """
 
-        # qcdpred: [shape,ratio,ratio_to_fail]
-        if islephad:
-            qcdpred = {
-                1: {
-                    "sig": [
-                        hists_qcd["sig"]["lowmet"]["fail"],
-                        qcd_ratio["sig"]["lowmet"]["fail"],
-                        ratio_F["qcd"]["faildphi"][region]
-                    ],
-                    "top_cr": [
-                        hists_qcd["qcd_cr"]["nom"]["fail"],
-                        qcd_ratio["top_cr"]["nom"]["fail"],
-                        ratio_F["top"]["lowmet"][region]
-                    ],
-                    "wlnu_cr": [
-                        hists_qcd["qcd_cr"]["nom"]["fail"],
-                        qcd_ratio["wlnu_cr"]["nom"]["fail"],
-                        ratio_F["top"]["lowmet"][region]
-                    ],
-                }
-            }
-        else:
-            qcdpred = {
-                1: {
-                    "sig": [
-                        hists_qcd["qcd_cr"]["fail"]["fail"],
-                        qcd_ratio["sig"]["faildphi"]["fail"],
-                        ratio_F["qcd"]["faildphi"][region]
-                    ],
-                    "top_cr": [
-                        hists_qcd["qcd_cr"]["nom"]["fail"],
-                        qcd_ratio["top_cr"]["nom"]["fail"],
-                        ratio_F["qcd"]["qcdnom"][region]
-                    ],
-                    "wlnu_cr": [
-                        hists_qcd["qcd_cr"]["nom"]["fail"],
-                        qcd_ratio["wlnu_cr"]["nom"]["fail"],
-                        ratio_F["qcd"]["qcdnom"][region]
-                    ],
-                }
-            }
-            
-        """  
-             sig/top_cr/wlnu_cr             qcd_cr
+        """
+                 sig/top_cr/wlnu_cr             qcd_cr
              fail loosepass pass      fail loosepass pass
-        fail  A      C       D         G       I      J 
+        fail  A      C       D         G       I      J
         nom   B      E       F         H       K      L
 
         Method 1:
-        B = H(shape) * G/A
-        E = H(shape) * G/C
-        F = H(shape) * G/D
+        B = H(shape) * A/G*(norm to H) * ratio_to_fail_AA
+        E = H(shape) * C/G*(norm to H) * ratio_to_fail_AC
+        F = H(shape) * D/G*(norm to H) * ratio_to_fail_AD
 
         Method 2:
-        B = A(shape) * G/H
-        E = A(shape) * G/K
-        F = A(shape) * G/L
+        B = A(shape) * H/G*(norm to H) * ratio_to_fail_HH
+        E = A(shape) * K/G*(norm to H) * ratio_to_fail_HK
+        F = A(shape) * L/G*(norm to H) * ratio_to_fail_HL
 
-        (all) * ratio_to_fail (loosepass/fail, pass/fail)
+        noqcdcr_fail = ratio_to_fail_A
+        qcdcr_nom = ratio_to_fail_H
         """
-        qcd_index = {"nom":0, "dn":1, "up":2}
+        # qcdpred: [shape,ratio,ratio_to_fail]
+        qcdpred = {
+            1: {
+                "sig": [
+                    hists_qcd["qcd_cr"]["nom"]["fail"],  # H
+                    qcd_ratio["sig"]["sig_to_qcd"][region],  # A/G, C/G, D/G
+                    ratio_F["sig"]["noqcdcr_fail"][region],  # ratio_to_fail
+                ],
+                "top_cr": [
+                    hists_qcd["qcd_cr"]["nom"]["fail"],
+                    qcd_ratio["top_cr"]["sig_to_qcd"][region],
+                    ratio_F["top_cr"]["noqcdcr_fail"][region],
+                ],
+                "wlnu_cr": [
+                    hists_qcd["qcd_cr"]["nom"]["fail"],
+                    qcd_ratio["wlnu_cr"]["sig_to_qcd"][region],
+                    ratio_F["wlnu_cr"]["noqcdcr_fail"][region],
+                ],
+            },
+            2: {
+                "sig": [
+                    hists_qcd["sig"]["fail"]["fail"],  # A
+                    qcd_ratio["sig"]["nom_to_fail"][region],  # H/G,K/G,L/G
+                    ratio_F["sig"]["qcdcr_fail"][region],  # ratio_to_fail
+                ],
+                "top_cr": [
+                    hists_qcd["top_cr"]["fail"]["fail"],  # A
+                    qcd_ratio["top_cr"]["nom_to_fail"][region],
+                    ratio_F["top_cr"]["qcdcr_fail"][region],
+                ],
+                "wlnu_cr": [
+                    hists_qcd["wlnu_cr"]["fail"]["fail"],
+                    qcd_ratio["wlnu_cr"]["nom_to_fail"][region],
+                    ratio_F["wlnu_cr"]["qcdcr_fail"][region],
+                ],
+            },
+        }
+
+        qcd_index = {"nom": 0, "dn": 1, "up": 2}
         qcd_pred = collections.defaultdict(dict)
         for key in qcdpred[1].keys():
-            for var,qid in qcd_index.items():
+            for var, qid in qcd_index.items():
                 # TODO: add prediction from 2
-                shape_,ratio_,ratio_F_ = qcdpred[1][key]
+                shape_, ratio_, ratio_F_ = qcdpred[1][key]
                 qcd_pred[key][var] = shape_[qid] * ratio_[var] * ratio_F_[var]
-            
+
         return qcd_pred
-            
+
     # build regions
     for region in c.nnregions:
         # when to integrate prediction over a single mass bin
@@ -285,8 +291,8 @@ def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False)
         else:
             singlebinCR = False
             singlebinFail = True
-        singlebin = (singlebinFail and region == "fail")
-        singlebinCR = (singlebinCR or singlebin)
+        singlebin = singlebinFail and region == "fail"
+        singlebinCR = singlebinCR or singlebin
 
         logger.info(f"Building {region}-signal region")
 
@@ -325,7 +331,7 @@ def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False)
         )
 
     for region in ["SR", "topCR", "wlnuCR"]:
-        region_str = "" if region=="SR" else region
+        region_str = "" if region == "SR" else region
         str_fail = f"{region_str}fail{cat}{year}"
         str_loose = f"{region_str}loosepass{cat}{year}"
         str_pass = f"{region_str}pass{cat}{year}"
@@ -334,6 +340,7 @@ def createCards(hist_dict, cat, year, odir, label, unblind=False, no_syst=False)
     # save model
     with open(os.path.join(f"{odir}/{label}", f"{cat}Model.pkl"), "wb") as fout:
         pickle.dump(c.model, fout, protocol=2)
+
 
 def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
     logger = logging.getLogger("load-hists")
@@ -413,7 +420,7 @@ def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
                 h_dict[reg] = processmap.apply(toadd).integrate("region", reg)
         logger.debug(f"Mapped histograms from histogram {hs} to each region")
     logger.info("Mapped all histograms")
-        
+
     hist_dict = {}
     empty_dict = {"nn_disc": [], "met_pt": [], "systematic": []}
     for reg in regions:
@@ -430,13 +437,24 @@ def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
 
 @click.command()
 @click.option("--hist", required=True, help="hists pickle prefix")
-@click.option("--year", required=True, type=click.Choice(["2016", "2016APV", "2017", "2018"]), help="year")
+@click.option(
+    "--year",
+    required=True,
+    type=click.Choice(["2016", "2016APV", "2017", "2018"]),
+    help="year",
+)
 @click.option("--odir", default="test", help="output directory")
 @click.option("--tag", default="", help="tag")
 @click.option("--label", default="", help="label")
 @click.option("--sigxs", type=float, default=0.0, help="signal xs to scale to")
 @click.option("--sigscale", type=float, default=1.0, help="scale signal by")
-@click.option("--cat", "categories", required=True, multiple=True, type=click.Choice(["hadhad","hadel","hadmu"]))
+@click.option(
+    "--cat",
+    "categories",
+    required=True,
+    multiple=True,
+    type=click.Choice(["hadhad", "hadel", "hadmu"]),
+)
 @click.option(
     "--loglevel",
     default="INFO",
@@ -476,7 +494,7 @@ def makeCards(hist, year, odir, tag, label, sigscale, sigxs, categories, logleve
         },
         "top_cr": {
             "nom": hist_dict[f"{cat}_cr_b_mu_iso"],
-            "fail": hist_dict[f"{cat}_cr_b_mu_iso_dphi_inv"]
+            "fail": hist_dict[f"{cat}_cr_b_mu_iso_dphi_inv"],
         },
         "wlnu_cr": {
             "nom": hist_dict[f"{cat}_cr_mu_iso"],
@@ -515,6 +533,7 @@ def makeCards(hist, year, odir, tag, label, sigscale, sigxs, categories, logleve
             odir=odir,
             label=label,
         )
+
 
 if __name__ == "__main__":
     if not sys.warnoptions:

@@ -125,7 +125,7 @@ class Cards:
         self.invregions = {
             # faildphi in hadhad and iso in hadlep
             "fail": {
-                "sig": slices["met"], 
+                "sig": slices["met"],
                 "top_cr": slices["met"],
                 "wlnu_cr": slices["lowmet"],
                 "qcd_cr": slices["lowmet"],
@@ -138,7 +138,6 @@ class Cards:
             },
         }
         # exceptions
-
 
         # nn regions
         self.nnregions = ["fail", "loosepass", "pass"]
@@ -343,9 +342,7 @@ class Cards:
             nom = self._events(tempint)
             for syst in self.syst_dict[sample.name]:
                 nuisance, syst_dn, syst_up = self.syst_dict[sample.name][syst]
-                up = self._events(
-                    self._get_region(h, region, syst_up), clip=False
-                )
+                up = self._events(self._get_region(h, region, syst_up), clip=False)
                 dn = self._events(self._get_region(h, region, syst_dn))
                 up_var = (
                     np.divide(up, nom, out=np.ones_like(nom), where=nom > 0.0)
@@ -511,9 +508,13 @@ class Cards:
             ):
                 continue
 
-            logging.debug(f"Building template for sample {sample} and region {region} and category {category}, singlebin {singlebin}")
+            logging.debug(
+                f"Building template for sample {sample} and region {region} and category {category}, singlebin {singlebin}"
+            )
             h = hchannel[sample]
-            template,events = self.get_template(h, region, "nominal", singlebin, debug, clip=True)
+            template, events = self.get_template(
+                h, region, "nominal", singlebin, debug, clip=True
+            )
 
             # template changes if it is QCD
             if sample.name == "multijet":
