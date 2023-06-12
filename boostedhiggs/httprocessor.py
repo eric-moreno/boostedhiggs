@@ -1212,6 +1212,8 @@ class HttProcessor(processor.ProcessorABC):
             #'btagEffStatDown',
             'L1PreFiringUp',
             'L1PreFiringDown',
+            'pileup_weightUp',
+            'pileup_weightDown',
             #'scalevar_3ptUp',
             #'scalevar_3ptDown',
             #'scalevar_7ptUp',

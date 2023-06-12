@@ -1508,9 +1508,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
 
         return the_int
 
-    def getQCDfromDataFullMass(inhist,region,default=1.,systematic='nominal',hptslice=slice(h_pt_min,None),mslice=None,unc_scale=0.,verbose=0):
+    def getQCDfromDataFullMass(inhist,region,default=1.,systematic='nominal',hptslice=slice(h_pt_min,None),mslice=None,unc_scale=0.,verbose=0,sample_exclude=[]):
         qcd_data_full = intRegion(inhist['data_obs'],region,systematic=systematic,hptslice=hptslice,mslice=mslice)[0][lowmassbin:highmassbin]
-        other_mc = intRegion(inhist,region,samplelist=[s.name for s in inhist.identifiers('sample') if s.name!='data_obs' and s.name!='multijet'],systematic=systematic,hptslice=hptslice,mslice=mslice)
+        other_mc = intRegion(inhist,region,samplelist=[s.name for s in inhist.identifiers('sample') if s.name not in sample_exclude+['data_obs','multijet']],systematic=systematic,hptslice=hptslice,mslice=mslice)
         qcd_data = qcd_data_full - other_mc[0][lowmassbin:highmassbin]
         qcd_data_altdn = qcd_data_full - other_mc[0][lowmassbin:highmassbin]*(1.+unc_scale)
         qcd_data_altup = qcd_data_full - other_mc[0][lowmassbin:highmassbin]*(1.-unc_scale)
@@ -1533,8 +1533,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         qcd_temp_up = np.maximum(np.array([qcd_data_int[1][bi] if qcd_data_int[1][bi] >= 0. and not np.isnan(qcd_data_int[1][bi]) else 0. for bi in range(len(qcd_data))]),qcd_data_altup)
         return qcd_temp,qcd_temp_dn,qcd_temp_up
 
-    def getQCDfromData(inhist,region,default=1.,systematic='nominal',hptslice=slice(h_pt_min,None),mslice=None,unc_scale=0.,verbose=0):
-        tmp = getQCDfromDataFullMass(inhist,region,default,systematic,hptslice,mslice,unc_scale,verbose)
+    def getQCDfromData(inhist,region,default=1.,systematic='nominal',hptslice=slice(h_pt_min,None),mslice=None,unc_scale=0.,verbose=0,sample_exclude=[]):
+        tmp = getQCDfromDataFullMass(inhist,region,default,systematic,hptslice,mslice,unc_scale,verbose,sample_exclude)
         return tmp
 
     #         [F]    [L]    [P]
@@ -1554,6 +1554,7 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     #  Calt = G*Fi/Ji
 
     qcd_data_hists = {}
+    qcdwlnu_data_hists = {}
     top_data_hists = {}
     wlnu_data_hists = {}
     sig_data_hists = {}
@@ -1562,14 +1563,17 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcdfrom_top = {}
     qcdfrom_wlnu = {}
     qcdfrom_qcd = {}
+    qcdfrom_qcdwlnu = {}
     for pfregion in ["fail","loosepass","pass"]:
         qcdfrom_sig[pfregion] = {}
         qcdfrom_top[pfregion] = {}
         qcdfrom_wlnu[pfregion] = {}
         qcdfrom_qcd[pfregion] = {}
+        qcdfrom_qcdwlnu[pfregion] = {}
 
     def getQCDRatios(region, category="fail", verbose=False, defval=0.):
-        qcd_data_hists[region] = [getQCDfromData(qcd_cr_hists[region],category,hptslice=slice(qcd_cr_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[region].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[region].axis('h_pt').edges())-1 else None),default=defval,verbose=2) for ix in range(len(qcd_cr_hists[region].axis('h_pt').edges()))]
+        qcd_data_hists[region] = [getQCDfromData(qcd_cr_hists[region],category,hptslice=slice(qcd_cr_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[region].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[region].axis('h_pt').edges())-1 else None),default=defval) for ix in range(len(qcd_cr_hists[region].axis('h_pt').edges()))]
+        qcdwlnu_data_hists[region] = [getQCDfromData(qcd_cr_hists[region],category,hptslice=slice(qcd_cr_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[region].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[region].axis('h_pt').edges())-1 else None),default=defval,sample_exclude=['wlnu']) for ix in range(len(qcd_cr_hists[region].axis('h_pt').edges()))]
         top_data_hists[region] = [getQCDfromData(top_cr_hists[region],category,hptslice=slice(top_cr_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,top_cr_hists[region].axis('h_pt').edges()[ix] if ix<len(top_cr_hists[region].axis('h_pt').edges())-1 else None),default=defval) for ix in range(len(top_cr_hists[region].axis('h_pt').edges()))]
         wlnu_data_hists[region] = [getQCDfromData(wlnu_cr_hists[region],category,hptslice=slice(wlnu_cr_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,wlnu_cr_hists[region].axis('h_pt').edges()[ix] if ix<len(wlnu_cr_hists[region].axis('h_pt').edges())-1 else None),default=defval) for ix in range(len(wlnu_cr_hists[region].axis('h_pt').edges()))]
         sig_data_hists[region] = [getQCDfromData(sig_hists[region],category,hptslice=slice(sig_hists[region].axis('h_pt').edges()[ix-1] if ix>1 else None,sig_hists[region].axis('h_pt').edges()[ix] if ix<len(sig_hists[region].axis('h_pt').edges())-1 else None),default=defval,verbose=1) for ix in range(len(sig_hists[region].axis('h_pt').edges()))]
@@ -1584,12 +1588,14 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         qcdfrom_top[category][region] = [[np.sum(np.stack([(top_data_hists[region][ix][t]) for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else top_data_hists[region][t]),axis=0) for ptbin in range(npt)] for t in range(3)]
         qcdfrom_wlnu[category][region] = [[np.sum(np.stack([(wlnu_data_hists[region][ix][t]) for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else wlnu_data_hists[region][t]),axis=0) for ptbin in range(npt)] for t in range(3)]
         qcdfrom_qcd[category][region] = [[np.sum(np.stack([(qcd_data_hists[region][ix][t]) for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else qcd_data_hists[region][t]),axis=0) for ptbin in range(npt)] for t in range(3)] #does this work for len(qcdbins[ptbin])=0?
+        qcdfrom_qcdwlnu[category][region] = [[np.sum(np.stack([(qcdwlnu_data_hists[region][ix][t]) for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else qcdwlnu_data_hists[region][t]),axis=0) for ptbin in range(npt)] for t in range(3)] #does this work for len(qcdbins[ptbin])=0?
 
         if verbose:
             print(region,category,'ratio sig ',qcdfrom_sig[category][region])
             print(region,category,'ratio top ',qcdfrom_top[category][region])
             print(region,category,'ratio wlnu',qcdfrom_wlnu[category][region])
             print(region,category,'ratio qcd ',qcdfrom_qcd[category][region])
+            print(region,category,'ratio qcdwlnu ',qcdfrom_qcdwlnu[category][region])
 
     for qcdregion in ["faildphi","lowmet_faildphi","lowmet","nom"]:
         for pfregion in ["fail","loosepass","pass"]:
@@ -1667,7 +1673,8 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
             qcdratio_F_up[qcdreg][reg] = np.nan_to_num(qcdratio_F_up[qcdreg][reg])
 
     qcd_from_data_sig = {reg:{pf:[getQCDfromData(sig_hists[reg],shaperegion[ipf],hptslice=slice(sig_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,sig_hists[reg].axis('h_pt').edges()[ix] if ix<len(sig_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(sig_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
-    qcd_from_data_qcd = {reg:{pf:[getQCDfromData(qcd_cr_hists[reg],shaperegion[ipf],hptslice=slice(qcd_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(qcd_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
+    qcd_from_data_qcd = {reg:{pf:[getQCDfromData(qcd_cr_hists[reg],shaperegion[ipf],hptslice=slice(qcd_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[reg].axis('h_pt').edges())-1 else None),verbose=1 if reg=="nom" else 0) for ix in range(len(qcd_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
+    qcd_from_data_qcdwlnu = {reg:{pf:[getQCDfromData(qcd_cr_hists[reg],shaperegion[ipf],hptslice=slice(qcd_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,qcd_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(qcd_cr_hists[reg].axis('h_pt').edges())-1 else None),verbose=2 if reg=="nom" else 0,sample_exclude=['wlnu']) for ix in range(len(qcd_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
     qcd_from_data_top = {reg:{pf:[getQCDfromData(top_cr_hists[reg],shaperegion[ipf],hptslice=slice(top_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,top_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(top_cr_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(top_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
     qcd_from_data_wlnu = {reg:{pf:[getQCDfromData(wlnu_cr_hists[reg],shaperegion[ipf],hptslice=slice(wlnu_cr_hists[reg].axis('h_pt').edges()[ix-1] if ix>1 else None,wlnu_cr_hists[reg].axis('h_pt').edges()[ix] if ix<len(wlnu_cr_hists[reg].axis('h_pt').edges())-1 else None)) for ix in range(len(wlnu_cr_hists[reg].axis('h_pt').edges()))] for ipf,pf in enumerate(['fail', 'loosepass', 'pass'])} for reg in ["nom","faildphi","lowmet_faildphi","lowmet"]}
 
@@ -1678,6 +1685,10 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
     qcdratio_qcd_dn = {}
     qcdratio_qcd_up = {}
     qcdratio_qcd = {}
+
+    qcdratio_qcdwlnu_dn = {}
+    qcdratio_qcdwlnu_up = {}
+    qcdratio_qcdwlnu = {}
 
     qcdratio_top_dn = {}
     qcdratio_top_up = {}
@@ -1694,6 +1705,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
         qcdratio_qcd_dn[pfreg] = {}
         qcdratio_qcd_up[pfreg] = {}
         qcdratio_qcd[pfreg] = {}
+        qcdratio_qcdwlnu_dn[pfreg] = {}
+        qcdratio_qcdwlnu_up[pfreg] = {}
+        qcdratio_qcdwlnu[pfreg] = {}
         qcdratio_top_dn[pfreg] = {}
         qcdratio_top_up[pfreg] = {}
         qcdratio_top[pfreg] = {}
@@ -1707,6 +1721,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
             qcdratio_qcd_dn[pfreg][qcdreg] = []
             qcdratio_qcd_up[pfreg][qcdreg] = []
             qcdratio_qcd[pfreg][qcdreg] = []
+            qcdratio_qcdwlnu_dn[pfreg][qcdreg] = []
+            qcdratio_qcdwlnu_up[pfreg][qcdreg] = []
+            qcdratio_qcdwlnu[pfreg][qcdreg] = []
             qcdratio_top_dn[pfreg][qcdreg] = []
             qcdratio_top_up[pfreg][qcdreg] = []
             qcdratio_top[pfreg][qcdreg] = []
@@ -1759,6 +1776,27 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                 marr_dn = []
                 marr_up = []
                 marr = []
+                for ix in range(len(qcdfrom_sig[pfreg][qcdreg][0][ptbin])):
+                    if qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin][ix]>0.:
+                        marr_dn.append(qcdfrom_sig[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin][ix])
+                        marr_up.append(qcdfrom_sig[pfreg][qcdreg][2][ptbin][ix]/qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin][ix])
+                        marr.append(qcdfrom_sig[pfreg][qcdreg][0][ptbin][ix]/qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin][ix])
+                    else:
+                        if ix==0:
+                            marr_dn.append(1.)
+                            marr_up.append(1.)
+                            marr.append(1.)
+                        else:
+                            marr_dn.append(marr_dn[-1])
+                            marr_up.append(marr_up[-1])
+                            marr.append(marr[-1])
+                qcdratio_qcdwlnu_dn[pfreg][qcdreg].append(np.array(marr_dn))
+                qcdratio_qcdwlnu_up[pfreg][qcdreg].append(np.array(marr_up))
+                qcdratio_qcdwlnu[pfreg][qcdreg].append(np.array(marr))
+
+                marr_dn = []
+                marr_up = []
+                marr = []
                 for ix in range(len(qcdfrom_top[pfreg][qcdreg][0][ptbin])):
                     if qcdfrom_qcd[pfreg][qcdreg][1][ptbin][ix]>0.:
                         marr_dn.append(qcdfrom_top[pfreg][qcdreg][1][ptbin][ix]/qcdfrom_qcd[pfreg][qcdreg][0][ptbin][ix])
@@ -1803,14 +1841,17 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
             for ptbin in range(npt):
                 qcdratio_sig[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][0][ptbin])>0. else 1.)
                 qcdratio_qcd[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][0][ptbin])>0. else 1.)
+                qcdratio_qcdwlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcdwlnu[pfreg][qcdreg][ptbin]*qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][0][ptbin])>0. else 1.)
                 qcdratio_top[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][0][ptbin])>0. else 1.)
                 qcdratio_wlnu[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][0][ptbin])>0. else 1.)
                 qcdratio_sig_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_dn[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][1][ptbin])>0. else 1.)
                 qcdratio_qcd_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][1][ptbin])>0. else 1.)
+                qcdratio_qcdwlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcdwlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin])>0. else 1.)
                 qcdratio_top_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_dn[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][1][ptbin])>0. else 1.)
                 qcdratio_wlnu_dn[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_dn[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][1][ptbin])>0. else 1.)
                 qcdratio_sig_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_sig_up[pfreg][qcdreg][ptbin]*qcdfrom_sig[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_sig[pfreg][qcdreg][2][ptbin])>0. else 1.)
                 qcdratio_qcd_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcd_up[pfreg][qcdreg][ptbin]*qcdfrom_qcd[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_qcd[pfreg][qcdreg][2][ptbin])>0. else 1.)
+                qcdratio_qcdwlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_qcdwlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin])/(np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin]) if np.sum(qcdfrom_qcdwlnu[pfreg][qcdreg][1][ptbin])>0. else 1.)
                 qcdratio_top_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_top_up[pfreg][qcdreg][ptbin]*qcdfrom_top[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_top[pfreg][qcdreg][2][ptbin])>0. else 1.)
                 qcdratio_wlnu_up[pfreg][qcdreg][ptbin] = np.sum(qcdratio_wlnu_up[pfreg][qcdreg][ptbin]*qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])/(np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin]) if np.sum(qcdfrom_wlnu[pfreg][qcdreg][2][ptbin])>0. else 1.)
 
@@ -1863,6 +1904,9 @@ def createHadHad(sig_hist, top_cr_hist, wlnu_cr_hist, qcd_cr_hist, sig_faildphi,
                         #qcdpred = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
                         #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][1] * qcdratio_qcd_dn[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
                         #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][2] * qcdratio_qcd_up[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["faildphi"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
+                        #qcdpred = np.clip(np.sum(np.stack([(qcd_from_data_qcdwlnu["nom"][shaperegion[iregion]][ix][0]*qcdratio_qcdwlnu[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["qcdnom"][region][ix]+qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0]*qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin]*qcdratio_F["qcdnom"][region][ix])/2. for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcdwlnu["nom"][region][0][0])]),axis=0),0.,None)
+                        #qcdpred_dn = np.clip(np.sum(np.stack([qcd_from_data_qcdwlnu["nom"][shaperegion[iregion]][ix][0] * qcdratio_qcdwlnu[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_wlnu["nom"][region][0][0])]),axis=0),0.,None)
+                        #qcdpred_up = np.clip(np.sum(np.stack([qcd_from_data_qcd["nom"][shaperegion[iregion]][ix][0] * qcdratio_qcd[shaperegion[iregion]]["nom"][ptbin] * qcdratio_F["qcdnom"][region][ix] for ix in qcdbins[ptbin]] if len(qcdbins[ptbin])>0 else [np.zeros_like(qcd_from_data_qcd["nom"][region][0][0])]),axis=0),0.,None)
                         if singleBinFail and not isPass and not isLoosePass:
                             templ = (np.clip(np.array([np.sum(qcdpred)]),0.,None), mttone.binning, mttone.name, np.array([1000000.]))
                         else:
@@ -2764,7 +2808,7 @@ if __name__ == "__main__":
     parser.add_argument('--singleBinHadFail',   dest='singleBinHadFail',   action="store_true",           help="singleBinHadFail")
     
     parser.add_argument('--lowqcdmasslep',      dest='lowqcdmasslep',      default=55.,                    help="lowqcdmasslep",   type=float)
-    parser.add_argument('--lowqcdmasshad',      dest='lowqcdmasshad',      default=105.,                    help="lowqcdmasshad",   type=float)    
+    parser.add_argument('--lowqcdmasshad',      dest='lowqcdmasshad',      default=55.,                    help="lowqcdmasshad",   type=float)    
     parser.add_argument('--lowqcdincrease',     dest='lowqcdincrease',     default=0.5,                    help="lowqcdincrease",   type=float)    
 
     parser.add_argument('--highmasslep',        dest='highmasslep',        default=145.,                    help="highmasslep",   type=float)    
