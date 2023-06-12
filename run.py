@@ -14,6 +14,7 @@ def main(args):
 
     # read samples to submit
     with open(args.fileset, 'r') as f:
+        print(args.sample)
         files = json.load(f)[args.sample]
     fileset = {}
     fileset[args.sample] = ["root://cmseos.fnal.gov/"+ f if not f.startswith('root') else f for f in files[args.starti:args.endi]]
@@ -47,7 +48,7 @@ def main(args):
         print(f"Metrics: {metrics}")
 
 
-    filehandler = open(f'outfiles/{args.year}_{args.sample}_{args.plotopt}_{args.starti}-{args.endi}.hist', 'wb')
+    filehandler = open(f'outfiles/{args.year}_{args.sample}_{args.plotopt}_{args.starti}-{args.endi}-{args.tag}.hist', 'wb')
     pickle.dump(out, filehandler)
     filehandler.close()
 
@@ -71,6 +72,7 @@ if __name__ == "__main__":
     parser.add_argument('--chunksize',  dest='chunksize',  default=2000,         help='chunksize', type=int)
     parser.add_argument('--nworkers',   dest='nworkers',   default=1,            help='nworkers', type=int)
     parser.add_argument("--nojer",      dest="nojer",      action="store_true",  default=False, help="Run without JER")
+    parser.add_argument("--tag",        dest="tag",        default="",           help="tag", type=str)
     args = parser.parse_args()
 
     main(args)

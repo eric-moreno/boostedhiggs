@@ -1,4 +1,9 @@
 {
+    "WJetsToQQ_HT-400to600_test": [
+        "/store/user/lpcpfnano/jekrupa/v2_2/2016APV/WJetsToQQ/WJetsToQQ_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/WJetsToQQ_HT-400to600/220110_223108/0000/nano_mc2016pre_1-1.root", 
+        "/store/user/lpcpfnano/jekrupa/v2_2/2016APV/WJetsToQQ/WJetsToQQ_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/WJetsToQQ_HT-400to600/220110_223108/0000/nano_mc2016pre_1-10.root"
+    ],
+    
     "WJetsToQQ_HT-400to600": [
         "/store/user/lpcpfnano/jekrupa/v2_2/2016APV/WJetsToQQ/WJetsToQQ_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/WJetsToQQ_HT-400to600/220110_223108/0000/nano_mc2016pre_1-1.root", 
         "/store/user/lpcpfnano/jekrupa/v2_2/2016APV/WJetsToQQ/WJetsToQQ_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/WJetsToQQ_HT-400to600/220110_223108/0000/nano_mc2016pre_1-10.root", 

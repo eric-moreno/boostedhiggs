@@ -12,7 +12,7 @@ from boostedhiggs.corrections import (
     corrected_msoftdrop,
     add_pdf_weight,
     add_pileup_weight,
-    add_leptonSFs,
+    add_LeptonSFs,
     lumiMasks,
     is_overlap,
 )

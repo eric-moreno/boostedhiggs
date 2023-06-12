@@ -100,7 +100,8 @@ _ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_
 #_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/hadhad_H20000_Z25000_Lambda0.01_FLAT500k_genPtCut400.onnx', _ort_options)
 #_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
-_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadhad_v1.onnx', _ort_options)
+#_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H5000_Z5000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.01_hadhad.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadel_v1.onnx', _ort_options)
 _ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadmu_v1.onnx', _ort_options)
 

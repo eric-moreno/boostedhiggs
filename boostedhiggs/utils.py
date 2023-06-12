@@ -140,10 +140,16 @@ def get_pfcands_evt_features(events, fatjet, jet_idx):
     feature_dict["pf_dzErr"] = jet_pfcands.dzErr
     feature_dict["pf_d0"] = jet_pfcands.d0
     feature_dict["pf_d0Err"] = jet_pfcands.d0Err
+    #feature_dict["pfcand_dz"] = jet_pfcands.dz
+    #feature_dict["pfcand_dxy"] = jet_pfcands.d0
+    #feature_dict["pfcand_dzsig"] = jet_pfcands.dz / jet_pfcands.dzErr
+    #feature_dict["pfcand_dxysig"] = jet_pfcands.d0 / jet_pfcands.d0Err
     feature_dict["pf_dz"] = ak.fill_none(ak.mask(feature_dict["pf_dz"],feature_dict["pf_charge"]!=0.),0.)
     feature_dict["pf_dzErr"] = ak.fill_none(ak.mask(feature_dict["pf_dzErr"],feature_dict["pf_charge"]!=0.),0.)
     feature_dict["pf_d0"] = ak.fill_none(ak.mask(feature_dict["pf_d0"],feature_dict["pf_charge"]!=0.),0.)
     feature_dict["pf_d0Err"] = ak.fill_none(ak.mask(feature_dict["pf_d0Err"],feature_dict["pf_charge"]!=0.),0.)
+    #feature_dict["pf_dxy"] = ak.fill_none(ak.mask(feature_dict["pf_dxy"],feature_dict["pf_charge"]!=0.),0.)
+    #feature_dict["pf_dxyErr"] = ak.fill_none(ak.mask(feature_dict["pf_dxyErr"],feature_dict["pf_charge"]!=0.),0.)
     feature_dict["pf_puppiWeight"] = jet_pfcands.puppiWeight
     feature_dict["pf_puppiWeightNoLep"] = jet_pfcands.puppiWeightNoLep
     feature_dict["pf_trkChi2"] = jet_pfcands.trkChi2
@@ -693,7 +699,7 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
     eventTestData = [[ 7.14000000e+02  , -5.18000000e+02  ,  3.20800000e+03  ,  3.30322266e-01
    ,1.16008018e+02  ,  5.56250000e+00  ,  1.47752029e+02  ,  2.81494141e-01
    ,8.56875000e+01  ,  6.72500000e+02  ,  1.36254883e+00  ,  1.73071289e+00]]
-#    #evi = np.where((events.event[presel]).to_numpy()==3743783)
+#    evi = np.where((events.event[presel]).to_numpy()==3743783)
 #    evi = np.where((events.event[presel]).to_numpy()==2360724)
 #    print('EVI: ',evi, sum(evi))
 #    if sum(evi)>0:
@@ -706,12 +712,38 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
 #        print('tauTestData',{v:tagger_inputs['tau'][:,:,iv][evi] for iv,v in enumerate(inputs_lists['tau'])})
 #        print('eventTestData',{v:tagger_inputs['evt_z'][:,iv][evi] for iv,v in enumerate(inputs_lists['evt_z'])})
 #        print('eventRegTestData',{v:tagger_inputs['evt_reg'][:,iv][evi] for iv,v in enumerate(inputs_lists['evt_reg'])})
-    #print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
-    #print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
-    #print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
-    #print('muonTestData',{v:np.histogram(tagger_inputs['muon'][:,:,iv]) for iv,v in enumerate(inputs_lists['muon'])})
-    #print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
-    #print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
+    
+    
+    print(tagger_inputs.keys())
+    print(inputs_lists.keys())
+    import matplotlib.pyplot as plt
+
+    for iv,v in enumerate(inputs_lists['pf_reg']): 
+        plt.figure()
+        plt.hist(tagger_inputs['pf_reg'][:,:,iv], bins = 30, histtype='step', density=True)
+        plt.title(inputs_lists['pf_reg'][iv])
+        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/PF #" + str(iv) + ".jpg")
+
+    for iv,v in enumerate(inputs_lists['sv']): 
+        plt.figure()
+        plt.hist(tagger_inputs['sv'][:,:,iv], bins = 30, histtype='step', density=True)
+        plt.title(inputs_lists['sv'][iv])
+        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/SV #" + str(iv) + ".jpg")
+
+    for iv,v in enumerate(inputs_lists['evt_reg']): 
+        plt.figure()
+        plt.hist(tagger_inputs['evt_reg'][:,iv], bins = 30, histtype='step', density=True)
+        plt.title(inputs_lists['evt_reg'][iv])
+        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/EVT #" + str(iv) + ".jpg")
+    
+    print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
+    print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
+    print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
+    print('muonTestData',{v:np.histogram(tagger_inputs['muon'][:,:,iv]) for iv,v in enumerate(inputs_lists['muon'])})
+    print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
+    print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
+    sys.exit()
+
 
     #print(sessions["MassReg_hadmu"].run(
     #        [sessions["MassReg_hadmu"].get_outputs()[0].name],
