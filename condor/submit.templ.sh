@@ -1,7 +1,13 @@
 #!/bin/bash
 
-python3 -m pip install correctionlib==2.0.0rc6
-python3 -m pip install onnxruntime==1.10.0
+python3 -m pip install onnxruntime==1.12.0
+python3 -m pip install correctionlib
+#python3 -m pip install numpy==1.19.0
+#python3 -m pip install --upgrade cython
+
+# print the version numbers of everything in the environment
+python -m pip freeze
+
 
 # make dir for output
 mkdir outfiles

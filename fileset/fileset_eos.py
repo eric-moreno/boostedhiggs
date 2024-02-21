@@ -2,11 +2,11 @@ import os
 import subprocess
 import json
 
-pfnano_tag = "v2_2"
+pfnano_tag = "v2_3"
 eosbase = "root://cmseos.fnal.gov/"
-eosdir = f"/store/user/lpcpfnano"
-users = ["jekrupa","cmantill","pharris","drankin","dryu","yihan"]
-
+eosdir = f"/store/group/lpcpfnano"
+#users = ["jekrupa","cmantill","pharris","drankin","dryu","yihan"]
+users = ["rkansal","cmantill", "jdickins"]
 def eos_rec_search(startdir,suffix,dirs):
     dirlook = subprocess.check_output(f"eos {eosbase} ls {startdir}", shell=True).decode('utf-8').split("\n")[:-1]
     donedirs = [[] for d in dirlook]

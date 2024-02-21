@@ -564,7 +564,7 @@ datalist = ["SingleMuon", "SingleElectron", "JetHT", "Tau", "MET", "EGamma"]
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('indir', metavar='indir', type=str, help='indir')
-parser.add_argument('--eosdir', metavar='eosdir', default='/store/user/drankin/boostedhiggs/', type=str, help='eosdir')
+parser.add_argument('--eosdir', metavar='eosdir', default='/store/user/eamoreno/boostedhiggs/', type=str, help='eosdir')
 parser.add_argument('--samples', metavar='samples', help='samples', nargs='+')
 parser.add_argument('-i', '--invert', action='store_true')
 parser.add_argument('--ignore', action='store_true')

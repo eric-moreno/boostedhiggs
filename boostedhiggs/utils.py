@@ -714,36 +714,34 @@ def runInferenceOnnx(events, fatjet, jet_idx, sessions, presel=None):
 #        print('eventRegTestData',{v:tagger_inputs['evt_reg'][:,iv][evi] for iv,v in enumerate(inputs_lists['evt_reg'])})
     
     
-    print(tagger_inputs.keys())
-    print(inputs_lists.keys())
-    import matplotlib.pyplot as plt
+    #print(tagger_inputs.keys())
+    #print(inputs_lists.keys())
+    # import matplotlib.pyplot as plt
 
-    for iv,v in enumerate(inputs_lists['pf_reg']): 
-        plt.figure()
-        plt.hist(tagger_inputs['pf_reg'][:,:,iv], bins = 30, histtype='step', density=True)
-        plt.title(inputs_lists['pf_reg'][iv])
-        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/PF #" + str(iv) + ".jpg")
+    # for iv,v in enumerate(inputs_lists['pf_reg']): 
+    #     plt.figure()
+    #     plt.hist(tagger_inputs['pf_reg'][:,:,iv], bins = 30, histtype='step', density=True)
+    #     plt.title(inputs_lists['pf_reg'][iv])
+    #     plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/PF #" + str(iv) + ".jpg")
 
-    for iv,v in enumerate(inputs_lists['sv']): 
-        plt.figure()
-        plt.hist(tagger_inputs['sv'][:,:,iv], bins = 30, histtype='step', density=True)
-        plt.title(inputs_lists['sv'][iv])
-        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/SV #" + str(iv) + ".jpg")
+    # for iv,v in enumerate(inputs_lists['sv']): 
+    #     plt.figure()
+    #     plt.hist(tagger_inputs['sv'][:,:,iv], bins = 30, histtype='step', density=True)
+    #     plt.title(inputs_lists['sv'][iv])
+    #     plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/SV #" + str(iv) + ".jpg")
 
-    for iv,v in enumerate(inputs_lists['evt_reg']): 
-        plt.figure()
-        plt.hist(tagger_inputs['evt_reg'][:,iv], bins = 30, histtype='step', density=True)
-        plt.title(inputs_lists['evt_reg'][iv])
-        plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/EVT #" + str(iv) + ".jpg")
+    # for iv,v in enumerate(inputs_lists['evt_reg']): 
+    #     plt.figure()
+    #     plt.hist(tagger_inputs['evt_reg'][:,iv], bins = 30, histtype='step', density=True)
+    #     plt.title(inputs_lists['evt_reg'][iv])
+    #     plt.savefig("/uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/boostedhiggs/troubleshooting_figs/EVT #" + str(iv) + ".jpg")
     
-    print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
-    print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
-    print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
-    print('muonTestData',{v:np.histogram(tagger_inputs['muon'][:,:,iv]) for iv,v in enumerate(inputs_lists['muon'])})
-    print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
-    print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
-    sys.exit()
-
+    #print('particleTestData',{v:np.histogram(tagger_inputs['pf'][:,:,iv]) for iv,v in enumerate(inputs_lists['pf'])})
+    #print('svTestData',{v:np.histogram(tagger_inputs['sv'][:,:,iv]) for iv,v in enumerate(inputs_lists['sv'])})
+    #print('elecTestData',{v:np.histogram(tagger_inputs['elec'][:,:,iv]) for iv,v in enumerate(inputs_lists['elec'])})
+    #print('muonTestData',{v:np.histogram(tagger_inputs['muon'][:,:,iv]) for iv,v in enumerate(inputs_lists['muon'])})
+    #print('tauTestData',{v:np.histogram(tagger_inputs['tau'][:,:,iv]) for iv,v in enumerate(inputs_lists['tau'])})
+    #print('eventTestData',{v:np.histogram(tagger_inputs['evt_z'][:,iv]) for iv,v in enumerate(inputs_lists['evt_z'])})
 
     #print(sessions["MassReg_hadmu"].run(
     #        [sessions["MassReg_hadmu"].get_outputs()[0].name],

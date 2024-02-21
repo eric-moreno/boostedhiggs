@@ -24,7 +24,7 @@ import sys
 '''
 # Note: change username in `drankin` in this script
 
-homedir = "/store/user/drankin/boostedhiggs/"
+homedir = "/store/user/eamoreno/boostedhiggs/"
 
 parser = argparse.ArgumentParser(description='Submit coffea condor jobs.')
 parser.add_argument('settings', metavar='S', type=str, nargs='+', help='label scriptname files_per_job year chunksize options')
@@ -73,7 +73,7 @@ samples = {
             'WJetsToLNu_HT-600To800',
             'WJetsToLNu_HT-2500ToInf',
             'WJetsToLNu_HT-200To400',
-            'WJetsToLNu_HT-70To100',
+            #'WJetsToLNu_HT-70To100', #deleted in v2_3 apparently we dont need this though 
             'WJetsToLNu_HT-400To600',
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -154,7 +154,7 @@ samples = {
             'WJetsToLNu_HT-600To800',
             'WJetsToLNu_HT-2500ToInf',
             'WJetsToLNu_HT-200To400',
-            'WJetsToLNu_HT-70To100',
+            #'WJetsToLNu_HT-70To100', #deleted in v2_3 apparently we dont need this though 
             'WJetsToLNu_HT-400To600',
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -388,7 +388,7 @@ for reco in recos:
 
     totfiles = {}
     #with open('fileset/fileset_%s_%s.json'%(year,reco), 'r') as f:
-    with open('fileset/v2_2/%s.json'%(year), 'r') as f:
+    with open('fileset/v2_2.5/%s.json'%(year), 'r') as f:
         newfiles = json.load(f)
         totfiles.update(newfiles)
 
@@ -417,11 +417,11 @@ for reco in recos:
         print(njobs)
 
         yearmod = ""
-        if year[:4]=='2016':
-            if year=='2016':
-                yearmod=' --yearmod postVFP'
-            else:
-                yearmod=' --yearmod preVFP'
+        #if year[:4]=='2016':
+        #    if year=='2016':
+        #        yearmod=' --yearmod postVFP'
+        #    else:
+        #        yearmod=' --yearmod preVFP'
         
         for j in range(njobs):
             condor_templ_file = open(loc_base + "/condor/submit.templ.jdl")

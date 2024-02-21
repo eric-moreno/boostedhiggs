@@ -12,6 +12,6 @@ output                  = DIRECTORY/logs/PREFIX_JOBID.out
 error                   = DIRECTORY/logs/PREFIX_JOBID.err
 log                     = DIRECTORY/logs/PREFIX_JOBID.log
 
-+SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
++SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest-py3.10"
 
 Queue 1

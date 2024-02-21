@@ -101,7 +101,7 @@ _ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_
 #_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H5000_Z5000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
-_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.01_hadhad.onnx', _ort_options)
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadel_v1.onnx', _ort_options)
 _ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadmu_v1.onnx', _ort_options)
 
@@ -232,6 +232,7 @@ class HttProcessor(processor.ProcessorABC):
 
         # WPs for btagDeepFlavB (UL)
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
+        print(btagWPs["deepJet"].keys())
         self._btagWPs = btagWPs["deepJet"][year + yearmod]
         #self._btagSF = BTagCorrector('M', "deepJet", year)
 
@@ -452,9 +453,9 @@ class HttProcessor(processor.ProcessorABC):
         if isRealData:
             overlap_removal = isOverlap(events, dataset, self._triggers['e'] + self._triggers['mu'] + self._triggers['had'] + self._triggers['met'], self._year)
         else:
-            overlap_removal = np.ones(nevents, dtype=np.bool)
+            overlap_removal = np.ones(nevents, dtype=np.bool_)
 
-        met_filters = np.ones(nevents, dtype=np.bool)
+        met_filters = np.ones(nevents, dtype=np.bool_)
         for t in self._metFilters:
             if self._year+self._yearmod in ["2016APV", "2018"] and t in ["BadPFMuonDzFilter"]:
                 continue
@@ -1050,7 +1051,7 @@ class HttProcessor(processor.ProcessorABC):
 
         if not gotInf:
 
-            presel = np.zeros(nevents, dtype=np.bool)
+            presel = np.zeros(nevents, dtype=np.bool_)
             for r in regions:
                 tmpsel = [sel for sel in regions[r] if not any([exc in sel for exc in ['ptreg','ztagger','nn_disc']])]
                 presel = presel | selection.all(*tmpsel)
