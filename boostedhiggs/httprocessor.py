@@ -251,7 +251,8 @@ class HttProcessor(processor.ProcessorABC):
         ztagger_mu_bin = hist.Bin('ztagger_mu', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         ztagger_el_bin = hist.Bin('ztagger_el', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         #nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.5,0.8,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,1.000001])
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.9,0.98,0.995,0.9999,1.000001])
+        #nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.9,0.98,0.995,0.9999,1.000001])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.2,0.5,0.8,0.9,0.98,0.995,0.9999,1.000001])
         massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.])
         massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
         ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 101, 0., 1.01)
@@ -274,7 +275,7 @@ class HttProcessor(processor.ProcessorABC):
         met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 100, 0, 1000)
         met_pup_pt_bin = hist.Bin('met_pup_pt', r'PUPPI MET [GeV]', 100, 0, 1000)
         n2b1_bin = hist.Bin('n2b1', r'N_{2}', 100, -1.,1.)
-        #h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,400,1200])
+        h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,400,1200])
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',4,-0.5,3.5)
@@ -357,7 +358,7 @@ class HttProcessor(processor.ProcessorABC):
                     hist.Cat('dataset', 'Dataset'),
                     hist.Cat('systematic', 'Systematic'),
                     hist.Cat('region', 'Region'),
-                    met_pt_bin, massreg_bin, nn_disc_bin#, h_pt_bin, 
+                    met_pt_bin, massreg_bin, nn_disc_bin, h_pt_bin, 
                 )}
             ))
         elif self._plotopt==3:
@@ -388,6 +389,7 @@ class HttProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
+        
         isRealData = not hasattr(events, "genWeight")
 
         if isRealData or self._plotopt>0:
@@ -1205,26 +1207,26 @@ class HttProcessor(processor.ProcessorABC):
 
         systematics = [
             None,
-            #'jet_triggerUp',
-            #'jet_triggerDown',
-            #'btagWeightUp',
-            #'btagWeightDown',
-            #'btagEffStatUp',
-            #'btagEffStatDown',
+            # 'jet_triggerUp',
+            # 'jet_triggerDown',
+            # 'btagWeightUp',
+            # 'btagWeightDown',
+            # 'btagEffStatUp',
+            # 'btagEffStatDown',
             'L1PreFiringUp',
             'L1PreFiringDown',
             'pileup_weightUp',
             'pileup_weightDown',
-            #'scalevar_3ptUp',
-            #'scalevar_3ptDown',
-            #'scalevar_7ptUp',
-            #'scalevar_7ptDown',
-            #'PDFaS_weightUp',
-            #'PDFaS_weightDown',
-            #'aS_weightUp',
-            #'aS_weightDown',
-            #'PDF_weightUp',
-            #'PDF_weightDown',
+            # 'scalevar_3ptUp',
+            # 'scalevar_3ptDown',
+            # 'scalevar_7ptUp',
+            # 'scalevar_7ptDown',
+            # 'PDFaS_weightUp',
+            # 'PDFaS_weightDown',
+            # 'aS_weightUp',
+            # 'aS_weightDown',
+            # 'PDF_weightUp',
+            # 'PDF_weightDown',
         ]
         if 'TT' in dataset:
             systematics.append('TopPtReweightUp')
@@ -1302,7 +1304,7 @@ class HttProcessor(processor.ProcessorABC):
                     met_pt=normalize(met_p4.pt),
                     massreg=normalize(massreg),
                     nn_disc=normalize(nn_disc),
-                    #h_pt=normalize(ptreg),
+                    h_pt=normalize(ptreg),
                     weight=weight,
                 )
 #                if 'signal' in region:
