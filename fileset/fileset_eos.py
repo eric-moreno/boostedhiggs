@@ -6,7 +6,12 @@ pfnano_tag = "v2_3"
 eosbase = "root://cmseos.fnal.gov/"
 eosdir = f"/store/group/lpcpfnano"
 #users = ["jekrupa","cmantill","pharris","drankin","dryu","yihan"]
-users = ["rkansal","cmantill", "jdickins"]
+# put each of these users' directories into a list
+#ammitra    cmantill   dryu      jdickins   jiyoo     ncsmith                    pfnanoindex_v2_3.json   srothman
+#anovak     cmoore     duhoang   jekrupa    jkrupa    pfnanoindex_v2_2.json      pharris                 test
+#atalierc   drankin    emoreno   jennetd    miniaod  '#pfnanoindex_v2_3.json#'   rkansal                 yihan
+#users = ["ammitra","anovak","atalierc","cmantill","cmoore","drankin","duhoang","dryu","emoreno","jdickins","jekrupa","jennetd","jiyoo","jkrupa","miniaod","ncsmith","pharris","rkansal","srothman","test","yihan"]
+users = ["emoreno", "eamoreno"]
 def eos_rec_search(startdir,suffix,dirs):
     dirlook = subprocess.check_output(f"eos {eosbase} ls {startdir}", shell=True).decode('utf-8').split("\n")[:-1]
     donedirs = [[] for d in dirlook]
@@ -30,14 +35,14 @@ for year in ["2016","2016APV","2017","2018"]:
             eospfnano = f"{eosdir}/{user}/{pfnano_tag}/{year}"
             samples = subprocess.check_output(f"eos {eosbase} ls {eospfnano}/*/", shell=True).decode('utf-8').split("\n")[:-1]     
             for sample in samples:
-                if sample not in ['SingleMu'+year, 'SingleElectron'+year, 'EGamma'+year] and not sample.startswith('WJetsToLNu'):
-                    continue
+                #if sample not in ['SingleMu'+year, 'SingleElectron'+year, 'EGamma'+year] and not sample.startswith('WJetsToLNu'):
+                #    continue
                 if sample not in sampledict.keys(): sampledict[sample] = {}
                 datasets = subprocess.check_output(f"eos {eosbase} ls {eospfnano}/{sample}/",shell=True).decode('utf-8').split("\n")[:-1]
                 for dataset in datasets:
                     # some exceptions
-                    if dataset=="JetHT" and user!="jekrupa": continue
-                    if sample=="WJetsToQQ" and user!="jekrupa": continue
+                    #if dataset=="JetHT" and user!="jekrupa": continue
+                    #if sample=="WJetsToQQ" and user!="jekrupa": continue
 
                     curdir = f"{eospfnano}/{sample}/{dataset}"
                     dirlog = eos_rec_search(curdir,".root",[])

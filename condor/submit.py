@@ -227,7 +227,7 @@ samples = {
             'WJetsToLNu_HT-600To800',
             'WJetsToLNu_HT-2500ToInf',
             'WJetsToLNu_HT-200To400',
-            'WJetsToLNu_HT-70To100',
+            ################## 'WJetsToLNu_HT-70To100',
             'WJetsToLNu_HT-400To600',
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -388,7 +388,7 @@ for reco in recos:
 
     totfiles = {}
     #with open('fileset/fileset_%s_%s.json'%(year,reco), 'r') as f:
-    with open('fileset/v2_2.5/%s.json'%(year), 'r') as f:
+    with open('fileset/v2_2.5.1/%s.json'%(year), 'r') as f:
         newfiles = json.load(f)
         totfiles.update(newfiles)
 
@@ -433,7 +433,7 @@ for reco in recos:
                 line = line.replace('DIRECTORY', locdir)
                 line = line.replace('PREFIX', prefix)
                 line = line.replace('JOBID', str(j))
-                line = line.replace('MEMREQUEST', "7500" if "DYJets" in sample or "HTauTau" in sample else "6000")
+                line = line.replace('MEMREQUEST', "7500" if "DYJets" in sample or "HTauTau" in sample else "7000")
                 line = line.replace('JSON', "%s/metadata.json"%(locdir))
                 condor_file.write(line)
             condor_file.close()
