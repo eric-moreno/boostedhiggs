@@ -31,6 +31,7 @@ from .corrections import (
     add_TopPtReweighting,
 #    add_jetTriggerWeight,
 #    add_TriggerWeight,
+    add_JetTriggerSF,
     add_LeptonSFs,
     add_METSFs,
     add_pdf_weight,
@@ -56,6 +57,7 @@ from boostedhiggs.btag import btagWPs, BTagCorrector
 from .utils import (
     runInferenceOnnx
 )
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -232,7 +234,6 @@ class HttProcessor(processor.ProcessorABC):
 
         # WPs for btagDeepFlavB (UL)
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
-        print(btagWPs["deepJet"].keys())
         self._btagWPs = btagWPs["deepJet"][year + yearmod]
         #self._btagSF = BTagCorrector('M', "deepJet", year)
 
@@ -954,6 +955,7 @@ class HttProcessor(processor.ProcessorABC):
             add_LeptonSFs(w_hadel, leadinglep, self._year+self._yearmod, "elec")
             add_LeptonSFs(w_hadmu, leadinglep, self._year+self._yearmod, "muon")
             add_METSFs(w_hadhadmet, met.pt, self._year+modlabel)
+            add_JetTriggerSF(w_hadhad, best_ak8, self._year)
             #add_TriggerWeight(w_hadhad, best_ak8.msoftdrop, best_ak8.pt, leadinglep.pt, self._year, "hadhad")
 
         regions = {
@@ -1205,28 +1207,41 @@ class HttProcessor(processor.ProcessorABC):
                         allcuts_reg.add(cut)
                         output['cutflow_%s'%r][dataset][cut] += float(w_dict[r].weight()[selection.all(*allcuts_reg)].sum())
 
+        # 'PDF_weightUp', 
+        # '
+
+        # 'PDF_weightDown', 
+        # 'PDFaS_weightDown',  
+        # 'aS_weightDown', 
+        # 'PDFaS_weightUp', 
+        # 'aS_weightUp
+
         systematics = [
             None,
-            # 'jet_triggerUp',
-            # 'jet_triggerDown',
+            'MET_TRIGUp',
+            'MET_TRIGDown',
+            'HAD_TRIGUp',
+            'HAD_TRIGDown',
             # 'btagWeightUp',
             # 'btagWeightDown',
             # 'btagEffStatUp',
             # 'btagEffStatDown',
+            'pileup_weightUp',
+            'pileup_weightDown',
             'L1PreFiringUp',
             'L1PreFiringDown',
             'pileup_weightUp',
             'pileup_weightDown',
-            # 'scalevar_3ptUp',
-            # 'scalevar_3ptDown',
-            # 'scalevar_7ptUp',
-            # 'scalevar_7ptDown',
-            # 'PDFaS_weightUp',
-            # 'PDFaS_weightDown',
-            # 'aS_weightUp',
-            # 'aS_weightDown',
-            # 'PDF_weightUp',
-            # 'PDF_weightDown',
+            'scalevar_3ptUp',
+            'scalevar_3ptDown',
+            'scalevar_7ptUp',
+            'scalevar_7ptDown',
+            'PDFaS_weightUp',
+            'PDFaS_weightDown',
+            'aS_weightUp',
+            'aS_weightDown',
+            'PDF_weightUp',
+            'PDF_weightDown',
         ]
         if 'TT' in dataset:
             systematics.append('TopPtReweightUp')
@@ -1245,6 +1260,8 @@ class HttProcessor(processor.ProcessorABC):
                     sname = systematic
             else:
                 sname = shift
+            if systematic not in w_dict[region].variations and systematic is not None:
+                return 
             if wmod is None:
                 if not realData:
                     weight = w_dict[region].weight(modifier=systematic)
@@ -1257,7 +1274,6 @@ class HttProcessor(processor.ProcessorABC):
             #weight = zero if cut fails
             #seems reasonable enough, right?
             weight = ak.where(cut, weight, 0)
-
             '''
             I /think/ this is equivalent to what was here before...
             '''

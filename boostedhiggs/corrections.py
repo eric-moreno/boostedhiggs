@@ -232,7 +232,18 @@ for key in met_trigger_sfs:
         met_trigger_sfs[key]['error'] = np.array(met_trigger_sfs[key]['error'])
 
 def add_METSFs(weights, met, year):
-    weights.add('MET_TRIG', met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(), met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]-1.), met_trigger_sfs['binning'])-1])
+    _met_nom = met_trigger_sfs[year]['value'][np.digitize(np.clip(ak.to_numpy(met).flatten(), met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]-1.), met_trigger_sfs['binning'])-1]
+    _met_err = met_trigger_sfs[year]['error'][np.digitize(np.clip(ak.to_numpy(met).flatten(), met_trigger_sfs['binning'][0], met_trigger_sfs['binning'][-1]-1.), met_trigger_sfs['binning'])-1]
+    weights.add('MET_TRIG', _met_nom, _met_nom+_met_err, _met_nom-_met_err)
+    
+def add_JetTriggerSF(weights, jets, year):
+    cset = correctionlib.CorrectionSet.from_file(f"boostedhiggs/data/fatjet_triggerSF{year}.json")[f'fatjet_triggerSF{year}']
+    _msd = ak.to_numpy(jets.msoftdrop, allow_missing=True)
+    _pt = ak.to_numpy(jets.pt, allow_missing=True)
+    _sf = cset.evaluate("nominal", _pt, _msd)
+    _sfup = cset.evaluate("stat_up",  _pt, _msd)
+    _sfdn = cset.evaluate("stat_dn", _pt, _msd)
+    weights.add('HAD_TRIG', _sf, _sfup, _sfdn)
 
 def add_pdf_weight(weights, pdf_weights):
     nweights = len(weights.weight())
