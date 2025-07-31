@@ -29,8 +29,9 @@ from .corrections import (
     add_VJets_NLOkFactor,
     add_VJets_kFactors,
     add_TopPtReweighting,
-#    add_jetTriggerWeight,
+    #add_jetTriggerWeight,
 #    add_TriggerWeight,
+    add_JetTriggerSF,
     add_LeptonSFs,
     add_METSFs,
     add_pdf_weight,
@@ -102,6 +103,7 @@ _ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_
 #_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H5000_Z5000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
 _ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
+#_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H0_Z0_FLAT900000_Lambda0.01_hadhad.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadel_v1.onnx', _ort_options)
 _ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadmu_v1.onnx', _ort_options)
 
@@ -233,9 +235,25 @@ class HttProcessor(processor.ProcessorABC):
         # WPs for btagDeepFlavB (UL)
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation
         print(btagWPs["deepJet"].keys())
-        self._btagWPs = btagWPs["deepJet"][year + yearmod]
-        #self._btagSF = BTagCorrector('M', "deepJet", year)
 
+        if "preVFP" in yearmod:
+            self._btagWPs = btagWPs["deepJet"][year + "APV"]
+        else:
+            self._btagWPs = btagWPs["deepJet"][year + yearmod]
+        #self._btagSF = BTagCorrector('M', "deepJet", year)
+        
+        bins_nn_disc = [ 0.0,  0.04, 0.08,  0.11,  0.15,
+                           0.18, 0.2,  0.23,
+                           0.27, 0.3, 0.35, 
+                           0.40,  
+                           0.45, 0.5, 0.55, 0.6, 0.65, 0.7,
+                           0.72, 0.74, 0.76, 0.78, 0.8,
+                           0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89,
+                           0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
+                           0.991, 0.992, 0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.999,
+                           0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999,
+                           0.9999,0.99995, 0.99999, 1.000001]
+        
         jet_pt_bin = hist.Bin('jet_pt', r'Jet $p_{T}$ [GeV]', 40, 200., 1200.)
         jet_eta_bin = hist.Bin('jet_eta', r'Jet $\eta$', 20, -3., 3.)
         jet_msd_bin = hist.Bin('jet_msd', r'Jet $m_{sd}$ [GeV]', 50, 0., 500.)
@@ -251,7 +269,8 @@ class HttProcessor(processor.ProcessorABC):
         ztagger_mu_bin = hist.Bin('ztagger_mu', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         ztagger_el_bin = hist.Bin('ztagger_el', r'$Z^{\ell\tau}_{NN}$', 102, -0.01, 1.01)
         #nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.5,0.8,0.9,0.95,0.98,0.99,0.995,0.999,0.9995,0.9999,0.99999,1.000001])
-        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.9,0.98,0.995,0.9999,1.000001])
+        nn_disc_bin = hist.Bin('nn_disc',r'$NN$', [0.,0.2,0.5,0.8,0.9,0.98,0.99, 0.992, 0.994, 0.995, 0.997, 0.999, 0.9999, 0.99995, 0.99999, 1.000001])
+        #nn_disc_bin = hist.Bin('nn_disc',r'$NN$', bins_nn_disc)
         massreg_bin = hist.Bin('massreg',r'$m_{NN}$', [0.,10.,20.,30.,40.,50.,60.,70.,80.,90.,100.,110.,120.,130.,140.,150.,200.,250.,300.,350.,400.])
         massreg_fine_bin = hist.Bin('massreg',r'$m_{NN}$', 100, 0., 500.)
         ztagger_bin = hist.Bin('ztagger', r'$Z^{\ell\tau}_{NN}$', 101, 0., 1.01)
@@ -274,7 +293,8 @@ class HttProcessor(processor.ProcessorABC):
         met_nopup_pt_bin = hist.Bin('met_nopup_pt', r'MET [GeV]', 100, 0, 1000)
         met_pup_pt_bin = hist.Bin('met_pup_pt', r'PUPPI MET [GeV]', 100, 0, 1000)
         n2b1_bin = hist.Bin('n2b1', r'N_{2}', 100, -1.,1.)
-        #h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [280,400,1200])
+        #h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', [140, 280])
+        #h_pt_bin = hist.Bin('h_pt', r'h $p_{T}$ [GeV]', np.linspace(0.0, 2000, 15))
         ntau_bin = hist.Bin('ntau',r'Number of taus',64,-0.5,63.5)
         antilep_bin = hist.Bin('antilep',r'Anti lepton veto',3,-1.5,1.5)
         genhtt_bin = hist.Bin('genhtt',r'hh,eh,mh,em,ee,mm (- for dr > 0.8)',4,-0.5,3.5)
@@ -282,11 +302,21 @@ class HttProcessor(processor.ProcessorABC):
         gentau2had_bin = hist.Bin('gentau2had',r'1pr,1pr+pi0,3pr',4,-0.5,3.5)
         met_trigger_bin = hist.Bin('met_trigger',r'Pass MET Trigger', 2,-0.5,1.5)
 
-        self._altplots = (
-            { 'jet_pt':jet_pt_bin, 'jet_eta':jet_eta_bin, 'jet_msd':jet_msd_bin, 'mt_lepmet':mt_lepmet_bin, 'mt_jetmet': mt_jetmet_bin, 'lep_pt':lep_pt_bin, 'lep_eta':lep_eta_bin, 'lep_jet_dr':lep_jet_dr_bin, 'n2b1':n2b1_bin, 'jetlep_m':jetlep_m_bin, 'met_nopup_pt':met_nopup_pt_bin, 'met_pup_pt':met_pup_pt_bin, 'jetmet_dphi':jetmet_dphi_fine_bin, 'massreg':massreg_fine_bin, 'ztagger':ztagger_bin},
-            { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu':ztagger_mu_bin, 'ztagger_el':ztagger_el_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin, 'massreg':massreg_fine_bin}, 
-            {'met_pt':met_pup_pt_bin, 'met_trigger':met_trigger_bin},
-        )[self._plotopt-1]
+        if self._plotopt in (1, 2):
+            self._altplots = (
+                { 'jet_pt':jet_pt_bin, 'jet_eta':jet_eta_bin, 'jet_msd':jet_msd_bin, 'mt_lepmet':mt_lepmet_bin, 'mt_jetmet': mt_jetmet_bin, 'lep_pt':lep_pt_bin, 'lep_eta':lep_eta_bin, 'lep_jet_dr':lep_jet_dr_bin, 'n2b1':n2b1_bin, 'jetlep_m':jetlep_m_bin, 'met_nopup_pt':met_nopup_pt_bin, 'met_pup_pt':met_pup_pt_bin, 'jetmet_dphi':jetmet_dphi_fine_bin, 'massreg':massreg_fine_bin, 'ztagger':ztagger_bin},
+                { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu':ztagger_mu_bin, 'ztagger_el':ztagger_el_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin, 'massreg':massreg_fine_bin}, 
+                {'met_pt':met_pup_pt_bin, 'met_trigger':met_trigger_bin},
+                )[self._plotopt-1]
+            
+        else:
+            self._altplots = {}    
+
+        # self._altplots = (
+        #     { 'jet_pt':jet_pt_bin, 'jet_eta':jet_eta_bin, 'jet_msd':jet_msd_bin, 'mt_lepmet':mt_lepmet_bin, 'mt_jetmet': mt_jetmet_bin, 'lep_pt':lep_pt_bin, 'lep_eta':lep_eta_bin, 'lep_jet_dr':lep_jet_dr_bin, 'n2b1':n2b1_bin, 'jetlep_m':jetlep_m_bin, 'met_nopup_pt':met_nopup_pt_bin, 'met_pup_pt':met_pup_pt_bin, 'jetmet_dphi':jetmet_dphi_fine_bin, 'massreg':massreg_fine_bin, 'ztagger':ztagger_bin},
+        #     { 'lep_miso':lep_miso_bin, 'nn_hadhad':nn_hadhad_bin , 'nn_hadhad_qcd':nn_hadhad_qcd_bin, 'nn_hadhad_wjets':nn_hadhad_wjets_bin, 'ztagger_mu':ztagger_mu_bin, 'ztagger_el':ztagger_el_bin, 'nn_hadel':nn_hadel_bin, 'nn_hadmu':nn_hadmu_bin, 'antilep':antilep_bin, 'massreg':massreg_fine_bin}, 
+        #     {'met_pt':met_pup_pt_bin, 'met_trigger':met_trigger_bin},
+        # )[self._plotopt-1]
 
         if self._plotopt==3:
             self._accumulator = processor.dict_accumulator({
@@ -357,7 +387,7 @@ class HttProcessor(processor.ProcessorABC):
                     hist.Cat('dataset', 'Dataset'),
                     hist.Cat('systematic', 'Systematic'),
                     hist.Cat('region', 'Region'),
-                    met_pt_bin, massreg_bin, nn_disc_bin#, h_pt_bin, 
+                    met_pt_bin, massreg_bin, nn_disc_bin, #h_pt_bin, 
                 )}
             ))
         elif self._plotopt==3:
@@ -370,6 +400,17 @@ class HttProcessor(processor.ProcessorABC):
                     met_pup_pt_bin, met_trigger_bin,
                 )}
             ))
+        elif self._plotopt == 4:
+            self._accumulator.add(processor.dict_accumulator({
+                'nn_opt_kin': hist.Hist(
+                    'Events',
+                    hist.Cat('dataset',     'Dataset'),
+                    hist.Cat('systematic',  'Systematic'),
+                    hist.Cat('region',      'Region'),
+                    met_pt_bin, massreg_bin, nn_disc_bin
+                )
+            }))
+            
         elif self._plotopt>0:
             self._accumulator.add(processor.dict_accumulator({
                 '%s_kin'%n: hist.Hist(
@@ -457,7 +498,7 @@ class HttProcessor(processor.ProcessorABC):
 
         met_filters = np.ones(nevents, dtype=np.bool_)
         for t in self._metFilters:
-            if self._year+self._yearmod in ["2016APV", "2018"] and t in ["BadPFMuonDzFilter"]:
+            if self._year+self._yearmod in ["2016preVFP", "2018"] and t in ["BadPFMuonDzFilter"]:
                 continue
             met_filters = met_filters & events.Flag[t]
 
@@ -550,6 +591,8 @@ class HttProcessor(processor.ProcessorABC):
 
         else:
             gotInf = False
+
+        #selection.add('10percentunblind', events.event % 10==0)
 
         selection.add('jetacceptance', (
             (best_ak8.pt > 200.)
@@ -947,11 +990,18 @@ class HttProcessor(processor.ProcessorABC):
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
+            w_hadhadmu = deepcopy(weights)
+            w_hadhadmetcr = deepcopy(weights)
+
             #del weights
             #also need implementation here
             add_LeptonSFs(w_hadel, leadinglep, self._year+self._yearmod, "elec")
             add_LeptonSFs(w_hadmu, leadinglep, self._year+self._yearmod, "muon")
             add_METSFs(w_hadhadmet, met.pt, self._year+modlabel)
+            add_METSFs(w_hadhadmetcr, met.pt, self._year+modlabel)
+            add_JetTriggerSF(w_hadhad, best_ak8, self._year)
+            add_LeptonSFs(w_hadhadmu, leadinglep, self._year+self._yearmod, "muon")
+
             #add_TriggerWeight(w_hadhad, best_ak8.msoftdrop, best_ak8.pt, leadinglep.pt, self._year, "hadhad")
 
         regions = {
@@ -1040,14 +1090,19 @@ class HttProcessor(processor.ProcessorABC):
 
         w_dict = {}
         for r in regions:
-            if 'hadhad' in r and 'met' not in r:
-                w_dict[r] = w_hadhad 
-            elif 'hadhad' in r and 'met' in r:
+            if 'hadhad' in r and 'met' in r:
                 w_dict[r] = w_hadhadmet 
+            elif 'hadhad' in r and 'cr_dphi_inv' in r :
+                w_dict[r] = w_hadhadmetcr
+            elif 'hadhad' in r and 'cr' in r:
+                w_dict[r] = w_hadhadmu
+            elif 'hadhad' in r and 'met' not in r:
+                w_dict[r] = w_hadhad 
             if 'hadel' in r:
                 w_dict[r] = w_hadel
             if 'hadmu' in r:
                 w_dict[r] = w_hadmu
+            
 
         if not gotInf:
 
@@ -1205,26 +1260,30 @@ class HttProcessor(processor.ProcessorABC):
 
         systematics = [
             None,
-            #'jet_triggerUp',
-            #'jet_triggerDown',
-            #'btagWeightUp',
-            #'btagWeightDown',
-            #'btagEffStatUp',
-            #'btagEffStatDown',
+            'MET_TRIGUp',
+            'MET_TRIGDown',
+            'HAD_TRIGUp',
+            'HAD_TRIGDown',
+            # 'btagWeightUp',
+            # 'btagWeightDown',
+            # 'btagEffStatUp',
+            # 'btagEffStatDown',
+            'pileup_weightUp',
+            'pileup_weightDown',
             'L1PreFiringUp',
             'L1PreFiringDown',
             'pileup_weightUp',
             'pileup_weightDown',
-            #'scalevar_3ptUp',
-            #'scalevar_3ptDown',
-            #'scalevar_7ptUp',
-            #'scalevar_7ptDown',
-            #'PDFaS_weightUp',
-            #'PDFaS_weightDown',
-            #'aS_weightUp',
-            #'aS_weightDown',
-            #'PDF_weightUp',
-            #'PDF_weightDown',
+            'scalevar_3ptUp',
+            'scalevar_3ptDown',
+            'scalevar_7ptUp',
+            'scalevar_7ptDown',
+            'PDFaS_weightUp',
+            'PDFaS_weightDown',
+            'aS_weightUp',
+            'aS_weightDown',
+            'PDF_weightUp',
+            'PDF_weightDown',
         ]
         if 'TT' in dataset:
             systematics.append('TopPtReweightUp')
@@ -1243,6 +1302,10 @@ class HttProcessor(processor.ProcessorABC):
                     sname = systematic
             else:
                 sname = shift
+            
+            if systematic not in w_dict[region].variations and systematic is not None:
+                return 
+            
             if wmod is None:
                 if not realData:
                     weight = w_dict[region].weight(modifier=systematic)
@@ -1321,6 +1384,17 @@ class HttProcessor(processor.ProcessorABC):
                     met_pup_pt=normalize(met_p4.pt),
                     met_trigger=normalize(triggermasks['met']),
                     weight=weight,
+                )
+            elif self._plotopt == 4:
+                output['nn_opt_kin'].fill(
+                    dataset    = dataset + addname,
+                    region     = region,
+                    systematic = sname,
+                    met_pt     = normalize(met_p4.pt),
+                    massreg    = normalize(massreg),
+                    nn_disc    = normalize(nn_disc),
+                    #h_pt       = normalize(ptreg),
+                    weight     = weight,
                 )
             elif self._plotopt>0:
                 altvars = {
