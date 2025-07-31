@@ -117,11 +117,11 @@ samples = {
             'SingleMuon_Run2016D_HIPM',
             'SingleMuon_Run2016E_HIPM',
             'SingleMuon_Run2016F_HIPM',
-            #'JetHT_Run2016B_ver2_HIPM',
-            #'JetHT_Run2016C_HIPM',
-            #'JetHT_Run2016D_HIPM',
-            #'JetHT_Run2016E_HIPM',
-            #'JetHT_Run2016F_HIPM',
+            # #'JetHT_Run2016B_ver2_HIPM',
+            # #'JetHT_Run2016C_HIPM',
+            # #'JetHT_Run2016D_HIPM',
+            # #'JetHT_Run2016E_HIPM',
+            # #'JetHT_Run2016F_HIPM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
@@ -192,9 +192,9 @@ samples = {
             'SingleMuon_Run2016F',
             'SingleMuon_Run2016G',
             'SingleMuon_Run2016H',
-            #'JetHT_Run2016F',
-            #'JetHT_Run2016G',
-            #'JetHT_Run2016H',
+            # #'JetHT_Run2016F',
+            # #'JetHT_Run2016G',
+            # #'JetHT_Run2016H',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
             'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
@@ -227,7 +227,7 @@ samples = {
             'WJetsToLNu_HT-600To800',
             'WJetsToLNu_HT-2500ToInf',
             'WJetsToLNu_HT-200To400',
-            'WJetsToLNu_HT-70To100',
+            #'WJetsToLNu_HT-70To100', #deleted in v2_3 apparently we dont need this though 
             'WJetsToLNu_HT-400To600',
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -308,7 +308,7 @@ samples = {
             'WJetsToLNu_HT-600To800',
             'WJetsToLNu_HT-2500ToInf',
             'WJetsToLNu_HT-200To400',
-            'WJetsToLNu_HT-70To100',
+            #'WJetsToLNu_HT-70To100', #deleted in v2_3 apparently we dont need this though 
             'WJetsToLNu_HT-400To600',
             'QCD_Pt_3200toInf',
             'QCD_Pt_1400to1800',
@@ -353,18 +353,18 @@ samples = {
             #'JetHT_Run2018B',
             #'JetHT_Run2018C',
             #'JetHT_Run2018D',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
-            #'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M10_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M20_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M30_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M40_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M50_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M75_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M100_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M125_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M150_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M200_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M250_nodmx_v0_TuneCP5_MLM',
+            'Spin0ToTauTau_2j_scalar_g1_HT300_M300_nodmx_v0_TuneCP5_MLM',
         ],
     },
     "preUL": {
@@ -384,11 +384,11 @@ for reco in recos:
     os.system('mkdir -p  %s' % logdir)
 
     outdir = homedir + label + '_' + year + '_' + reco + '/outfiles/'
-    os.system('mkdir -p  /eos/uscms/%s' % outdir)
+    os.system('mkdir -p  root://cmseos.fnal.gov/%s' % outdir)
 
     totfiles = {}
     #with open('fileset/fileset_%s_%s.json'%(year,reco), 'r') as f:
-    with open('fileset/v2_2.5/%s.json'%(year), 'r') as f:
+    with open('fileset/v2_2.5.1/%s.json'%(year), 'r') as f:
         newfiles = json.load(f)
         totfiles.update(newfiles)
 
@@ -417,11 +417,11 @@ for reco in recos:
         print(njobs)
 
         yearmod = ""
-        #if year[:4]=='2016':
-        #    if year=='2016':
-        #        yearmod=' --yearmod postVFP'
-        #    else:
-        #        yearmod=' --yearmod preVFP'
+        if year[:4]=='2016':
+            if year=='2016':
+                yearmod=''
+            else:
+                yearmod=' --yearmod preVFP'
         
         for j in range(njobs):
             condor_templ_file = open(loc_base + "/condor/submit.templ.jdl")
@@ -433,7 +433,7 @@ for reco in recos:
                 line = line.replace('DIRECTORY', locdir)
                 line = line.replace('PREFIX', prefix)
                 line = line.replace('JOBID', str(j))
-                line = line.replace('MEMREQUEST', "7500" if "DYJets" in sample or "HTauTau" in sample else "6000")
+                line = line.replace('MEMREQUEST', "7500" if "DYJets" in sample or "HTauTau" in sample else "14000")
                 line = line.replace('JSON', "%s/metadata.json"%(locdir))
                 condor_file.write(line)
             condor_file.close()
