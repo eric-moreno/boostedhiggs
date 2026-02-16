@@ -102,7 +102,8 @@ _ort_sessions['Ztagger_Zmm_Zhm_v6'] = rt.InferenceSession('boostedhiggs/data/IN_
 #_ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/hadel_H15000_Z15000_Lambda0.1_hadel_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/hadmu_H9000_Z15000_Lambda0.01_hadmu_FLAT300k_genPtCut300.onnx', _ort_options)
 #_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H5000_Z5000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
-_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
+#_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H25000_Z25000_FLAT900000_Lambda0.1_hadhad.onnx', _ort_options)
+_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H0_Z0_FLAT900000_Lambda0.01_hadhad.onnx', _ort_options)
 #_ort_sessions['MassReg_hadhad'] = rt.InferenceSession('boostedhiggs/data/UL_H0_Z0_FLAT900000_Lambda0.01_hadhad.onnx', _ort_options)
 _ort_sessions['MassReg_hadel'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadel_v1.onnx', _ort_options)
 _ort_sessions['MassReg_hadmu'] = rt.InferenceSession('boostedhiggs/data/UL_regression_hadmu_v1.onnx', _ort_options)
@@ -951,6 +952,9 @@ class HttProcessor(processor.ProcessorABC):
             w_hadhadmet = deepcopy(weights)
             w_hadel = deepcopy(weights)
             w_hadmu = deepcopy(weights)
+            w_hadhadmu = deepcopy(weights)
+            w_hadhadmetcr = deepcopy(weights)
+            
             #del weights
             #genTauTauDecay = ak.zeros_like(best_ak8.pt)
             #genHadTau1Decay = ak.zeros_like(best_ak8.pt)
@@ -1097,7 +1101,7 @@ class HttProcessor(processor.ProcessorABC):
             elif 'hadhad' in r and 'cr' in r:
                 w_dict[r] = w_hadhadmu
             elif 'hadhad' in r and 'met' not in r:
-                w_dict[r] = w_hadhad 
+                w_dict[r] = w_hadhad
             if 'hadel' in r:
                 w_dict[r] = w_hadel
             if 'hadmu' in r:
